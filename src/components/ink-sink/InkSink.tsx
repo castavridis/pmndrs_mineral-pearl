@@ -10,7 +10,7 @@ import {
   type Ref,
 } from 'react';
 import { useResolvedTheme } from '../theme';
-import { usePageLook } from '../theme/look';
+import { usePageLook, usePageLooks } from '../theme/look';
 import { getFixedGround, registerGround, useGroundCount } from './grounds';
 import {
   LiquidPond,
@@ -137,13 +137,18 @@ export function InkSink({
   const grounds = useGroundCount();
   // the page look is the default; a prop on this pond wins over it
   const look = usePageLook();
-  const visc = viscosity ?? look.viscosity;
+  // the mineral body is dressed by the dark look, the pearl body by the light
+  const looks = usePageLooks();
+  const visc = viscosity ?? looks.dark.viscosity;
   const merged = () => ({
-    mineral: { ...MINERAL_DEFAULT, ...look.mineral, ...mineral },
-    pearl: { ...PEARL_DEFAULT, ...look.pearl, ...pearl },
+    mineral: { ...MINERAL_DEFAULT, ...looks.dark.mineral, ...mineral },
+    pearl: { ...PEARL_DEFAULT, ...looks.light.pearl, ...pearl },
     mercury: { ...MERCURY_DEFAULT, ...look.mercury, ...mercury },
-    spectrum: { ...SPECTRUM_DEFAULT, ...look.spectrum, ...spectrum },
-    pointer: { ...POINTER_DEFAULT, ...look.pointer, ...pointer },
+    spectrum: { ...SPECTRUM_DEFAULT, ...looks.dark.spectrum, ...spectrum },
+    pointer: { ...POINTER_DEFAULT, ...looks.dark.pointer, ...pointer },
+    spectrumPearl: { ...SPECTRUM_DEFAULT, ...looks.light.spectrum, ...spectrum },
+    pointerPearl: { ...POINTER_DEFAULT, ...looks.light.pointer, ...pointer },
+    viscosityPearl: viscosity ?? looks.light.viscosity,
   });
   const hostRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -231,6 +236,7 @@ export function InkSink({
     radius,
     unit,
     look,
+    looks,
     mineral,
     pearl,
     spectrum,

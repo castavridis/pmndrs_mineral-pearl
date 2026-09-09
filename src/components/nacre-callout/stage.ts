@@ -8,7 +8,7 @@
 // glass but the black mineral nacre of the liquid pond: dark body, nacre
 // noise, brand iridescence, facet glitter.
 
-import { useLook } from '../theme/look';
+import { getPageLooks } from '../theme/look';
 
 const TRAIL = 12;
 const BLOBS = 5;
@@ -774,7 +774,8 @@ export class NacreStage {
     gl.uniform1i(u.uSteps, q.steps);
     gl.uniform1i(u.uGhost, 0);
     // the nacre: the page look's mineral and spectrum, the stage's own knobs on top
-    const look = useLook.getState().look;
+    // the nacre is the mineral body: the dark look dresses it in either scheme
+    const look = getPageLooks().dark;
     gl.uniform3fv(u.uMinBase, hexToRgb(look.mineral.base));
     gl.uniform3fv(u.uMinHigh, hexToRgb(look.mineral.highlight));
     gl.uniform1f(u.uStoneGray, look.mineral.stoneGray);

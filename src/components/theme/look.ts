@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import {
@@ -175,3 +176,14 @@ export const useLook = create<LookState>()(
 
 /** The page look in force, live. */
 export const usePageLook = () => useLook((s) => s.look);
+
+/** Both schemes' looks in force: the mineral body wears the dark one, the pearl body the light one. */
+export function usePageLooks(): Record<ResolvedTheme, PageLook> {
+  const looks = useLook((s) => s.looks);
+  return useMemo(() => ({ dark: inForce(looks, 'dark'), light: inForce(looks, 'light') }), [looks]);
+}
+/** The looks in force, outside React. */
+export const getPageLooks = (): Record<ResolvedTheme, PageLook> => {
+  const looks = useLook.getState().looks;
+  return { dark: inForce(looks, 'dark'), light: inForce(looks, 'light') };
+};

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, type CSSProperties } from 'react';
 import { useResolvedTheme, useThemeStore } from '../theme';
-import { usePageLook } from '../theme/look';
+import { usePageLook, usePageLooks } from '../theme/look';
 import { useWebGL } from '../gate';
 import { registerGround } from './grounds';
 import {
@@ -68,13 +68,18 @@ export function LiquidGround({
 }: LiquidGroundProps) {
   // the page look is the default; a prop on this ground wins over it
   const look = usePageLook();
-  const visc = viscosity ?? look.viscosity;
+  // the mineral body is dressed by the dark look, the pearl body by the light
+  const looks = usePageLooks();
+  const visc = viscosity ?? looks.dark.viscosity;
   const merged = () => ({
-    mineral: { ...MINERAL_DEFAULT, ...look.mineral, ...mineral },
-    pearl: { ...PEARL_DEFAULT, ...look.pearl, ...pearl },
+    mineral: { ...MINERAL_DEFAULT, ...looks.dark.mineral, ...mineral },
+    pearl: { ...PEARL_DEFAULT, ...looks.light.pearl, ...pearl },
     mercury: { ...MERCURY_DEFAULT, ...look.mercury, ...mercury },
-    spectrum: { ...SPECTRUM_DEFAULT, ...look.spectrum, ...spectrum },
-    pointer: { ...POINTER_DEFAULT, ...look.pointer, ...reaction },
+    spectrum: { ...SPECTRUM_DEFAULT, ...looks.dark.spectrum, ...spectrum },
+    pointer: { ...POINTER_DEFAULT, ...looks.dark.pointer, ...reaction },
+    spectrumPearl: { ...SPECTRUM_DEFAULT, ...looks.light.spectrum, ...spectrum },
+    pointerPearl: { ...POINTER_DEFAULT, ...looks.light.pointer, ...reaction },
+    viscosityPearl: viscosity ?? looks.light.viscosity,
   });
   const theme = useResolvedTheme();
   const liq: Liquid = liquid === 'auto' ? (theme === 'dark' ? 'mineral' : 'pearl') : liquid;
@@ -134,7 +139,7 @@ export function LiquidGround({
     Object.assign(pond.opts, merged());
     pond.setLiquid(liq);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [liq, visc, maxDpr, unit, look, mineral, pearl, mercury, spectrum, reaction]);
+  }, [liq, visc, maxDpr, unit, look, looks, mineral, pearl, mercury, spectrum, reaction]);
 
   return (
     <div

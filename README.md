@@ -180,7 +180,7 @@ The pages mirror the 3d-2d-nav repo's, page for page, with the liquid where it h
 | `/dev/splat`        | Full-viewport splat with the leva panel (colour, mark, origin…)                        |
 | `/dev/engulf`       | Engulf and the pond, every knob; presets are saved here                                |
 
-The page look (`useLook`, `pmndrs-page-look`) is per scheme: the dark ground's default is the "sunken spot" preset (black mineral, coarse glitter, no pointer halo), the light ground's is "sunken spot (nacre)" (cream nacre, thick, fine soft glitter, a pointer halo); `ThemeApplier` keeps the look in force on the current scheme, "apply to page" writes to that scheme's look, and reset returns both to the defaults.
+The pond shader carries both bodies' materials at once: the mineral body wears the dark look (its colours, spectrum, pointer dimple, viscosity) and the pearl body the light look, uploaded side by side and mixed per pixel by the body in force there. So under the theme's ink mask the incoming body is drawn whole, in its own dress, and nothing swaps at commit. The page look (`useLook`, `pmndrs-page-look`) is per scheme: the dark ground's default is the "sunken spot" preset (black mineral, coarse glitter, no pointer halo), the light ground's is "sunken spot (nacre)" (cream nacre, thick, fine soft glitter, a pointer halo); `ThemeApplier` keeps the look in force on the current scheme, "apply to page" writes to that scheme's look, and reset returns both to the defaults.
 
 Pond presets are kept in `localStorage` (`pmndrs-pond-presets`), which is per origin: a dev server on another port has its own. The ones in `src/app/pond-presets.json` ship with the app and are always in the list.
 

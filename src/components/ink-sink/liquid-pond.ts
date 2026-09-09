@@ -73,6 +73,12 @@ uniform float uGlint;      // glitter strength multiplier (study 1)
 uniform float uLamina;     // (port) striation density: the laminar lines' frequency (study 72)
 uniform float uGlintPtr;   // (port) how much the facets light from over the pointer (0: the study's fixed light)
 uniform float uDimple;     // (port) depth of the dent the pointer makes in the surface (study 1)
+// (port) the pearl body's own spectrum, dimple and viscosity: the two bodies
+// are two materials in one shader, each pixel taking the one its mode says,
+// so a masked switch shows the incoming body whole, not in the other's dress
+uniform float uWhiteP, uSpreadP, uSwirlP, uGlowKP, uGrainSizeP, uGrainDensP, uGlitterDensP, uFacetSharpP, uGlintP, uGlintPtrP, uLaminaP, uDimpleP, uViscP;
+// the values in force at this pixel (set at the top of main)
+float kWhite, kSpread, kSwirl, kGlowK, kGrainSize, kGrainDens, kGlitterDens, kFacetSharp, kGlint, kGlintPtr, kLamina, kDimple, kVisc;
 uniform float uSlabOn;     // (port) 0: no slab at all, the liquid alone (the ground, the nav pill)
 uniform vec2  uShiftPx;    // (port) well: this canvas's centre from the page ground's, device px
 uniform vec2  uVigRes;     // (port) the vignette's frame: the ground's canvas when in a well
@@ -147,9 +153,9 @@ float surf(vec2 p){
 
   float pd = length(p - uPtr);
   // high tension: the pointer dents a narrow, deep dimple instead of a wide bowl
-  h -= uPtrOn * uDimple * mix(0.020 * exp(-pd * pd * 26.0), 0.030 * exp(-pd * pd * 110.0), uGoop);
+  h -= uPtrOn * kDimple * mix(0.020 * exp(-pd * pd * 26.0), 0.030 * exp(-pd * pd * 110.0), uGoop);
 
-  float thin = clamp(1.0 - uVisc * 0.5, 0.0, 1.0);
+  float thin = clamp(1.0 - kVisc * 0.5, 0.0, 1.0);
   float spd  = mix(0.42, 0.78, thin);
   float damp = mix(1.0, 0.45, thin);
   float freq = mix(9.0, 15.0, thin);
@@ -202,6 +208,29 @@ vec3 inkField(vec2 p){
 }
 
 void main(){
+  // which body this pixel is: the pond's mode, or under a mask the incoming one
+  float modeP = uMode;
+  if (uMaskOn > 0.5) {
+    vec2 fuv = gl_FragCoord.xy / uRes;
+    vec2 muv = vec2(uMaskRect.x + fuv.x * uMaskRect.z, uMaskRect.y + (1.0 - fuv.y) * uMaskRect.w);
+    // the mask is a WebGL canvas: Chrome hands those over with the top row
+    // at t = 0, the reverse of a 2D canvas, so the top-based uv samples as is
+    modeP = mix(uMode, uModeTo, texture(uMask, muv).a);
+  }
+  // the material in force here: the mineral body's numbers, the pearl's, or between
+  kWhite = mix(uWhite, uWhiteP, modeP);
+  kSpread = mix(uSpread, uSpreadP, modeP);
+  kSwirl = mix(uSwirl, uSwirlP, modeP);
+  kGlowK = mix(uGlowK, uGlowKP, modeP);
+  kGrainSize = mix(uGrainSize, uGrainSizeP, modeP);
+  kGrainDens = mix(uGrainDens, uGrainDensP, modeP);
+  kGlitterDens = mix(uGlitterDens, uGlitterDensP, modeP);
+  kFacetSharp = mix(uFacetSharp, uFacetSharpP, modeP);
+  kGlint = mix(uGlint, uGlintP, modeP);
+  kGlintPtr = mix(uGlintPtr, uGlintPtrP, modeP);
+  kLamina = mix(uLamina, uLaminaP, modeP);
+  kDimple = mix(uDimple, uDimpleP, modeP);
+  kVisc = mix(uVisc, uViscP, modeP);
   // (port) in a well the frame is the page ground's: the same point of the
   // page samples the same liquid in both canvases, so the two are one surface
   vec2  fc = gl_FragCoord.xy - 0.5 * uRes + uShiftPx;
@@ -272,12 +301,12 @@ void main(){
   float cyc = gd * 2.4;
   float band = smoothstep(0.35, 0.9, cyc) * (1.0 - smoothstep(1.9, 2.6, cyc));
   float halo = exp(-gd * gd * 6.0) * 0.55 + exp(-gd * gd * 28.0) * 0.45;
-  float glow = halo * uPtrOn * uGlowK;
+  float glow = halo * uPtrOn * kGlowK;
 
-  float nac = fbm3(uv * uSwirl + vec2(0.0, t * uMotion * 0.02));
-  float lam = vn(uv * vec2(3.0, uLamina) + 11.0);
-  float phase = (nac * 1.9 + fres * 1.5 + lam * 0.16 + cyc * 0.30) * uSpread - t * uMotion * 0.02;
-  vec3  irid = mix(brand(phase), vec3(1.0), uWhite);
+  float nac = fbm3(uv * kSwirl + vec2(0.0, t * uMotion * 0.02));
+  float lam = vn(uv * vec2(3.0, kLamina) + 11.0);
+  float phase = (nac * 1.9 + fres * 1.5 + lam * 0.16 + cyc * 0.30) * kSpread - t * uMotion * 0.02;
+  vec3  irid = mix(brand(phase), vec3(1.0), kWhite);
 
   // --- slab geometry: its shading never changes under the surface; it only
   // fades out (opacity) as the liquid closes over it --------------------------
@@ -313,7 +342,7 @@ void main(){
   // mouse sweeps by, so the glitter answers the hand instead of only drifting
   vec3  Lp = normalize(vec3(uPtr - uv, 0.55));
   vec3  Hp = normalize(Lp + V);
-  vec3  Hg = normalize(mix(Hv, Hp, uPtrOn * uGlintPtr));
+  vec3  Hg = normalize(mix(Hv, Hp, uPtrOn * kGlintPtr));
   // (port) the study set one facet per grid cell, jittered within it, and the
   // lattice showed through. Two layers on grids of different scale and
   // rotation, jitter past the cell, per-facet size, and a density that ebbs
@@ -323,9 +352,9 @@ void main(){
   for(int L = 0; L < 2; L++){
     float lf = float(L);
     float ang = 0.61 * lf;
-    vec2 guv = mat2(cos(ang), -sin(ang), sin(ang), cos(ang)) * uv * uGrainSize * (1.0 - 0.37 * lf) + lf * 7.3;
+    vec2 guv = mat2(cos(ang), -sin(ang), sin(ang), cos(ang)) * uv * kGrainSize * (1.0 - 0.37 * lf) + lf * 7.3;
     vec2 gid = floor(guv), gv = fract(guv) - 0.5;
-    float dens = uGrainDens * (0.35 + 0.9 * vn(gid * 0.11 + lf * 3.0));
+    float dens = kGrainDens * (0.35 + 0.9 * vn(gid * 0.11 + lf * 3.0));
     for(int y = -1; y <= 1; y++){
       for(int x = -1; x <= 1; x++){
         vec2 o = vec2(float(x), float(y));
@@ -339,8 +368,8 @@ void main(){
         tl += 0.05 * uMotion * vec2(sin(t * (0.5 + r.y * 1.3) + r.z * 21.0),
                                     cos(t * (0.4 + r.z * 1.1) + r.y * 17.0));
         vec3 fn = normalize(vec3(tl, 0.72));
-        float sp = pow(max(dot(fn, Hg), 0.0), uFacetSharp) * (0.6 + r.z * 0.9);
-        float w  = sp * (core + uGlitterDens * exp(-d * d * 90.0)) * alive * (1.0 - 0.35 * lf);
+        float sp = pow(max(dot(fn, Hg), 0.0), kFacetSharp) * (0.6 + r.z * 0.9);
+        float w  = sp * (core + kGlitterDens * exp(-d * d * 90.0)) * alive * (1.0 - 0.35 * lf);
         sparkC += mix(vec3(1.0), brand(cyc - 1.0 + dot(tl, rad) * 0.14 + r.y * 0.1 - t * 0.02) * 1.25, 0.82) * w;
         sparkI += w;
       }
@@ -379,7 +408,7 @@ void main(){
   vec3 colD = mix(liqD, slabD, bMask);
   colD += vec3(0.16) * sheen * inkM;
   colD *= 1.0 - 0.22 * lip;
-  colD += sparkC * sparkMask * 1.15 * (1.0 + glow) * uGlint;
+  colD += sparkC * sparkMask * 1.15 * (1.0 + glow) * kGlint;
   colD += vec3(0.80, 0.86, 1.00) * rim * 0.20 * slabA;
   colD += focusC * ring * 0.55;
   colD *= 1.0 - 0.28 * vig;
@@ -401,7 +430,7 @@ void main(){
   vec3 colL = mix(liqL, slabL, bMask);
   colL -= vec3(0.14) * sheen * inkM;
   colL *= 1.0 - 0.10 * lip;
-  colL = mix(colL, mix(vec3(0.36, 0.35, 0.33), irid * 0.8, band), clamp(sparkI * sparkMask * 0.8 * uGlint, 0.0, 1.0) * 0.45);
+  colL = mix(colL, mix(vec3(0.36, 0.35, 0.33), irid * 0.8, band), clamp(sparkI * sparkMask * 0.8 * kGlint, 0.0, 1.0) * 0.45);
   colL += vec3(0.55, 0.52, 0.48) * rim * 0.10 * slabA;
   colL += focusC * 0.75 * ring * 0.60;
   colL *= 1.0 - 0.10 * vig;
@@ -416,20 +445,12 @@ void main(){
   vec3 colM = mix(liqM, slabM, bMask);
   colM += vec3(0.35) * sheen * inkM;
   colM *= 1.0 - 0.18 * lip;
-  colM += sparkC * sparkMask * 0.35 * uGlint;
+  colM += sparkC * sparkMask * 0.35 * kGlint;
   colM += vec3(1.0) * rim * 0.35 * slabA;
   colM += focusC * ring * 0.55;
   colM *= 1.0 - 0.22 * vig;
   colM  = clamp(colM, 0.0, 1.0);
 
-  float modeP = uMode;
-  if (uMaskOn > 0.5) {
-    vec2 fuv = gl_FragCoord.xy / uRes;
-    vec2 muv = vec2(uMaskRect.x + fuv.x * uMaskRect.z, uMaskRect.y + (1.0 - fuv.y) * uMaskRect.w);
-    // the mask is a WebGL canvas: Chrome hands those over with the top row
-    // at t = 0, the reverse of a 2D canvas, so the top-based uv samples as is
-    modeP = mix(uMode, uModeTo, texture(uMask, muv).a);
-  }
   vec3 outC = mix(mix(colD, colL, modeP), colM, uMerc);
   // (port) the dry face is a hole in the layer: the DOM slab shows through it.
   // Covered, the liquid closes over it, faintly translucent while shallow.
@@ -592,9 +613,14 @@ export interface PondOptions {
   well?: boolean;
   mineral: MineralLook;
   pearl: PearlLook;
+  /** Iridescence and glitter of the mineral body (and of everything, without the pearl's own). */
   spectrum: SpectrumLook;
   pointer: PointerLook;
   mercury: MercuryLook;
+  /** The pearl body's own spectrum, pointer reaction and viscosity; default the mineral's. */
+  spectrumPearl?: SpectrumLook;
+  pointerPearl?: PointerLook;
+  viscosityPearl?: number;
 }
 
 const hex3 = (h: string): [number, number, number] => [
@@ -955,9 +981,22 @@ export class LiquidPond {
   }
 
   /** (port) a pointer response, scaled by the master `reaction`. */
+  private _prOf(p: PointerLook, k: 'dimple' | 'wake' | 'tilt' | 'drift') {
+    return p.reaction * p[k];
+  }
+  private _viscOf(v: number) {
+    return Math.max(0.15, Math.min(2, v));
+  }
+  /** viscosity in force for the slab's physics: between the two bodies' by mode */
+  private _visc(mode: number) {
+    const a = this._viscOf(this.opts.viscosity);
+    const b = this._viscOf(this.opts.viscosityPearl ?? this.opts.viscosity);
+    return a + (b - a) * mode;
+  }
   private _pr(k: 'dimple' | 'wake' | 'tilt' | 'drift') {
-    const p = this.opts.pointer;
-    const r = p.reaction * p[k];
+    const a = this._prOf(this.opts.pointer, k);
+    const b = this._prOf(this.opts.pointerPearl ?? this.opts.pointer, k);
+    const r = a + (b - a) * this._state.modeT;
     // (port) in a well the page's reaction scales the liquid (the dimple must
     // match the ground's), not how far a thing afloat on it tips or drifts
     return this.opts.well && (k === 'tilt' || k === 'drift') ? Math.min(1, r) : r;
@@ -1316,6 +1355,19 @@ export class LiquidPond {
       'uGlintPtr',
       'uLamina',
       'uDimple',
+      'uWhiteP',
+      'uSpreadP',
+      'uSwirlP',
+      'uGlowKP',
+      'uGrainSizeP',
+      'uGrainDensP',
+      'uGlitterDensP',
+      'uFacetSharpP',
+      'uGlintP',
+      'uGlintPtrP',
+      'uLaminaP',
+      'uDimpleP',
+      'uViscP',
       'uSlabOn',
       'uShiftPx',
       'uVigRes',
@@ -1406,7 +1458,7 @@ export class LiquidPond {
       // the slab only goes under on a press (a ~1.5s dunk, then it bobs back);
       // hovering just weighs it down a touch and tips it toward the pointer
       const pressed = now / 1000 - s.pressAt < 1.5;
-      const visc = Math.max(0.15, Math.min(2, this.opts.viscosity));
+      const visc = this._visc(s.modeT);
       const hoverY = 0.014 - s.prox * 0.022 * this._pr('tilt');
       const target = this._sunk ? -0.34 : pressed ? -0.3 : hoverY;
       const k = this._sunk ? 7.5 : pressed ? 18 : 22;
@@ -1485,7 +1537,7 @@ export class LiquidPond {
       gl.uniform1f(u.uMode, s.modeT);
       gl.uniform1f(u.uMotion, this._reduce ? 0 : 1);
       gl.uniform1f(u.uGoop, s.goop);
-      gl.uniform1f(u.uVisc, visc);
+      gl.uniform1f(u.uVisc, this._viscOf(this.opts.viscosity));
       gl.uniform1f(u.uMerc, s.mercT);
       gl.uniform2f(u.uTilt, s.tilt[0], s.tilt[1]);
       gl.uniform3f(u.uGlob, this.opts.globSize, this.opts.globDensity, this.opts.globHeight);
@@ -1516,7 +1568,21 @@ export class LiquidPond {
       gl.uniform1f(u.uGlint, sp.glint);
       gl.uniform1f(u.uGlintPtr, sp.glintFollowsPointer);
       gl.uniform1f(u.uLamina, sp.lamina);
-      gl.uniform1f(u.uDimple, this._pr('dimple'));
+      gl.uniform1f(u.uDimple, this._prOf(this.opts.pointer, 'dimple'));
+      const spP = this.opts.spectrumPearl ?? sp;
+      gl.uniform1f(u.uWhiteP, spP.white);
+      gl.uniform1f(u.uSpreadP, spP.spread);
+      gl.uniform1f(u.uSwirlP, spP.swirl);
+      gl.uniform1f(u.uGlowKP, spP.cursorGlow);
+      gl.uniform1f(u.uGrainSizeP, spP.grainSize);
+      gl.uniform1f(u.uGrainDensP, spP.grainDensity);
+      gl.uniform1f(u.uGlitterDensP, spP.glitterDensity);
+      gl.uniform1f(u.uFacetSharpP, spP.facetSharpness);
+      gl.uniform1f(u.uGlintP, spP.glint);
+      gl.uniform1f(u.uGlintPtrP, spP.glintFollowsPointer);
+      gl.uniform1f(u.uLaminaP, spP.lamina);
+      gl.uniform1f(u.uDimpleP, this._prOf(this.opts.pointerPearl ?? this.opts.pointer, 'dimple'));
+      gl.uniform1f(u.uViscP, this._viscOf(this.opts.viscosityPearl ?? this.opts.viscosity));
       gl.uniform1f(u.uSlabOn, this.slab ? 1 : 0);
       this._uploadMask();
       const mc = this.opts.mercury;
