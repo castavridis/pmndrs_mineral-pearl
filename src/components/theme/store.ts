@@ -2,6 +2,7 @@ import { useEffect, useSyncExternalStore } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { ResolvedTheme } from './tokens';
+import { useLook } from './look';
 
 export type ThemeChoice = ResolvedTheme | 'system';
 
@@ -85,6 +86,8 @@ export function ThemeApplier() {
   useEffect(() => {
     document.documentElement.dataset.theme = resolved;
     document.documentElement.classList.toggle('dark', resolved === 'dark');
+    // the page look in force is the scheme's
+    useLook.getState().setScheme(resolved);
   }, [resolved]);
   return null;
 }
