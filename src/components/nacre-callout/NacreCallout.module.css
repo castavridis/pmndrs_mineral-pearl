@@ -1,0 +1,51 @@
+/* the DOM of a nacre callout sits above the stage canvas; the slab is drawn
+   beneath it in the page's single WebGL context */
+.cal {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  /* the text reads on the black mineral whatever the scheme */
+  color: #eeeeea;
+}
+
+.ico {
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  margin-top: 2px;
+}
+
+.ico svg {
+  width: 17px;
+  height: 17px;
+  fill: currentColor;
+}
+
+.body {
+  min-width: 0;
+}
+
+.lbl {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--accent);
+  margin: 0 0 3px;
+}
+
+.body p {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+
+.body p + p {
+  margin-top: 0.5em;
+}
