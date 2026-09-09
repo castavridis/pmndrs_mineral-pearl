@@ -124,6 +124,15 @@ The one surface every element sits on: a clipped box in one of three shapes (`pi
 
 Every surface has one exit, `exit`: `dismiss` (the ground's own liquid closes in over it, drains, and the content is gone; `onDone` fires), `disable` (the liquid closes over and stays; the content stays visible but dimmed and the surface is `aria-disabled`, the study's rule that sunk means unavailable but still findable), and `pending` (the same while it lasts; back to `none`, the liquid drains and the content is restored). The engulfing ink samples the page ground rather than a colour, so the ground reclaims the element wherever it sits; without a ground or with the shaders off it is the page ink.
 
+### The mark
+
+`reference/logo.svg` is the source of the pmndrs mark: an 800 unit box on a 40 unit grid, five blocks (a top bar, a right arm, and three squares). It is drawn twice, because the two consumers cannot share a representation:
+
+- [`nav/Logo.tsx`](src/components/nav/Logo.tsx) carries the source's paths verbatim, with the fills dropped so the ink is inherited. This is the mark in the nav pill, the command palette and the bento.
+- `logoSDF` in [`ink-splat/shaders.ts`](src/components/ink-splat/shaders.ts) carries it as five `sdBox` calls in a unit square, the mark that surfaces through the ink. Every block is 0.15 half-extent but the top bar (0.325 wide) and the arm (0.325 tall).
+
+Change one and check the other.
+
 ### `<Nav>`
 
 ```tsx

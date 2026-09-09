@@ -117,13 +117,17 @@ float sdBox(vec2 p, vec2 b) {
   return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0);
 }
 
-// pmndrs mark: five axis-aligned blocks in a unit square (y down)
+// pmndrs mark: five axis-aligned blocks in a unit square (y down). The source
+// is reference/logo.svg, an 800 unit box on a 40 unit grid, divided through by
+// 800: every block is 240 wide (half extent 0.15) but the top bar (520) and the
+// right arm (520 tall). Keep in step with nav/Logo.tsx, which draws the same
+// mark as paths.
 float logoSDF(vec2 q) {
-  float d = sdBox(q - vec2(0.675, 0.144), vec2(0.325, 0.144));
-  d = min(d, sdBox(q - vec2(0.85, 0.320), vec2(0.15, 0.320)));
-  d = min(d, sdBox(q - vec2(0.5, 0.489), vec2(0.15, 0.150)));
-  d = min(d, sdBox(q - vec2(0.15, 0.489), vec2(0.15, 0.150)));
-  d = min(d, sdBox(q - vec2(0.5, 0.843), vec2(0.15, 0.154)));
+  float d = sdBox(q - vec2(0.675, 0.150), vec2(0.325, 0.150));   // top bar
+  d = min(d, sdBox(q - vec2(0.850, 0.325), vec2(0.150, 0.325))); // right arm
+  d = min(d, sdBox(q - vec2(0.500, 0.500), vec2(0.150, 0.150))); // centre
+  d = min(d, sdBox(q - vec2(0.150, 0.500), vec2(0.150, 0.150))); // left
+  d = min(d, sdBox(q - vec2(0.500, 0.850), vec2(0.150, 0.150))); // bottom
   return d;
 }
 
@@ -264,7 +268,7 @@ void main() {
   float sub = 1.0 - focus;
   lq += (vec2(fbm(lq * 6.0 + uTime * 3.0), fbm(lq * 6.0 + 17.0 - uTime * 3.0)) - 0.5) * 0.16 * sub;
 
-  float dl = logoSDF(lq + vec2(0.5, 0.498)) * lsize;
+  float dl = logoSDF(lq + vec2(0.5, 0.5)) * lsize;
   float aaL = mix(0.012, uPx, focus);
   // the mark sinks back under as the flood takes the screen
   float logoM = (1.0 - smoothstep(-aaL, aaL, dl)) * focus * (1.0 - smoothstep(0.15, 0.7, fs)) * uLogo;
