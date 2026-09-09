@@ -34,6 +34,8 @@ export interface InkCalloutProps {
   bleed?: number;
   /** Blot scale relative to the canvas. Default 0.65. */
   scale?: number;
+  /** Surface tension and iridescence on the ink, 0..1. Default 0.8. */
+  nacre?: number;
   className?: string;
   style?: CSSProperties;
 }
@@ -56,6 +58,7 @@ export function InkCallout({
   static: forceStatic = false,
   bleed = 64,
   scale = 0.65,
+  nacre = 0.8,
   className,
   style,
 }: InkCalloutProps) {
@@ -119,6 +122,7 @@ export function InkCallout({
             ink={ink}
             logo={false}
             scale={scale}
+            nacre={nacre}
             clip={{ inset: bleed, radius }}
             interactive={false}
             onSplat={onSplat}

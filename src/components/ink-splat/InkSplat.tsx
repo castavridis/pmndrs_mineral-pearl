@@ -90,6 +90,12 @@ export interface InkSplatProps {
   logo?: boolean;
   /** Blot scale relative to the longer canvas edge. Default 1.5. */
   scale?: number;
+  /**
+   * The surface of the liquid: 0 (default) is matte ink; up to 1, the ink
+   * shows surface tension at its rim and a nacre-like iridescence across
+   * it, its own colour kept as the body.
+   */
+  nacre?: number;
   /** Impact point as fractions of the canvas, `[0.5, 0.5]` is the centre. */
   origin?: [number, number];
   /** Bound the flood to a rounded box; droplets may still overhang it. */
@@ -140,6 +146,7 @@ export function InkSplat({
   fillCanvas = null,
   mark,
   logo = true,
+  nacre = 0,
   scale = BLOT_SCALE,
   origin,
   clip,
@@ -198,6 +205,7 @@ export function InkSplat({
         fillCanvas={fillCanvas}
         mark={mark ?? (dark ? '#111111' : '#ffffff')}
         logo={logo}
+        nacre={nacre}
         scale={scale}
         originX={origin?.[0] ?? 0.5}
         originY={origin?.[1] ?? 0.5}
@@ -221,6 +229,7 @@ interface LayerProps {
   fillCanvas: HTMLCanvasElement | null;
   mark: string;
   logo: boolean;
+  nacre: number;
   scale: number;
   originX: number;
   originY: number;
@@ -315,6 +324,7 @@ function createResources(): Resources {
       uFillRect: { value: new THREE.Vector4(0, 0, 1, 1) },
       uMark: { value: new THREE.Vector3(1, 1, 1) },
       uSheen: { value: 0.16 },
+      uNacre: { value: 0 },
       uClipHalf: { value: new THREE.Vector2(0, 0) },
       uClipRadius: { value: 0 },
       uClipOn: { value: 0 },
@@ -383,6 +393,7 @@ function InkSplatLayer({
   fillCanvas,
   mark,
   logo,
+  nacre,
   scale,
   originX,
   originY,
@@ -561,8 +572,9 @@ function InkSplatLayer({
     // the wet edge brightens dark ink and darkens light ink
     u.uSheen.value = luminance(u.uInk.value) > 0.5 ? -0.14 : 0.16;
     u.uLogo.value = logo ? 1 : 0;
+    u.uNacre.value = nacre;
     invalidate();
-  }, [ink, mark, logo, invalidate]);
+  }, [ink, mark, logo, nacre, invalidate]);
 
   useEffect(() => {
     controlsRef.current = { splat, drain };

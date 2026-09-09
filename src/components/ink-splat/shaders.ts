@@ -69,6 +69,8 @@ uniform float uCover;
 uniform vec3 uInk;
 uniform vec3 uMark;
 uniform float uSheen;
+// nacre: how much the surface shows tension and iridescence (0: matte ink)
+uniform float uNacre;
 // optional: the ink takes its colour from a screen-sized canvas beneath
 // (a WebGL canvas, whose upload puts its top row at t = 0)
 uniform sampler2D uFill;
@@ -190,6 +192,38 @@ void main() {
   float band = smoothstep(0.5, 0.7, raw) * (1.0 - smoothstep(0.7, 1.0, raw));
   float sheen = pow(max(dot(-n, normalize(vec2(-0.6, 0.8))), 0.0), 3.0);
   ink += vec3(uSheen) * sheen * band * (1.0 - fs);
+
+  // nacre: the surface of the liquid, not its colour. A height from the
+  // field (steep at the meniscus, flat inside) and slow bumps of surface
+  // tension across the mass give a normal; a lip darkens just inside the
+  // rim, the rim itself catches a thin highlight, and where the surface
+  // curves away a spectral iridescence is mixed in, weighted so the ink's
+  // own colour stays the body of it
+  if (uNacre > 0.001) {
+    float h = smoothstep(0.35, 1.1, raw);
+    float bump = fbm(p * 5.0 + vec2(uTime * 0.05, -uTime * 0.04) + uSeed * 2.0);
+    float bump2 = fbm(p * 5.0 + vec2(0.37, 0.11) + vec2(uTime * 0.05, -uTime * 0.04) + uSeed * 2.0);
+    vec2 bn = vec2(bump2 - bump, fbm(p * 5.0 + vec2(0.0, 0.37) + uSeed * 2.0) - bump) * 1.6;
+    vec2 hg = vec2(dFdx(h), dFdy(h)) / max(uPx, 1e-4) * 0.35;
+    vec3 N = normalize(vec3(-hg - bn * 0.35, 1.0));
+    vec3 V = vec3(0.0, 0.0, 1.0);
+    vec3 L = normalize(vec3(-0.5, 0.7, 0.6));
+    float fres = pow(1.0 - max(dot(N, V), 0.0), 2.2);
+    float lip = smoothstep(0.5, 0.62, raw) * (1.0 - smoothstep(0.62, 0.95, raw));
+    float rimHi = smoothstep(0.5, 0.56, raw) * (1.0 - smoothstep(0.56, 0.66, raw));
+    float spec = pow(max(dot(reflect(-L, N), V), 0.0), 48.0);
+    // the spectrum turns with the view angle and the bumps, like nacre
+    float phase = fres * 5.0 + bump * 7.0 + uTime * 0.15;
+    vec3 irid = 0.5 + 0.5 * cos(phase + vec3(0.0, 2.1, 4.2));
+    float lum = dot(ink, vec3(0.299, 0.587, 0.114));
+    // light ink takes a darker lip, dark ink a brighter one
+    float lipK = lum > 0.5 ? -0.10 : 0.10;
+    vec3 tinted = mix(ink, ink * (0.6 + 0.8 * irid), clamp(fres * 0.9 + 0.12, 0.0, 1.0));
+    ink = mix(ink, tinted, 0.55 * uNacre);
+    ink += ink * lipK * lip * uNacre * 1.4;
+    ink += vec3(0.16) * rimHi * uNacre;
+    ink += (vec3(0.6) + irid * 0.4) * spec * 0.22 * uNacre;
+  }
 
   // logo rising through the ink in 3D: starts deep and tilted away,
   // springs upright while surfacing, refracted by the liquid until it clears

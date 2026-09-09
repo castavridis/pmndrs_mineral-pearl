@@ -74,6 +74,8 @@ const ref = useRef<InkSplatHandle>(null)
 
 With `prefers-reduced-motion` the splat lands already settled. A `splat()` asked for before the scene has mounted is kept and fired when it has.
 
+`nacre` (0..1) gives the ink a surface: from a height built on the density field (steep at the meniscus, flat inside) and slow bumps of surface tension across the mass the shader takes a normal, darkens a lip just inside the rim, catches a thin highlight on the rim, adds a specular and mixes in a spectral iridescence where the surface curves away, weighted so the ink's own colour stays the body of it. `InkCallout` uses 0.8 by default (its panel has the slider); the theme flood and engulf stay matte.
+
 ### `<InkThemeToggle>` and `<InkThemeTransition>`
 
 The toggle cycles dark → light → system and requests the change with its own position. The transition mounts a full-viewport overlay that splats from that point. With the liquid shaders on, the splat _is_ the liquid: its coverage masks every scheme-following ground (the page ground and the nav pill) so they show the new body, mineral or pearl, where the ink has landed, and the splat itself is drawn on top with the ground's own pixels for ink, so the new liquid rolls over the content too. When the flood has covered the page the grounds switch outright, the theme commits underneath, and the overlay fades to reveal the switched content. With the shaders off (a persisted switch in the theme store) or without WebGL, the splat is a flat flood of the new page colour. Reduced motion or a change with no visible effect commit at once. Render the transition once per page, after the content (see `src/app/AppShell.tsx`).

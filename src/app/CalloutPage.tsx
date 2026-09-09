@@ -38,6 +38,7 @@ export function CalloutPage() {
     radius: { value: 14, min: 0, max: 40, step: 1 },
     bleed: { value: 64, min: 0, max: 160, step: 4 },
     scale: { value: 0.65, min: 0.3, max: 2, step: 0.05 },
+    nacre: { value: 0.8, min: 0, max: 1, step: 0.05 },
     maxWidth: { value: 560, min: 280, max: 900, step: 10 },
     replay: button(() => {
       for (const h of cards.values()) h.splat();
@@ -95,6 +96,7 @@ export function CalloutPage() {
               radius={c.radius}
               bleed={c.bleed}
               scale={c.scale}
+              nacre={c.nacre}
               maxWidth={c.maxWidth}
               ref={keep(kind)}
             >
