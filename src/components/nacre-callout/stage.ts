@@ -345,24 +345,34 @@ void main(){
   col += iridS * (0.07 + 0.75 * fres) * 0.45 * uMinIrid;
 
   vec3 Hv = normalize(uLight + vec3(0.0, 0.0, 1.0));
-  vec2 gp = uvn * uGrainSize;
-  vec2 gid = floor(gp), gv = fract(gp) - 0.5;
+  // (port) the study set one facet per grid cell, jittered within it, and the
+  // lattice showed through. Two layers on grids of different scale and
+  // rotation, jitter past the cell, per-facet size, and a density that ebbs
+  // with a slow noise make the scatter read as random.
+  vec3  sparkC = vec3(0.0);
   float sparkI = 0.0;
-  vec3 sparkC = vec3(0.0);
-  for(int y = -1; y <= 1; y++){
-    for(int x = -1; x <= 1; x++){
-      vec2 o = vec2(float(x), float(y));
-      vec3 r = h33(gid + o);
-      float alive = step(r.x, uGrainDens);
-      vec2 cp = o + (r.yz - 0.5) * 0.82;
-      float dd = length(gv - cp);
-      float core = smoothstep(0.13, 0.0, dd);
-      vec2 tl = (h22(gid + o + 11.71) - 0.5) * 1.5 + n.xy * 0.6;
-      vec3 fn = normalize(vec3(tl, 0.72));
-      float sp = pow(max(dot(fn, Hv), 0.0), uFacetSharp) * (0.6 + r.z * 0.9);
-      float w = sp * (core + uGlitterDens * exp(-dd * dd * 90.0)) * alive;
-      sparkC += mix(vec3(1.0), brand(r.y * 0.3 + fres) * 1.25, 0.82) * w;
-      sparkI += w;
+  for(int L = 0; L < 2; L++){
+    float lf = float(L);
+    float ang = 0.61 * lf;
+    vec2 guv = mat2(cos(ang), -sin(ang), sin(ang), cos(ang)) * uvn * uGrainSize * (1.0 - 0.37 * lf) + lf * 7.3;
+    vec2 gid = floor(guv), gv = fract(guv) - 0.5;
+    float dens = uGrainDens * (0.35 + 0.9 * vnoise(gid * 0.11 + lf * 3.0));
+    for(int y = -1; y <= 1; y++){
+      for(int x = -1; x <= 1; x++){
+        vec2 o = vec2(float(x), float(y));
+        vec3 r = h33(gid + o + lf * 19.0);
+        float alive = step(r.x, dens);
+        vec2  cp = o + (r.yz - 0.5) * 1.7;
+        float sz = 0.55 + 1.1 * hash21(gid + o + 4.2 + lf);
+        float d  = length(gv - cp) / sz;
+        float core = smoothstep(0.13, 0.0, d);
+        vec2 tl = (h22(gid + o + 11.71) - 0.5) * 1.5 + n.xy * 0.6;
+        vec3 fn = normalize(vec3(tl, 0.72));
+        float sp = pow(max(dot(fn, Hv), 0.0), uFacetSharp) * (0.6 + r.z * 0.9);
+        float w  = sp * (core + uGlitterDens * exp(-d * d * 90.0)) * alive * (1.0 - 0.35 * lf);
+        sparkC += mix(vec3(1.0), brand(r.y * 0.3 + fres) * 1.25, 0.82) * w;
+        sparkI += w;
+      }
     }
   }
   col += sparkC * 1.15 * uGlint;
