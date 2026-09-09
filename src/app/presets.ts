@@ -1,11 +1,20 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import shipped from './pond-presets.json';
 
 // Saved sink-panel presets, kept in localStorage. Leva has no persistence of
 // its own; the panel's buttons write here and read the latest panel values
 // through `latest`, which the page updates from an effect.
+//
+// localStorage is per origin: a dev server on another port has its own. The
+// presets in pond-presets.json ship with the app and are always in the list;
+// a saved one under the same name wins, and deleting a shipped one only
+// lasts until the next load.
 
 export type PresetValues = Record<string, unknown>;
+
+/** The presets that ship with the app (pond-presets.json). */
+export const SHIPPED_PRESETS: Record<string, PresetValues> = shipped;
 
 interface PresetState {
   presets: Record<string, PresetValues>;
@@ -16,7 +25,7 @@ interface PresetState {
 export const usePresets = create<PresetState>()(
   persist(
     (set) => ({
-      presets: {},
+      presets: { ...SHIPPED_PRESETS },
       save: (name, values) => set((s) => ({ presets: { ...s.presets, [name]: values } })),
       remove: (name) =>
         set((s) => {
@@ -25,7 +34,13 @@ export const usePresets = create<PresetState>()(
           return { presets: next };
         }),
     }),
-    { name: 'pmndrs-pond-presets' }
+    {
+      name: 'pmndrs-pond-presets',
+      merge: (persisted, current) => {
+        const p = (persisted as Partial<PresetState> | undefined)?.presets ?? {};
+        return { ...current, presets: { ...SHIPPED_PRESETS, ...p } };
+      },
+    }
   )
 );
 
