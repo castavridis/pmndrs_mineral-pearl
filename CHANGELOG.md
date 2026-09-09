@@ -54,6 +54,13 @@ so the study can still be diffed against.
 | The well layer feathers out over its last 48 px (`fcddabc`) | The slab's displacement collar reaches past the canvas; without the fade a rectangle showed on the ground. |
 | **Both bodies' materials in one shader** (`787781f`) | The masked theme switch showed the incoming body wearing the *outgoing* body's spectrum until commit. Now mineral and pearl parameters are uploaded side by side and mixed per pixel by the body in force there, so the incoming liquid is drawn whole from the first frame and nothing swaps at commit. |
 
+| Two fallback tiers under the pond, not one | Asked for a fallback for the card afloat. A faithful CPU port is three to four orders of magnitude out of reach (five height-field samples per pixel, each three octave-summed noises, before a 128-droplet loop), so the fallbacks reproduce the *experience* instead: `swallow` keeps the droplets and the closing front, `quiet` keeps only the recession. |
+| The swallow reuses `InkParticles` unchanged | The simulation was already on the CPU; only the rendering was GPU-bound. The fallback drives the same class in engulf mode, so the droplets, drag and flood push are the shipped ones rather than a second implementation. |
+| Merging is done by an SVG filter, not by JavaScript | A metaball field thresholded at one half is blurred alpha with its contrast pushed, so a gaussian blur plus a colour matrix on the alpha channel gives the merge for free, in compositor code. The frame costs a few dozen `arc` calls. |
+| Each axis of the front closes in proportion to its own size | Insetting uniformly covered a wide, short banner's short axis in the first quarter of the animation, before the droplets had done anything. |
+| Reduced motion gets `quiet`, not a cheaper imitation of more | Less motion is the correct answer there. It is also why reduced motion does not force the fallback when the pond can run: the pond already stills itself. |
+| `onSunkSettled` instead of a constant | The three tiers cover in 1400, 1250 and 620 ms; a dismissal timed by a hardcoded 1400 ms left the quiet tier sitting on an empty box. |
+
 ## 4. Theme, ground and page look
 
 | Decision | Why |

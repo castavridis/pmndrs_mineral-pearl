@@ -2,7 +2,9 @@ export { InkSink } from './InkSink';
 export { LiquidGround } from './LiquidGround';
 export { getFixedGround, getGrounds, registerGround, schemeLiquid, useGroundCount } from './grounds';
 export type { LiquidGroundProps } from './LiquidGround';
-export type { InkSinkHandle, InkSinkProps } from './InkSink';
+export { sinkCoverMs } from './InkSink';
+export type { InkSinkHandle, InkSinkProps, SinkTier } from './InkSink';
+export { SinkFallback } from './SinkFallback';
 export {
   LiquidPond,
   MERCURY_DEFAULT,

@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { InkSink, type InkSinkHandle } from '../ink-sink/InkSink';
-import { Surface, useSurfaceTier } from '../surface/Surface';
+import { Surface } from '../surface/Surface';
+import type { SinkTier } from '../ink-sink/InkSink';
 import { announcement } from './metrics';
 import styles from './Announcement.module.css';
 
@@ -11,10 +12,12 @@ export interface AnnouncementProps {
   /** Maximum banner width in px; it fills its container up to this. Default 652. */
   width?: number;
   /**
-   * `auto` (default): a slab afloat on the page's liquid where the shaders
-   * run, a flat card otherwise. `liquid` and `flat` force one.
+   * How the banner floats. `auto` (default) lets the sink pick the best tier
+   * the page can run; `liquid`, `swallow` and `quiet` force one of them (see
+   * `InkSink`'s `tier`), and `flat` opts out of floating altogether for a
+   * plain card whose dismissal is the ink exit.
    */
-  variant?: 'auto' | 'liquid' | 'flat';
+  variant?: 'auto' | SinkTier | 'flat';
   /**
    * Dismissible: a close button. Afloat, the blow sinks the banner into the
    * page and the liquid closes over it; flat, the ink closes over it. Called
@@ -38,18 +41,23 @@ export function Announcement({
   className,
   style,
 }: AnnouncementProps) {
-  const tier = useSurfaceTier(variant === 'flat' ? 'flat' : 'full');
-  const liquid = variant !== 'flat' && tier !== 'flat';
+  // the sink resolves its own tier; only `flat` opts out of floating
+  const liquid = variant !== 'flat';
   const sink = useRef<InkSinkHandle>(null);
   // sunk: the slab is under; after a beat the whole thing fades, leaving the
   // ground (the liquid it shows is the ground's, so nothing else changes)
   const [sunk, setSunk] = useState(false);
   const [fading, setFading] = useState(false);
+  // the sink says when the liquid has closed over the slab; a backstop keeps
+  // a dismissal from hanging if a tier never reports
   useEffect(() => {
     if (!sunk) return;
-    const t = window.setTimeout(() => setFading(true), 1400);
+    const t = window.setTimeout(() => setFading(true), 3000);
     return () => window.clearTimeout(t);
   }, [sunk]);
+  const onSunkSettled = (isSunk: boolean) => {
+    if (isSunk) setFading(true);
+  };
   const [exit, setExit] = useState<'none' | 'dismiss'>('none');
 
   const content = (
@@ -99,6 +107,8 @@ export function Announcement({
       sinkOnClick={false}
       mercuryOnSink={false}
       sunk={sunk}
+      tier={variant}
+      onSunkSettled={onSunkSettled}
       className={`${styles.root} ${className ?? ''}`}
       style={{
         width: `calc(100% + ${announcement.bleed * 2}px)`,

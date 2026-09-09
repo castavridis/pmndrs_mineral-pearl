@@ -1,0 +1,18 @@
+/* the filter definition takes no space and paints nothing */
+.defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* the mass, over the slab and under nothing; it never eats clicks */
+.canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}

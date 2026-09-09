@@ -7,13 +7,20 @@ import { useThemeTweak } from './tweaks';
 export function AnnouncementPage() {
   useThemeTweak();
   const [gen, setGen] = useState(0);
-  const c = useControls('announcement', {
-    variant: { value: 'auto', options: ['auto', 'liquid', 'flat'] },
-    dismissible: true,
-    restore: button(() => setGen((g) => g + 1)),
-  });
-  const variant = c.variant as 'auto' | 'liquid' | 'flat';
   const [gone, setGone] = useState<Record<string, boolean>>({});
+  const c = useControls('announcement', {
+    variant: {
+      value: 'auto',
+      options: ['auto', 'liquid', 'swallow', 'quiet', 'flat'],
+      hint: 'liquid is the pond; swallow and quiet are the fallbacks; flat opts out of floating',
+    },
+    dismissible: true,
+    restore: button(() => {
+      setGone({});
+      setGen((g) => g + 1);
+    }),
+  });
+  const variant = c.variant as 'auto' | 'liquid' | 'swallow' | 'quiet' | 'flat';
   const dismiss = (id: string) => () => setGone((g) => ({ ...g, [id]: true }));
   const items = [
     {

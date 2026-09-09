@@ -57,3 +57,61 @@
 .slab[data-sunk] {
   cursor: pointer;
 }
+
+/* --- fallback tiers: the recession, in CSS ---------------------------------
+   No shader can run, so the slab itself carries the sinking: it draws back,
+   softens, darkens and goes, over a dent left in the ground where it was.
+   The swallow tier adds the mass closing over it (see SinkFallback); the
+   quiet tier is this alone, and under reduced motion it is only a fade. */
+.slab[data-fallback] {
+  transition:
+    transform 900ms cubic-bezier(0.4, 0, 0.2, 1),
+    filter 900ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 700ms ease;
+}
+
+.slab[data-fallback][data-sunk] {
+  transform: scale(0.87) translateY(10px);
+  filter: blur(3px) brightness(0.55);
+}
+
+/* the swallow's mass covers the slab, so the slab need not fade; the quiet
+   tier has nothing to hide it, so there the recession ends in a fade */
+.root[data-tier='quiet'] .slab[data-fallback][data-sunk] {
+  opacity: 0;
+}
+
+/* the dent the slab leaves in the ground: it deepens as the slab goes under */
+.root[data-tier='swallow']::before,
+.root[data-tier='quiet']::before {
+  content: '';
+  position: absolute;
+  inset: var(--pond-bleed, 0);
+  z-index: 0;
+  border-radius: var(--pond-radius, 16px);
+  box-shadow:
+    inset 0 1px 12px rgb(0 0 0 / 0.35),
+    0 10px 40px -12px rgb(0 0 0 / 0.5);
+  opacity: 0;
+  transition: opacity 800ms ease;
+  pointer-events: none;
+}
+
+.root[data-tier='swallow'][data-sunk]::before,
+.root[data-tier='quiet'][data-sunk]::before {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slab[data-fallback] {
+    transition: opacity 240ms ease;
+  }
+  .slab[data-fallback][data-sunk] {
+    transform: none;
+    filter: none;
+  }
+  .root[data-tier='swallow']::before,
+  .root[data-tier='quiet']::before {
+    transition-duration: 240ms;
+  }
+}

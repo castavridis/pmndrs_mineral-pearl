@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  useCallback,
   useEffect,
   useImperativeHandle,
   useRef,
@@ -9,7 +10,9 @@ import {
   type ReactNode,
   type Ref,
 } from 'react';
-import { useResolvedTheme } from '../theme';
+import { useResolvedTheme, useThemeStore } from '../theme';
+import { useReducedMotion, useWebGL } from '../gate';
+import { COVER_S, RISE_S, SinkFallback } from './SinkFallback';
 import { usePageLook, usePageLooks } from '../theme/look';
 import { getFixedGround, registerGround, useGroundCount } from './grounds';
 import {
@@ -40,6 +43,16 @@ export interface InkSinkHandle {
   /** An impact where the pointer is: the slab takes the hit there and goes under, and stays. */
   impact: (at: { clientX: number; clientY: number }) => void;
 }
+
+/**
+ * How the sink renders. `liquid` is the pond; the two below it are the
+ * fallbacks, and neither can carry the material — see `SinkFallback`.
+ */
+export type SinkTier = 'liquid' | 'swallow' | 'quiet';
+
+/** How long the liquid takes to close over the slab, per tier, in ms. */
+export const sinkCoverMs = (tier: SinkTier, reduced = false) =>
+  tier === 'liquid' ? 1400 : tier === 'swallow' ? COVER_S * 1000 : reduced ? 260 : 620;
 
 export interface InkSinkProps {
   ref?: Ref<InkSinkHandle>;
@@ -88,6 +101,16 @@ export interface InkSinkProps {
    * Needs a fixed `LiquidGround` on the page; without one it is a plain slab.
    */
   well?: boolean;
+  /**
+   * Which tier renders the liquid. `auto` (default) picks the best the page
+   * can run: `liquid` (the pond) where WebGL2 and the shaders are available,
+   * `swallow` (a 2D canvas mass over a receding slab) where they are not, and
+   * `quiet` (the recession alone, no canvas) under reduced motion. Force one
+   * to see the fallbacks on a capable machine.
+   */
+  tier?: SinkTier | 'auto';
+  /** The liquid has closed over the slab, or has withdrawn from it. */
+  onSunkSettled?: (sunk: boolean) => void;
   className?: string;
   style?: CSSProperties;
   /** On the host: a fade set through `style` ending, for instance. */
@@ -127,12 +150,26 @@ export function InkSink({
   onSunkChange,
   sinkOnClick = true,
   well = false,
+  tier: wantedTier = 'auto',
+  onSunkSettled,
   className,
   style,
   onTransitionEnd,
 }: InkSinkProps) {
   const theme = useResolvedTheme();
   const liq: Liquid = liquid === 'auto' ? (theme === 'dark' ? 'mineral' : 'pearl') : liquid;
+  // which tier renders the liquid: the pond where it can run, else a fallback
+  const webgl = useWebGL();
+  const shaders = useThemeStore((st) => st.shaders);
+  const reduced = useReducedMotion();
+  const tier: SinkTier =
+    wantedTier !== 'auto'
+      ? wantedTier
+      : webgl !== false && shaders
+        ? 'liquid'
+        : reduced
+          ? 'quiet'
+          : 'swallow';
   // in a well the pond is built once the page ground is there, and rebuilt if it changes
   const grounds = useGroundCount();
   // the page look is the default; a prop on this pond wins over it
@@ -162,7 +199,7 @@ export function InkSink({
     const host = hostRef.current;
     const canvas = canvasRef.current;
     const slab = slabRef.current;
-    if (!host || !canvas || !slab) return;
+    if (!host || !canvas || !slab || tier !== 'liquid') return;
     // read here, not in render: the registry is not reactive to the compiler
     const ground = well ? getFixedGround() : null;
     if (well && !ground) return;
@@ -208,7 +245,7 @@ export function InkSink({
     };
     // the pond is built once (per ground); options are pushed into it below
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [well, grounds]);
+  }, [well, grounds, tier]);
 
   useEffect(() => {
     const pond = pondRef.current;
@@ -249,6 +286,20 @@ export function InkSink({
     if (pond && pond.sunk !== isSunk) pond.sunk = isSunk;
   }, [isSunk]);
 
+  // the swallow tier reports for itself (it knows when its front has closed);
+  // the pond and the quiet recession are timed
+  const settled = useRef(onSunkSettled);
+  useEffect(() => {
+    settled.current = onSunkSettled;
+  }, [onSunkSettled]);
+  useEffect(() => {
+    if (tier === 'swallow') return;
+    const ms = isSunk ? sinkCoverMs(tier, reduced) : RISE_S * 1000;
+    const id = window.setTimeout(() => settled.current?.(isSunk), ms);
+    return () => window.clearTimeout(id);
+  }, [isSunk, tier, reduced]);
+  const onCovered = useCallback(() => settled.current?.(true), []);
+
   useImperativeHandle(
     ref,
     () => ({
@@ -266,7 +317,7 @@ export function InkSink({
 
   const onSlabPointerDown = (e: React.PointerEvent) => {
     const pond = pondRef.current;
-    if (!sinkOnClick || !pond || e.button !== 0) return;
+    if (!sinkOnClick || e.button !== 0) return;
     if (isSunk) {
       setIsSunk(false);
       onSunkChange?.(false);
@@ -274,7 +325,7 @@ export function InkSink({
     }
     // the pond takes the blow now; React's state follows so a re-render
     // doesn't undo it
-    pond.impact(pond.uv(e.nativeEvent));
+    if (pond) pond.impact(pond.uv(e.nativeEvent));
     setIsSunk(true);
     onSunkChange?.(true);
   };
@@ -284,6 +335,7 @@ export function InkSink({
     '--pond-bg': POND_BG[liq],
     '--slab-bg': SLAB_LOOK[liq].bg,
     '--slab-fg': SLAB_LOOK[liq].fg,
+    '--pond-bleed': `${bleed}px`,
   } as CSSProperties;
   // in a well the window's pointer drives the pond (attached above)
   const own = !well;
@@ -293,6 +345,8 @@ export function InkSink({
       className={`${styles.root} ${className ?? ''}`}
       style={{ padding: bleed, ...vars, ...style }}
       data-well={well || undefined}
+      data-tier={tier}
+      data-sunk={isSunk || undefined}
       onTransitionEnd={onTransitionEnd}
       onPointerMove={own ? (e) => pondRef.current?.point(e.nativeEvent) : undefined}
       onPointerDown={own ? (e) => pondRef.current?.point(e.nativeEvent) : undefined}
@@ -300,11 +354,22 @@ export function InkSink({
       onFocus={() => pondRef.current?.setFocus(true)}
       onBlur={() => pondRef.current?.setFocus(false)}
     >
-      <canvas ref={canvasRef} className={styles.canvas} aria-hidden="true" />
+      {tier === 'liquid' && <canvas ref={canvasRef} className={styles.canvas} aria-hidden="true" />}
+      {tier === 'swallow' && (
+        <SinkFallback
+          hostRef={hostRef}
+          slabRef={slabRef}
+          sunk={isSunk}
+          radius={radius}
+          ink={POND_BG[liq] === SLAB_LOOK[liq].bg ? SLAB_LOOK[liq].fg : POND_BG[liq]}
+          onCovered={onCovered}
+        />
+      )}
       <div
         ref={slabRef}
         className={styles.slab}
         data-sunk={isSunk || undefined}
+        data-fallback={tier !== 'liquid' || undefined}
         data-clickable={sinkOnClick || undefined}
         onPointerDown={onSlabPointerDown}
       >

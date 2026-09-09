@@ -41,6 +41,7 @@ Avoid whole-repo `pnpm format` / `pnpm lint` unless asked.
 - Removing, disabling or holding an element is always `exit` on its `Surface` (dismiss / disable / pending), never a bespoke transition.
 - The pages and components mirror `~/Git/@pmndrs/3d-2d-nav` (Nav, Announcement, Callout, the /dev pages) one for one; keep names, props and metrics aligned with that repo when adding to either. Its 3D-model pages are out of scope here.
 - A thing afloat on the page (the Announcement) is an `InkSink` in `well` mode: the fixed ground is the liquid, never a pond panel of its own.
+- The sink has three tiers (`liquid`, `swallow`, `quiet`); a component above it passes `tier` through rather than gating on the shaders itself, and times a dismissal from `onSunkSettled`, never a hardcoded duration.
 - The mark's source is `reference/logo.svg`; it is drawn as paths in `nav/Logo.tsx` and as an SDF in the ink shader's `logoSDF`. Those two are the only copies — change both together.
 - `localStorage` is per origin, and the dev server's port changes: anything a user saves in the browser (presets) should also be shippable in the repo (`src/app/pond-presets.json`).
 - Components own their `<Canvas>` unless they are explicitly designed to live inside an existing scene.
