@@ -1,0 +1,55 @@
+/* one surface for every element: a clipped box with the liquid inside it */
+.surface {
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  border: 1px solid color-mix(in srgb, var(--page-ink) 16%, transparent);
+  color: var(--page-ink);
+  font: inherit;
+  text-align: inherit;
+  background: transparent;
+  isolation: isolate;
+}
+
+.surface[data-shape='pill'] {
+  border-radius: 999px;
+}
+
+.surface[data-shape='card'] {
+  border-radius: 14px;
+}
+
+.surface[data-shape='key'] {
+  border-radius: 8px;
+}
+
+/* flat: tokens only, no canvas */
+.surface[data-tier='flat'] {
+  background: color-mix(in srgb, var(--page-ink) 5%, var(--page-bg) 60%);
+}
+
+/* the ground inside it never takes pointer events */
+.surface > [data-liquid],
+.surface > [data-liquid] * {
+  pointer-events: none !important;
+}
+
+button.surface {
+  cursor: pointer;
+}
+
+.surface[aria-disabled='true'] {
+  cursor: not-allowed;
+}
+
+/* the content rides above the liquid */
+.content {
+  position: relative;
+  z-index: 1;
+  display: block;
+  transition: opacity 400ms ease;
+}
+
+.content[data-dim] {
+  opacity: 0.45;
+}

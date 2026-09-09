@@ -37,6 +37,7 @@ Avoid whole-repo `pnpm format` / `pnpm lint` unless asked.
 ## Conventions
 
 - Components live in `src/components/<name>/` with an `index.ts` barrel and are re-exported from `src/components/index.ts`.
+- New elements are built on `Surface` (shape × material × expressiveness) rather than as one-off boxes; the liquid inside is a `LiquidGround` reading the page look. Use `flat` for utilitarian controls.
 - Components own their `<Canvas>` unless they are explicitly designed to live inside an existing scene.
 - Prefer demand-driven rendering (`frameloop="demand"` + `invalidate()`) so idle components cost nothing.
 - `erasableSyntaxOnly` is on: no enums, no parameter properties.

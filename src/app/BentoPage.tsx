@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Leva, folder, useControls } from 'leva';
+import { useEffect } from 'react';
 import {
   InkCallout,
   InkEngulf,
-  LiquidGround,
   NACRE_DEFAULT,
   NacreCallout,
+  Surface,
   getNacreStage,
   type InkEngulfHandle,
   type NacreConfig,
@@ -78,21 +79,11 @@ const Logo = ({ size = 22 }: { size?: number }) => (
   </svg>
 );
 
-/** A small control on the liquid: a pill-shaped pond with the label on it. */
-function LiquidButton({ children, wide = false }: { children: React.ReactNode; wide?: boolean }) {
-  return (
-    <button type="button" className={`bento-liquid ${wide ? 'wide' : ''}`}>
-      <LiquidGround />
-      <span>{children}</span>
-    </button>
-  );
-}
-
 /**
- * `/dev/bento`: the shader bento, the components laid out by how expressive
- * they are. Most expressive: the liquid pill nav and the ink announcement.
- * Somewhat expressive: liquid buttons and the nacre callout. Utilitarian:
- * plain controls and a tabbed card.
+ * `/dev/bento`: the shader bento, every element one `Surface` in a shape and
+ * a tier of motion. Most expressive: the pill nav and the announcement, full.
+ * Somewhat expressive: buttons, calm, beside the nacre and ink callouts.
+ * Utilitarian: key caps and a tabbed card, flat.
  */
 export function BentoPage() {
   useThemeTweak();
@@ -106,8 +97,13 @@ export function BentoPage() {
       <section className="bento-tier">
         <h2>Most Expressive</h2>
         <div className="bento-row">
-          <nav className="pill pill-sm" aria-label="Bento nav">
-            <LiquidGround />
+          <Surface
+            as="nav"
+            shape="pill"
+            expressiveness="full"
+            className="pill pill-sm"
+            aria-label="Bento nav"
+          >
             <a href="/" className="pill-logo" aria-label="pmndrs home">
               <Logo />
             </a>
@@ -118,10 +114,10 @@ export function BentoPage() {
               <a href="/examples">Examples</a>
               <a href="/blog">Blog</a>
             </div>
-          </nav>
+          </Surface>
           {!gone && (
             <InkEngulf ref={banner} className="bento-grow" onDone={() => setGone(true)}>
-              <div className="banner">
+              <Surface shape="card" expressiveness="full" className="banner">
                 <span>
                   <strong>Announcement.</strong> The ink layers ship as separate chunks.
                 </span>
@@ -134,7 +130,7 @@ export function BentoPage() {
                 >
                   ×
                 </button>
-              </div>
+              </Surface>
             </InkEngulf>
           )}
         </div>
@@ -145,12 +141,26 @@ export function BentoPage() {
         <div className="bento-row">
           <div className="bento-stack">
             <div className="bento-inline">
-              <LiquidButton>{copied ? 'Copied!' : 'Copy'}</LiquidButton>
-              <button type="button" className="text-button" onClick={() => setCopied((c) => !c)}>
-                toggle
-              </button>
+              <Surface
+                as="button"
+                type="button"
+                shape="pill"
+                expressiveness="calm"
+                className="surface-button"
+                onClick={() => setCopied((c) => !c)}
+              >
+                {copied ? 'Copied!' : 'Copy'}
+              </Surface>
             </div>
-            <LiquidButton wide>Article Launcher</LiquidButton>
+            <Surface
+              as="button"
+              type="button"
+              shape="pill"
+              expressiveness="calm"
+              className="surface-button wide"
+            >
+              Article Launcher
+            </Surface>
           </div>
           <div className="bento-grow bento-stack">
             <NacreCallout kind="tip">
@@ -170,20 +180,20 @@ export function BentoPage() {
         <h2>Utilitarian</h2>
         <div className="bento-row">
           <div className="bento-inline">
-            <button type="button" className="kbd">
-              Cmd K
-            </button>
-            <button type="button" className="kbd">
-              TW
-            </button>
-            <button type="button" className="kbd">
-              DI
-            </button>
-            <button type="button" className="kbd">
-              GH
-            </button>
+            {['Cmd K', 'TW', 'DI', 'GH'].map((k) => (
+              <Surface
+                key={k}
+                as="button"
+                type="button"
+                shape="key"
+                expressiveness="flat"
+                className="surface-key"
+              >
+                {k}
+              </Surface>
+            ))}
           </div>
-          <div className="tabs-card">
+          <Surface shape="card" expressiveness="flat" className="tabs-card">
             <div className="tabs" role="tablist">
               {['Logo', 'React Three Fiber', 'Introduction'].map((t, i) => (
                 <button
@@ -203,7 +213,7 @@ export function BentoPage() {
               <li>Point 2</li>
               <li>Point 3</li>
             </ul>
-          </div>
+          </Surface>
         </div>
       </section>
       <Leva collapsed titleBar={{ title: 'pmndrs' }} />

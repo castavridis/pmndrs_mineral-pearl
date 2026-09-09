@@ -74,6 +74,8 @@ a {
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--page-ink) 14%, transparent);
   box-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.7);
+  /* as a Surface the content is wrapped once: keep the row layout inside */
+  --pill-gap: clamp(28px, 5vw, 56px);
   font-family: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, monospace;
   font-size: clamp(16px, 2vw, 22px);
   color: var(--page-ink);
@@ -192,6 +194,19 @@ a {
   cursor: pointer;
 }
 
+/* as Surfaces, the pill and the banner get one content span: it takes the row */
+.pill > span,
+.banner > span {
+  display: flex;
+  align-items: center;
+  gap: var(--pill-gap, 16px);
+  width: 100%;
+}
+
+.banner > span > span:first-child {
+  flex: 1;
+}
+
 /* the dismissible announcement banner on the home page */
 .banner {
   display: flex;
@@ -203,10 +218,6 @@ a {
   border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
   background: color-mix(in srgb, currentColor 5%, transparent);
   font-size: 15px;
-}
-
-.banner > span {
-  flex: 1;
 }
 
 .banner-dismiss {
@@ -324,47 +335,28 @@ a {
   font-size: 16px;
 }
 
-/* a liquid button: a pill-shaped pond with the label riding on it */
-.bento-liquid {
-  position: relative;
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--page-ink) 16%, transparent);
-  border-radius: 999px;
+/* buttons and keys as Surfaces */
+.surface-button {
   padding: 12px 22px;
   min-width: 120px;
-  font: inherit;
   font-size: 15px;
-  color: var(--page-ink);
-  background: transparent;
-  cursor: pointer;
 }
 
-.bento-liquid.wide {
+.surface-button.wide {
   min-width: 220px;
 }
 
-.bento-liquid > span {
-  position: relative;
-  z-index: 1;
-}
-
-.kbd {
-  font: inherit;
-  font-size: 14px;
+.surface-key {
   padding: 10px 14px;
-  border-radius: 8px;
-  border: 1px solid color-mix(in srgb, var(--page-ink) 18%, transparent);
-  background: color-mix(in srgb, var(--page-ink) 4%, transparent);
-  color: inherit;
-  cursor: pointer;
+  font-size: 14px;
 }
 
 .tabs-card {
   flex: 0 1 480px;
-  border: 1px solid color-mix(in srgb, var(--page-ink) 18%, transparent);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--page-bg) 60%, transparent);
-  overflow: hidden;
+}
+
+.tabs-card > span {
+  display: block;
 }
 
 .tabs {

@@ -35,6 +35,7 @@ src/
     ink-engulf/          InkEngulf: the inverse, ink closing in from the edges over content
     ink-sink/            InkSink + LiquidPond + LiquidGround: the study's pond, as slab, ground or pill
     nacre-callout/       NacreCallout + NacreStage: one-context raymarched callouts on black nacre
+    surface/             Surface: the one primitive (shape × material × expressiveness) under every element
   app/                   the site: AppShell, Home, /dev pages
   main.tsx, index.css
 ```
@@ -105,6 +106,14 @@ const ref = useRef<InkSinkHandle>(null)
 ```
 
 The pond from the "Liquid Button Ink" study (`reference/`), ported with its shaders and simulation and one change of model: the layer over the content is transparent with a hole where the slab's face is still dry, so the DOM content shows through it. `sink()` sends the slab under with an ink-splat particle swallow (droplets burst from the rim, are drawn back onto the slab and merge) while the surface closes over the face, ripples first, until nothing is left dry; the liquid is faintly translucent while shallow, so the content is seen receding into the ground, then fades. `rise()` brings it back; `press()` is a beat under and back; hover tips it. A click on the content is an impact: the slab tips into the hit and plunges, the liquid closing over that side first (`sinkOnClick`, with `onSunkChange` for a controlled `sunk`); a click when sunk raises it. `liquid` is mineral, pearl or mercury (`auto` follows the scheme). Raw WebGL2; without it the content only dims when sunk.
+
+### `<Surface>`
+
+```tsx
+<Surface as="button" shape="pill" expressiveness="calm" onClick={...}>Copy</Surface>
+```
+
+The one surface every element sits on: a clipped box in one of three shapes (`pill`, `card`, `key`), filled with the page's liquid in one of three tiers of motion. `full` is the liquid with the page look's pointer reaction; `calm` is the same liquid nearly still, a quarter of the reaction; `flat` is tokens only, no canvas. The gates step the tier down on their own: reduced motion caps at calm, no WebGL or the shaders off means flat. `material` is `auto` (follows the scheme), `mineral`, `pearl` or `mercury`, read through the page look so a preset restyles every surface. `as` picks the tag (div, button, nav, a); other attributes pass through. The bento is built entirely on it.
 
 ### `<NacreCallout>`
 
