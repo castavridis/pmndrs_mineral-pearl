@@ -1,15 +1,14 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Leva, folder, useControls } from 'leva';
 import { useEffect } from 'react';
 import {
   InkCallout,
-  InkEngulf,
   NACRE_DEFAULT,
   NacreCallout,
   Surface,
   getNacreStage,
-  type InkEngulfHandle,
   type NacreConfig,
+  type SurfaceExit,
 } from '../components';
 import { useThemeTweak } from './tweaks';
 
@@ -88,10 +87,20 @@ const Logo = ({ size = 22 }: { size?: number }) => (
 export function BentoPage() {
   useThemeTweak();
   useNacreTweaks();
-  const banner = useRef<InkEngulfHandle>(null);
+  const [bannerExit, setBannerExit] = useState<SurfaceExit>('none');
   const [gone, setGone] = useState(false);
+  const [copyExit, setCopyExit] = useState<SurfaceExit>('none');
   const [copied, setCopied] = useState(false);
+  const [launcherDisabled, setLauncherDisabled] = useState(false);
   const [tab, setTab] = useState(2);
+  const copy = () => {
+    if (copyExit !== 'none') return;
+    setCopyExit('pending');
+    window.setTimeout(() => {
+      setCopied(true);
+      setCopyExit('none');
+    }, 1500);
+  };
   return (
     <main className="bento">
       <section className="bento-tier">
@@ -116,22 +125,26 @@ export function BentoPage() {
             </div>
           </Surface>
           {!gone && (
-            <InkEngulf ref={banner} className="bento-grow" onDone={() => setGone(true)}>
-              <Surface shape="card" expressiveness="full" className="banner">
-                <span>
-                  <strong>Announcement.</strong> The ink layers ship as separate chunks.
-                </span>
-                <a href="/blog">Read more</a>
-                <button
-                  type="button"
-                  className="banner-dismiss"
-                  aria-label="Dismiss announcement"
-                  onClick={() => banner.current?.engulf()}
-                >
-                  ×
-                </button>
-              </Surface>
-            </InkEngulf>
+            <Surface
+              shape="card"
+              expressiveness="full"
+              className="banner bento-grow"
+              exit={bannerExit}
+              onDone={() => setGone(true)}
+            >
+              <span>
+                <strong>Announcement.</strong> The ink layers ship as separate chunks.
+              </span>
+              <a href="/blog">Read more</a>
+              <button
+                type="button"
+                className="banner-dismiss"
+                aria-label="Dismiss announcement"
+                onClick={() => setBannerExit('dismiss')}
+              >
+                ×
+              </button>
+            </Surface>
           )}
         </div>
       </section>
@@ -147,20 +160,34 @@ export function BentoPage() {
                 shape="pill"
                 expressiveness="calm"
                 className="surface-button"
-                onClick={() => setCopied((c) => !c)}
+                exit={copyExit}
+                onClick={copy}
               >
-                {copied ? 'Copied!' : 'Copy'}
+                {copyExit === 'pending' ? 'Copying…' : copied ? 'Copied!' : 'Copy'}
               </Surface>
+              <button type="button" className="text-button" onClick={() => setCopied(false)}>
+                reset
+              </button>
             </div>
-            <Surface
-              as="button"
-              type="button"
-              shape="pill"
-              expressiveness="calm"
-              className="surface-button wide"
-            >
-              Article Launcher
-            </Surface>
+            <div className="bento-inline">
+              <Surface
+                as="button"
+                type="button"
+                shape="pill"
+                expressiveness="calm"
+                className="surface-button wide"
+                exit={launcherDisabled ? 'disable' : 'none'}
+              >
+                Article Launcher
+              </Surface>
+              <button
+                type="button"
+                className="text-button"
+                onClick={() => setLauncherDisabled((d) => !d)}
+              >
+                {launcherDisabled ? 'enable' : 'disable'}
+              </button>
+            </div>
           </div>
           <div className="bento-grow bento-stack">
             <NacreCallout kind="tip">

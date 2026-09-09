@@ -30,3 +30,9 @@
 .content[data-hidden] {
   visibility: hidden;
 }
+
+/* kept under the ink with the content showing through: unavailable, still there */
+.content[data-covered] {
+  opacity: 0.45;
+  transition: opacity 400ms ease;
+}

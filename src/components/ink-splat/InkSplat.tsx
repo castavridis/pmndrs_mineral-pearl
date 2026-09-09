@@ -312,6 +312,7 @@ function createResources(): Resources {
       uInk: { value: new THREE.Vector3(0.067, 0.067, 0.067) },
       uFill: { value: null as THREE.Texture | null },
       uFillOn: { value: 0 },
+      uFillRect: { value: new THREE.Vector4(0, 0, 1, 1) },
       uMark: { value: new THREE.Vector3(1, 1, 1) },
       uSheen: { value: 0.16 },
       uClipHalf: { value: new THREE.Vector2(0, 0) },
@@ -621,7 +622,15 @@ function InkSplatLayer({
     }
     res.particles.encode(t, res.data);
     res.dataTex.needsUpdate = true;
-    if (fillRef.current) fillRef.current.needsUpdate = true;
+    if (fillRef.current) {
+      fillRef.current.needsUpdate = true;
+      // where this canvas sits in the viewport, so a small overlay samples
+      // its own patch of the (viewport-sized) fill
+      const r = gl.domElement.getBoundingClientRect();
+      const W = window.innerWidth || 1;
+      const H = window.innerHeight || 1;
+      res.inkMaterial.uniforms.uFillRect.value.set(r.left / W, r.top / H, r.width / W, r.height / H);
+    }
     res.fieldMaterial.uniforms.uCount.value = res.particles.count;
     res.inkMaterial.uniforms.uTime.value = t;
 

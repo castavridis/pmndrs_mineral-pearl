@@ -73,6 +73,8 @@ uniform float uSheen;
 // (a WebGL canvas, whose upload puts its top row at t = 0)
 uniform sampler2D uFill;
 uniform float uFillOn;
+// this canvas's place in the fill (x, y from the top, w, h, viewport fractions)
+uniform vec4 uFillRect;
 // optional rounded box (centred, shader units) that bounds the flood
 uniform vec2 uClipHalf;
 uniform float uClipRadius;
@@ -178,7 +180,8 @@ void main() {
   // derivatives are core in WebGL2, which three r163+ requires
   float aa = max(fwidth(field) * 0.8, 0.004);
   float alpha = smoothstep(0.5 - aa, 0.5 + aa, field);
-  vec3 ink = uFillOn > 0.5 ? texture2D(uFill, vec2(vUv.x, 1.0 - vUv.y)).rgb : uInk;
+  vec2 fillUv = vec2(uFillRect.x + vUv.x * uFillRect.z, uFillRect.y + (1.0 - vUv.y) * uFillRect.w);
+  vec3 ink = uFillOn > 0.5 ? texture2D(uFill, fillUv).rgb : uInk;
 
   // wet edge: a faint sheen along edges that face the light, from the
   // field's gradient in the thin band just inside the surface

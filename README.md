@@ -94,7 +94,7 @@ const ref = useRef<InkEngulfHandle>(null)
 </InkEngulf>
 ```
 
-The inverse of the callout. On `engulf()` droplets are flung in from the edges of the content's box and the ink closes in behind them until the content is drowned; the content is then hidden (and made inert), the ink drains back out, and the spatter fades. `keep` leaves the ink in place instead. The content keeps its layout box throughout; unmount it in `onDone`. Without WebGL the content simply goes.
+The inverse of the callout, and the behaviour behind `Surface`'s `exit`. On `engulf()` (or `engulfed`) droplets are flung in from the edges of the content's box and the ink closes in behind them; with `fill="ground"` (default) the ink is the page's liquid. Then the ink drains and the spatter fades (`onDone`), or with `keep` it stays until `release()` drains it and gives the content back (`onReleased`); `hideContent={false}` leaves the content visible under the ink. `lazy` mounts the canvas only once something is engulfed. The content keeps its layout box throughout. Without WebGL the content simply goes, or is held.
 
 ### `<InkSink>`
 
@@ -114,6 +114,8 @@ The pond from the "Liquid Button Ink" study (`reference/`), ported with its shad
 ```
 
 The one surface every element sits on: a clipped box in one of three shapes (`pill`, `card`, `key`), filled with the page's liquid in one of three tiers of motion. `full` is the liquid with the page look's pointer reaction; `calm` is the same liquid nearly still, a quarter of the reaction; `flat` is tokens only, no canvas. The gates step the tier down on their own: reduced motion caps at calm, no WebGL or the shaders off means flat. `material` is `auto` (follows the scheme), `mineral`, `pearl` or `mercury`, read through the page look so a preset restyles every surface. `as` picks the tag (div, button, nav, a); other attributes pass through. The bento is built entirely on it.
+
+Every surface has one exit, `exit`: `dismiss` (the ground's own liquid closes in over it, drains, and the content is gone; `onDone` fires), `disable` (the liquid closes over and stays; the content stays visible but dimmed and the surface is `aria-disabled`, the study's rule that sunk means unavailable but still findable), and `pending` (the same while it lasts; back to `none`, the liquid drains and the content is restored). The engulfing ink samples the page ground rather than a colour, so the ground reclaims the element wherever it sits; without a ground or with the shaders off it is the page ink.
 
 ### `<NacreCallout>`
 

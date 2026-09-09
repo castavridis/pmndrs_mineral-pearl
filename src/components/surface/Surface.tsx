@@ -4,6 +4,7 @@ import type { CSSProperties, ElementType, FC, ReactNode } from 'react';
 import { useReducedMotion, useWebGL } from '../gate';
 import { useThemeStore } from '../theme';
 import { LiquidGround } from '../ink-sink/LiquidGround';
+import { InkEngulf } from '../ink-engulf/InkEngulf';
 import type { Liquid } from '../ink-sink/liquid-pond';
 import styles from './Surface.module.css';
 
@@ -17,8 +18,20 @@ export type SurfaceMaterial = Liquid | 'auto';
  */
 export type SurfaceTier = 'full' | 'calm' | 'flat';
 
+/**
+ * The universal exit. `dismiss`: the ground's ink closes over the surface,
+ * drains, and the content is gone (`onDone`). `disable`: the ink closes over
+ * and stays; the content stays visible, dimmed, and the surface is
+ * aria-disabled (unavailable, still findable). `pending`: the same while it
+ * lasts; back to `none`, the ink drains and the content is restored.
+ */
+export type SurfaceExit = 'none' | 'dismiss' | 'disable' | 'pending';
+
 export interface SurfaceProps {
   as?: ElementType;
+  exit?: SurfaceExit;
+  /** A dismissal has drained and faded; the surface may be unmounted. */
+  onDone?: () => void;
   shape?: SurfaceShape;
   material?: SurfaceMaterial;
   expressiveness?: SurfaceTier;
@@ -59,9 +72,14 @@ export function Surface({
   style,
   children,
   dim = false,
+  exit = 'none',
+  onDone,
   ...rest
 }: SurfaceProps) {
   const tier = useSurfaceTier(expressiveness);
+  const unavailable = exit === 'disable' || exit === 'pending';
+  const engulfed = exit !== 'none';
+  const radius = shape === 'pill' ? 999 : shape === 'card' ? 14 : 8;
   // any intrinsic or component tag; attributes are passed through untyped
   const Tag = as as unknown as FC<Record<string, unknown>>;
   return (
@@ -70,6 +88,8 @@ export function Surface({
       style={style}
       data-shape={shape}
       data-tier={tier}
+      aria-disabled={unavailable ? 'true' : undefined}
+      data-exit={exit !== 'none' ? exit : undefined}
       {...rest}
     >
       {tier !== 'flat' && (
@@ -81,9 +101,20 @@ export function Surface({
           reaction={tier === 'calm' ? { reaction: 0.25 } : undefined}
         />
       )}
-      <span className={styles.content} data-dim={dim || undefined}>
-        {children}
-      </span>
+      <InkEngulf
+        lazy
+        bleed={0}
+        radius={Math.min(radius, 200)}
+        engulfed={engulfed}
+        keep={exit !== 'dismiss'}
+        hideContent={exit === 'dismiss'}
+        onDone={onDone}
+        className={styles.exit}
+      >
+        <span className={styles.content} data-dim={dim || unavailable || undefined}>
+          {children}
+        </span>
+      </InkEngulf>
     </Tag>
   );
 }

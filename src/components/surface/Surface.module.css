@@ -53,3 +53,11 @@ button.surface {
 .content[data-dim] {
   opacity: 0.45;
 }
+
+/* the exit wrapper spans the surface; its (absolute) canvas is clipped by
+   the surface's own overflow */
+.exit {
+  position: relative;
+  z-index: 1;
+  display: block;
+}
