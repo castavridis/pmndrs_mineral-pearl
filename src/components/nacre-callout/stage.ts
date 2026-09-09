@@ -515,9 +515,9 @@ export class NacreStage {
     this._raf = requestAnimationFrame(this._loop);
   }
 
-  /** Invalidate the ghosts (theme or content changed) and repaint. */
+  /** Invalidate the ghosts (theme, content or quality changed), re-size, repaint. */
   refresh() {
-    for (const c of this._cards.values()) this._dropGhost(c);
+    this._resize();
     this._dirty = true;
   }
 
