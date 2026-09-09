@@ -39,6 +39,9 @@ Avoid whole-repo `pnpm format` / `pnpm lint` unless asked.
 - Components live in `src/components/<name>/` with an `index.ts` barrel and are re-exported from `src/components/index.ts`.
 - New elements are built on `Surface` (shape × material × expressiveness) rather than as one-off boxes; the liquid inside is a `LiquidGround` reading the page look. Use `flat` for utilitarian controls.
 - Removing, disabling or holding an element is always `exit` on its `Surface` (dismiss / disable / pending), never a bespoke transition.
+- The pages and components mirror `~/Git/@pmndrs/3d-2d-nav` (Nav, Announcement, Callout, the /dev pages) one for one; keep names, props and metrics aligned with that repo when adding to either. Its 3D-model pages are out of scope here.
+- A thing afloat on the page (the Announcement) is an `InkSink` in `well` mode: the fixed ground is the liquid, never a pond panel of its own.
+- `localStorage` is per origin, and the dev server's port changes: anything a user saves in the browser (presets) should also be shippable in the repo (`src/app/pond-presets.json`).
 - Components own their `<Canvas>` unless they are explicitly designed to live inside an existing scene.
 - Prefer demand-driven rendering (`frameloop="demand"` + `invalidate()`) so idle components cost nothing.
 - `erasableSyntaxOnly` is on: no enums, no parameter properties.

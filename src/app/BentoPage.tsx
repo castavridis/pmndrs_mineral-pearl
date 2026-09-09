@@ -2,14 +2,23 @@ import { useState } from 'react';
 import { Leva, folder, useControls } from 'leva';
 import { useEffect } from 'react';
 import {
+  Announcement,
   InkCallout,
   NACRE_DEFAULT,
+  Nav,
   NacreCallout,
   Surface,
   getNacreStage,
   type NacreConfig,
+  type NavLink,
   type SurfaceExit,
 } from '../components';
+
+const LINKS: NavLink[] = [
+  { id: 'docs', label: 'Docs', href: '/docs' },
+  { id: 'examples', label: 'Examples', href: '/examples' },
+  { id: 'blog', label: 'Blog', href: '/blog' },
+];
 import { useThemeTweak } from './tweaks';
 
 /** Every parameter of the nacre stage, applied live to the page's stage. */
@@ -87,7 +96,6 @@ const Logo = ({ size = 22 }: { size?: number }) => (
 export function BentoPage() {
   useThemeTweak();
   useNacreTweaks();
-  const [bannerExit, setBannerExit] = useState<SurfaceExit>('none');
   const [gone, setGone] = useState(false);
   const [copyExit, setCopyExit] = useState<SurfaceExit>('none');
   const [copied, setCopied] = useState(false);
@@ -106,46 +114,19 @@ export function BentoPage() {
       <section className="bento-tier">
         <h2>Most Expressive</h2>
         <div className="bento-row">
-          <Surface
-            as="nav"
-            shape="pill"
-            expressiveness="full"
-            className="pill pill-sm"
-            aria-label="Bento nav"
-          >
-            <a href="/" className="pill-logo" aria-label="pmndrs home">
-              <Logo />
-            </a>
-            <div className="pill-links">
-              <a href="/docs">
-                <strong>Docs</strong>
-              </a>
-              <a href="/examples">Examples</a>
-              <a href="/blog">Blog</a>
-            </div>
-          </Surface>
-          {!gone && (
-            <Surface
-              shape="card"
-              expressiveness="full"
-              className="banner bento-grow"
-              exit={bannerExit}
-              onDone={() => setGone(true)}
-            >
-              <span>
-                <strong>Announcement.</strong> The ink layers ship as separate chunks.
-              </span>
-              <a href="/blog">Read more</a>
-              <button
-                type="button"
-                className="banner-dismiss"
-                aria-label="Dismiss announcement"
-                onClick={() => setBannerExit('dismiss')}
-              >
-                ×
-              </button>
-            </Surface>
-          )}
+          <div className="bento-grow" style={{ flexBasis: 620 }}>
+            <Nav links={LINKS} active="docs" enhancement="full" />
+          </div>
+          <div className="bento-grow" style={{ padding: '52px 0' }}>
+            {!gone && (
+              <Announcement width={720} onDismiss={() => setGone(true)}>
+                <span>
+                  <strong>v10 is out.</strong> Petals, glass and the growing pill, in one package.
+                </span>
+                <a href="/blog/v10">Read more</a>
+              </Announcement>
+            )}
+          </div>
         </div>
       </section>
 

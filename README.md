@@ -36,7 +36,10 @@ src/
     ink-sink/            InkSink + LiquidPond + LiquidGround: the study's pond, as slab, ground or pill
     nacre-callout/       NacreCallout + NacreStage: one-context raymarched callouts on black nacre
     surface/             Surface: the one primitive (shape × material × expressiveness) under every element
-  app/                   the site: AppShell, Home, /dev pages
+    nav/                 Nav: the responsive pill nav (full / compact / collapsed) and its ⌘K palette
+    announcement/        Announcement: the banner afloat on the page, sinking into it on dismiss
+    callout/             Callout: the lens callout (surface / plain / svg) on a Surface
+  app/                   the site: AppShell, Home, /dev pages (mirroring the 3d-2d-nav pages)
   main.tsx, index.css
 ```
 
@@ -107,6 +110,8 @@ const ref = useRef<InkSinkHandle>(null)
 
 The pond from the "Liquid Button Ink" study (`reference/`), ported with its shaders and simulation and one change of model: the layer over the content is transparent with a hole where the slab's face is still dry, so the DOM content shows through it. `sink()` sends the slab under with an ink-splat particle swallow (droplets burst from the rim, are drawn back onto the slab and merge) while the surface closes over the face, ripples first, until nothing is left dry; the liquid is faintly translucent while shallow, so the content is seen receding into the ground, then fades. `rise()` brings it back; `press()` is a beat under and back; hover tips it. A click on the content is an impact: the slab tips into the hit and plunges, the liquid closing over that side first (`sinkOnClick`, with `onSunkChange` for a controlled `sunk`); a click when sunk raises it. `liquid` is mineral, pearl or mercury (`auto` follows the scheme). Raw WebGL2; without it the content only dims when sunk.
 
+`well` makes the whole page the well: the sink has no panel of its own, and its liquid continues the fixed `LiquidGround`'s surface exactly. The pond draws in the viewport's frame (a `uShiftPx` offset into the ground's coordinates, the ground's vignette, unit and resolution), every pond runs on one clock, the window's pointer drives it, its ripples are the ground's own array (an impact on the slab rings out across the page), and it registers as a ground so the theme's masked switch rolls it over with the page. Only the slab, its collar and the droplets of the swallow are its own. `Announcement` is built on it.
+
 ### `<Surface>`
 
 ```tsx
@@ -116,6 +121,35 @@ The pond from the "Liquid Button Ink" study (`reference/`), ported with its shad
 The one surface every element sits on: a clipped box in one of three shapes (`pill`, `card`, `key`), filled with the page's liquid in one of three tiers of motion. `full` is the liquid with the page look's pointer reaction; `calm` is the same liquid nearly still, a quarter of the reaction; `flat` is tokens only, no canvas. The gates step the tier down on their own: reduced motion caps at calm, no WebGL or the shaders off means flat. `material` is `auto` (follows the scheme), `mineral`, `pearl` or `mercury`, read through the page look so a preset restyles every surface. `as` picks the tag (div, button, nav, a); other attributes pass through. The bento is built entirely on it.
 
 Every surface has one exit, `exit`: `dismiss` (the ground's own liquid closes in over it, drains, and the content is gone; `onDone` fires), `disable` (the liquid closes over and stays; the content stays visible but dimmed and the surface is `aria-disabled`, the study's rule that sunk means unavailable but still findable), and `pending` (the same while it lasts; back to `none`, the liquid drains and the content is restored). The engulfing ink samples the page ground rather than a colour, so the ground reclaims the element wherever it sits; without a ground or with the shaders off it is the page ink.
+
+### `<Nav>`
+
+```tsx
+<Nav links={[{ id: 'docs', label: 'Docs', href: '/docs' }]} active="docs" />
+```
+
+The site nav of the 3d-2d-nav explorations, its pill a `Surface`: the logo, the links and the Cmd item on the page's liquid. It is DOM in every tier (the a11y and SEO source of truth); `enhancement` is `auto` (the gates), `full`, `calm` or `flat`, and in dev `?nav=` overrides. The layout mode follows the container: the pill is measured in every mode (`full`, `compact`, `collapsed`) by swapping `data-mode`, and `resolveMode` picks one with hysteresis so a resize around a threshold never flaps. Collapsed, the links become a disclosure under the pill. Every length is a token (`navTokens`), the glass nav's numbers, shared with the CSS as `--nav-*`. The Cmd item and ⌘K / Ctrl+K open `CmdPalette`, a `<dialog>` listing the links. One zustand store per nav (`createNavStore`, `useNavStore`) so several can share a page.
+
+### `<Announcement>`
+
+```tsx
+<Announcement width={652} onDismiss={() => setGone(true)}>
+  <span><strong>v10 is out.</strong> …</span>
+  <a href="/blog/v10">Read more</a>
+</Announcement>
+```
+
+The wide banner, afloat: the whole page is the well. It is an `InkSink` in `well` mode, so the liquid around the slab is the fixed page ground's own surface, drawn in the same frame, and the slab tips under the pointer and sinks into the page. `onDismiss` adds a close button; the click is an impact at that point, the banner plunges and the liquid closes over it, then the layer fades (the liquid it shows is the ground's, so only the slab goes) and `onDismiss` fires. Flat (`variant="flat"`, or the gates) it is a flat `Surface` card and the dismissal is the `exit`.
+
+### `<Callout>`
+
+```tsx
+<Callout variant="surface" kind="tip" title="Start with the fiber docs">
+  <p>…</p>
+</Callout>
+```
+
+The glass callout's layout on a `Surface`: the kind's symbol in a lens ring at the top-left corner (the glass metrics: 96 px at 64, 64), the kind label, a title and body. `surface` is the liquid in full motion, `plain` the liquid calm, `svg` a flat outline; each steps down to what the page can run. Kinds and tints are `InkCallout`'s.
 
 ### `<NacreCallout>`
 
@@ -129,12 +163,22 @@ A port of the "single-context callout shaders" study (`reference/callout-shaders
 
 ## Pages
 
-| Route          | What                                                            |
-| -------------- | --------------------------------------------------------------- |
-| `/`            | The nav-page layout in ink: hero, callouts, the flooding toggle |
-| `/dev/`        | Index of experiments                                            |
-| `/dev/splat`   | Full-viewport splat with the leva panel (colour, mark, origin…) |
-| `/dev/callout` | Every callout kind, replay all, and the static fallback         |
+The pages mirror the 3d-2d-nav repo's, page for page, with the liquid where it had glass. Its 3D-model pages (`/dev/stage`, `/dev/cube`, `/dev/trace`, `/dev/x/…`) have no ink counterpart and are not mirrored.
+
+| Route               | What                                                                                   |
+| ------------------- | -------------------------------------------------------------------------------------- |
+| `/`                 | The site home: Nav, Announcement, hero, two Callouts, the flooding theme toggle        |
+| `/dev/`             | Index of experiments                                                                   |
+| `/dev/demo`         | The nav in a page, with link count, container width and current page controls         |
+| `/dev/nav`          | 1, 3, 6 and 10 links × full, compact, collapsed; flat rows and a liquid row            |
+| `/dev/callout`      | Callout surface / plain / every kind, then the ink blots with their panel              |
+| `/dev/announcement` | The banner afloat at 652 and 900 px; variant and dismissal in the panel                |
+| `/dev/palette`      | Every liquid as a live sample, and the saved presets, each applicable to the page      |
+| `/dev/bento`        | The shader bento: the components by expressiveness                                     |
+| `/dev/splat`        | Full-viewport splat with the leva panel (colour, mark, origin…)                        |
+| `/dev/engulf`       | Engulf and the pond, every knob; presets are saved here                                |
+
+Pond presets are kept in `localStorage` (`pmndrs-pond-presets`), which is per origin: a dev server on another port has its own. The ones in `src/app/pond-presets.json` ship with the app and are always in the list.
 
 ## Development
 
