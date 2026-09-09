@@ -1,0 +1,32 @@
+.root {
+  position: relative;
+  width: 100%;
+}
+
+/* the ink sits over the content: the card plus a bleed for the spatter */
+/* react-three-fiber sets pointer-events: auto on its wrapper and canvas, which
+   would let the bleed swallow clicks meant for whatever lies around the card */
+.canvas,
+.canvas * {
+  pointer-events: none !important;
+}
+
+.canvas {
+  position: absolute;
+  z-index: 2;
+  transition: opacity 600ms ease;
+}
+
+.canvas[data-fading] {
+  opacity: 0;
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+}
+
+/* engulfed: the content is gone, its box stays until the parent lets go */
+.content[data-hidden] {
+  visibility: hidden;
+}
