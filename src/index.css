@@ -1,0 +1,421 @@
+:root {
+  /* Page palette; src/components/theme/tokens.ts carries the same values for the ink.
+     Dark before JS; ThemeApplier stamps data-theme once the stored choice is known. */
+  --page-bg: #0c0a06;
+  --page-ink: #eeeeea;
+  color-scheme: dark;
+  font-family:
+    'Inter Variable',
+    Inter,
+    system-ui,
+    -apple-system,
+    sans-serif;
+  background: var(--page-bg);
+  color: var(--page-ink);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    --page-bg: #faf5ea;
+    --page-ink: #12100c;
+    color-scheme: light;
+  }
+}
+
+:root[data-theme='light'] {
+  --page-bg: #faf5ea;
+  --page-ink: #12100c;
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  /* the page colour lives on <html> (above) and paints the canvas. The body
+     must not paint it again: its own background would sit above the fixed,
+     z-index: -1 liquid ground and hide it behind the content. */
+  background: transparent;
+  color: var(--page-ink);
+  /* droplets may overhang the viewport on narrow screens; clip rather than scroll */
+  overflow-x: clip;
+}
+
+a {
+  color: inherit;
+  text-underline-offset: 3px;
+}
+
+/* ---- site pages ---------------------------------------------------------- */
+
+.site-header {
+  padding: 72px 8px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* the nav pill: the liquid's surface with the mark, the links and ⌘K on it */
+.pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(28px, 5vw, 56px);
+  padding: 14px 20px 14px 28px;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--page-ink) 14%, transparent);
+  box-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.7);
+  font-family: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  font-size: clamp(16px, 2vw, 22px);
+  color: var(--page-ink);
+}
+
+.pill > * {
+  position: relative;
+  z-index: 1;
+}
+
+.pill-links {
+  display: flex;
+  align-items: center;
+  gap: clamp(28px, 5vw, 56px);
+}
+
+.pill-links a {
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 999px;
+  opacity: 0.92;
+}
+
+.pill-links a:hover {
+  opacity: 1;
+}
+
+.pill-logo {
+  display: inline-flex;
+}
+
+.pill-kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 48px;
+  height: 40px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.9em;
+  color: inherit;
+  background: color-mix(in srgb, var(--page-bg) 45%, transparent);
+  border: 1px solid color-mix(in srgb, var(--page-ink) 18%, transparent);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+}
+
+.page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: clamp(32px, 6vw, 48px) clamp(16px, 4vw, 24px) 96px;
+  display: grid;
+  gap: clamp(40px, 7vw, 56px);
+}
+
+.hero {
+  display: grid;
+  gap: 16px;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: clamp(28px, 8vw, 40px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.hero p {
+  margin: 0;
+  font-size: clamp(16px, 4.5vw, 18px);
+  line-height: 1.5;
+  opacity: 0.75;
+  max-width: 640px;
+}
+
+.callouts {
+  display: grid;
+  gap: 32px;
+  justify-items: center;
+}
+
+.site-footer {
+  display: flex;
+  justify-content: center;
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.dev-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.dev-list a {
+  display: grid;
+  gap: 4px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: color-mix(in srgb, currentColor 5%, transparent);
+  border: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+  text-decoration: none;
+}
+
+.text-button {
+  font: inherit;
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* the dismissible announcement banner on the home page */
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 56px;
+  padding: 12px 12px 12px 20px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  background: color-mix(in srgb, currentColor 5%, transparent);
+  font-size: 15px;
+}
+
+.banner > span {
+  flex: 1;
+}
+
+.banner-dismiss {
+  font: inherit;
+  font-size: 18px;
+  line-height: 1;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.banner-dismiss:hover {
+  opacity: 1;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+/* engulf page demos */
+.prose-card {
+  padding: 20px 24px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.prose-card p {
+  margin: 0;
+}
+
+.prose-card p + p {
+  margin-top: 0.7em;
+}
+
+/* the content riding on the pond's slab: no border, the slab is the card */
+.slab-card {
+  max-width: 520px;
+  padding: 22px 26px;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.slab-card p {
+  margin: 0;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.tile {
+  display: grid;
+  place-items: center;
+  height: 88px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  background: color-mix(in srgb, currentColor 5%, transparent);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+/* ---- the shader bento ---------------------------------------------------- */
+
+.bento {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 72px clamp(16px, 4vw, 40px) 96px;
+}
+
+.bento-tier {
+  padding: 40px 0 56px;
+  border-bottom: 1px solid color-mix(in srgb, var(--page-ink) 12%, transparent);
+}
+
+.bento-tier h2 {
+  margin: 0 0 32px;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.bento-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px 48px;
+  align-items: flex-start;
+}
+
+.bento-grow {
+  flex: 1 1 480px;
+  min-width: 0;
+}
+
+.bento-stack {
+  display: grid;
+  gap: 24px;
+  align-content: start;
+}
+
+.bento-inline {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.pill-sm {
+  padding: 10px 18px 10px 20px;
+  gap: 28px;
+  font-size: 16px;
+}
+
+/* a liquid button: a pill-shaped pond with the label riding on it */
+.bento-liquid {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--page-ink) 16%, transparent);
+  border-radius: 999px;
+  padding: 12px 22px;
+  min-width: 120px;
+  font: inherit;
+  font-size: 15px;
+  color: var(--page-ink);
+  background: transparent;
+  cursor: pointer;
+}
+
+.bento-liquid.wide {
+  min-width: 220px;
+}
+
+.bento-liquid > span {
+  position: relative;
+  z-index: 1;
+}
+
+.kbd {
+  font: inherit;
+  font-size: 14px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--page-ink) 18%, transparent);
+  background: color-mix(in srgb, var(--page-ink) 4%, transparent);
+  color: inherit;
+  cursor: pointer;
+}
+
+.tabs-card {
+  flex: 0 1 480px;
+  border: 1px solid color-mix(in srgb, var(--page-ink) 18%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--page-bg) 60%, transparent);
+  overflow: hidden;
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid color-mix(in srgb, var(--page-ink) 18%, transparent);
+}
+
+.tabs button {
+  font: inherit;
+  font-size: 15px;
+  padding: 12px 18px;
+  border: 0;
+  border-right: 1px solid color-mix(in srgb, var(--page-ink) 18%, transparent);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.tabs button.active {
+  font-weight: 600;
+}
+
+.tabs-card ul {
+  margin: 0;
+  padding: 18px 18px 18px 36px;
+  line-height: 1.7;
+}
+
+/* ---- the full-viewport splat page ---------------------------------------- */
+
+.stage {
+  position: fixed;
+  inset: 0;
+}
+
+.splat {
+  width: 100%;
+  height: 100%;
+}
+
+.hint {
+  position: absolute;
+  left: 50%;
+  bottom: 2rem;
+  transform: translateX(-50%);
+  margin: 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.5;
+  pointer-events: none;
+}
