@@ -39,6 +39,12 @@ export interface NacreConfig {
   cornerN: number;
   edgeRoll: number;
   glint: number;
+  /** nacre noise frequency (the pond's 2.2) */
+  swirl: number;
+  /** striation density: laminar lines across the nacre (the pond's 72) */
+  lamina: number;
+  /** how strongly the striations show */
+  striation: number;
   quality: 'high' | 'balanced' | 'battery';
 }
 
@@ -69,6 +75,9 @@ export const NACRE_DEFAULT: NacreConfig = {
   cornerN: 2.9,
   edgeRoll: 1.0,
   glint: 1.0,
+  swirl: 2.2,
+  lamina: 72,
+  striation: 0.35,
   quality: 'balanced',
 };
 
@@ -138,6 +147,8 @@ uniform float uGrainDens;
 uniform float uGlitterDens;
 uniform float uFacetSharp;
 uniform float uGlint;
+uniform float uLamina;
+uniform float uStriation;
 
 vec2 uSize;
 
@@ -218,6 +229,9 @@ vec4 card(vec2 p, float t){
 
   vec2 uvn = p / uSize.y;
   float nac = fbm(uvn * uSwirl + vec2(0.0, t * 0.02));
+  // laminar striations running across the nacre, bent by the noise
+  float lam = vnoise(vec2(uvn.x * 3.0 + nac * 2.0, uvn.y * uLamina + nac * 6.0) + 11.0);
+  nac = clamp(nac + (lam - 0.5) * uStriation, 0.0, 1.0);
   vec3 col = mix(uMinBase, uMinHigh, smoothstep(0.25, 0.80, nac) * uStoneGray);
   float phase = (nac * 1.9 + 0.3 + uvn.x * 0.3) * uSpread - t * 0.02;
   vec3 irid = mix(brand(phase), vec3(1.0), uWhite);
@@ -756,7 +770,9 @@ export class NacreStage {
     gl.uniform1f(u.uMinIrid, MINERAL_DEFAULT.iridescence);
     gl.uniform1f(u.uWhite, SPECTRUM_DEFAULT.white);
     gl.uniform1f(u.uSpread, SPECTRUM_DEFAULT.spread);
-    gl.uniform1f(u.uSwirl, SPECTRUM_DEFAULT.swirl);
+    gl.uniform1f(u.uSwirl, cfg.swirl);
+    gl.uniform1f(u.uLamina, cfg.lamina);
+    gl.uniform1f(u.uStriation, cfg.striation);
     gl.uniform1f(u.uGrainSize, SPECTRUM_DEFAULT.grainSize);
     gl.uniform1f(u.uGrainDens, SPECTRUM_DEFAULT.grainDensity);
     gl.uniform1f(u.uGlitterDens, SPECTRUM_DEFAULT.glitterDensity);

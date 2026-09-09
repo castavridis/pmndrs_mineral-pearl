@@ -40,6 +40,9 @@ function useNacreTweaks() {
       lightColor: { value: d.lightColor, label: 'light colour' },
     }),
     nacre: folder({
+      swirl: { value: d.swirl, min: 0.2, max: 12, step: 0.1 },
+      lamina: { value: d.lamina, min: 8, max: 400, step: 2, label: 'striations' },
+      striation: { value: d.striation, min: 0, max: 1.5, step: 0.05, label: 'striation depth' },
       iridescence: { value: d.iridescence, min: 0, max: 3, step: 0.05, label: 'sheen glints' },
       intensity: { value: d.intensity, min: 0, max: 2, step: 0.05, label: 'glint intensity' },
       sheenSpeed: { value: d.sheenSpeed, min: 0, max: 1, step: 0.01, label: 'sheen speed' },

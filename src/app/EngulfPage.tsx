@@ -195,6 +195,13 @@ export function EngulfPage() {
           step: 0.1,
           label: 'glint strength',
         },
+        spLamina: {
+          value: SPECTRUM_DEFAULT.lamina,
+          min: 8,
+          max: 400,
+          step: 2,
+          label: 'striations',
+        },
         spGlintPtr: {
           value: SPECTRUM_DEFAULT.glintFollowsPointer,
           min: 0,
@@ -297,6 +304,7 @@ export function EngulfPage() {
     facetSharpness: sink.spFacet,
     glint: sink.spGlint,
     glintFollowsPointer: sink.spGlintPtr,
+    lamina: sink.spLamina,
   };
 
   return (

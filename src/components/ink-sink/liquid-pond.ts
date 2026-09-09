@@ -69,6 +69,7 @@ uniform float uGrainDens;  // fraction of grid cells that carry a facet (study 0
 uniform float uGlitterDens; // soft halo around each facet (study 0.22)
 uniform float uFacetSharp; // facet specular exponent (study 230)
 uniform float uGlint;      // glitter strength multiplier (study 1)
+uniform float uLamina;     // (port) striation density: the laminar lines' frequency (study 72)
 uniform float uGlintPtr;   // (port) how much the facets light from over the pointer (0: the study's fixed light)
 uniform float uDimple;     // (port) depth of the dent the pointer makes in the surface (study 1)
 uniform float uSlabOn;     // (port) 0: no slab at all, the liquid alone (the ground, the nav pill)
@@ -267,7 +268,7 @@ void main(){
   float glow = halo * uPtrOn * uGlowK;
 
   float nac = fbm3(uv * uSwirl + vec2(0.0, t * uMotion * 0.02));
-  float lam = vn(uv * vec2(3.0, 72.0) + 11.0);
+  float lam = vn(uv * vec2(3.0, uLamina) + 11.0);
   float phase = (nac * 1.9 + fres * 1.5 + lam * 0.16 + cyc * 0.30) * uSpread - t * uMotion * 0.02;
   vec3  irid = mix(brand(phase), vec3(1.0), uWhite);
 
@@ -469,6 +470,8 @@ export interface SpectrumLook {
   glint: number;
   /** how much the facets light from over the pointer; 0 is the study's fixed light */
   glintFollowsPointer: number;
+  /** striation density: the laminar lines' frequency (study 72) */
+  lamina: number;
 }
 /** Quicksilver: the chrome reflection of a soft studio. Colours are CSS hex. */
 export interface MercuryLook {
@@ -513,6 +516,7 @@ export const SPECTRUM_DEFAULT: SpectrumLook = {
   facetSharpness: 230,
   glint: 1,
   glintFollowsPointer: 1,
+  lamina: 72,
 };
 /** The study's constants. */
 export const MINERAL_DEFAULT: MineralLook = {
@@ -1229,6 +1233,7 @@ export class LiquidPond {
       'uFacetSharp',
       'uGlint',
       'uGlintPtr',
+      'uLamina',
       'uDimple',
       'uSlabOn',
       'uMask',
@@ -1409,6 +1414,7 @@ export class LiquidPond {
       gl.uniform1f(u.uFacetSharp, sp.facetSharpness);
       gl.uniform1f(u.uGlint, sp.glint);
       gl.uniform1f(u.uGlintPtr, sp.glintFollowsPointer);
+      gl.uniform1f(u.uLamina, sp.lamina);
       gl.uniform1f(u.uDimple, this._pr('dimple'));
       gl.uniform1f(u.uSlabOn, this.slab ? 1 : 0);
       this._uploadMask();
