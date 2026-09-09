@@ -1,0 +1,250 @@
+/*
+ * The DOM nav. Every length comes from tokens.ts via --nav-* custom properties
+ * set on .root by tokensToCssVars(). Mode is driven by [data-mode].
+ */
+.root {
+  --pad-start: var(--nav-pill-pad-start-full);
+  --pad-end: var(--nav-pill-pad-end-full);
+  --gap: var(--nav-gap-full);
+  --fs: var(--nav-font-size-full);
+  --menu-h: 40px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  color: var(--page-ink);
+  container-type: inline-size;
+}
+
+.root[data-mode='compact'] {
+  --pad-start: var(--nav-pill-pad-start-compact);
+  --pad-end: var(--nav-pill-pad-end-compact);
+  --gap: var(--nav-gap-compact);
+  --fs: var(--nav-font-size-compact);
+}
+
+.root[data-mode='collapsed'] {
+  --pad-start: var(--nav-pill-pad-start-collapsed);
+  --pad-end: var(--nav-pill-pad-end-collapsed);
+  --gap: var(--nav-gap-collapsed);
+  --fs: var(--nav-font-size-collapsed);
+}
+
+.nav {
+  position: relative;
+  display: inline-block;
+  /* room around the pill, as the glass nav kept for its clusters */
+  padding: var(--nav-bleed-y) var(--nav-bleed-x);
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* the pill is a Surface: its liquid is its whole face */
+.pill {
+  display: block;
+  width: max-content;
+  height: var(--nav-pill-height);
+  box-sizing: border-box;
+  font-size: var(--fs);
+  line-height: 1;
+  box-shadow: 0 24px 60px -30px rgb(0 0 0 / 0.7);
+  transition: font-size 240ms ease;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  height: calc(var(--nav-pill-height) - 2px);
+  padding: 0 var(--pad-end) 0 var(--pad-start);
+  box-sizing: border-box;
+  transition:
+    gap 240ms ease,
+    padding 240ms ease;
+}
+
+/* No JS (or not yet measured): clamp the pill and let the links scroll instead of overflowing. */
+.root:not([data-mode]) .pill {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+/* While Nav2D probes the natural width of each mode, transitions must not blur the numbers. */
+.root[data-probing],
+.root[data-probing] * {
+  transition: none !important;
+}
+
+.logo,
+.link,
+.cmd,
+.menuBtn {
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+  white-space: nowrap;
+  border-radius: 8px;
+  outline-offset: 4px;
+}
+
+.logo:focus-visible,
+.link:focus-visible,
+.cmd:focus-visible,
+.menuBtn:focus-visible {
+  outline: 2px solid currentColor;
+}
+
+.logo {
+  font-size: var(--nav-logo-size);
+  flex: none;
+}
+
+.logo svg {
+  display: block;
+}
+
+.links {
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.link {
+  position: relative;
+  padding: 2px 0;
+  transition: transform 160ms ease;
+}
+
+@media (hover: hover) {
+  .link:hover {
+    transform: translateY(-1px);
+  }
+}
+
+.link[aria-current='page']::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -4px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.6;
+}
+
+.cmd,
+.menuBtn {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  flex: none;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.root:not([data-mode='full']) .kbd {
+  display: none;
+}
+
+.kbd {
+  font: inherit;
+  font-size: 0.7em;
+  margin-left: 0.5em;
+  padding: 0.15em 0.4em;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--page-bg) 45%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 18%, transparent);
+}
+
+.menuBtn {
+  display: none;
+  gap: 6px;
+}
+
+.menuBtn svg {
+  width: 1.1em;
+  height: 1.1em;
+}
+
+/* --- collapsed: links become a disclosure ------------------------------- */
+.root[data-mode='collapsed'] .menuBtn {
+  display: inline-flex;
+}
+
+.root[data-mode='collapsed'] .links {
+  display: none;
+}
+
+.root[data-mode='collapsed'] .menu[data-open='true'] .links {
+  display: flex;
+}
+
+.menu {
+  display: none;
+  z-index: 3;
+}
+
+.root[data-mode='collapsed'] .menu {
+  display: block;
+  position: absolute;
+  left: var(--nav-bleed-x);
+  right: var(--nav-bleed-x);
+  top: calc(var(--nav-bleed-y) + var(--nav-pill-height) + 8px);
+}
+
+.root[data-mode='collapsed'] .menu .links {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  padding: 8px;
+  border-radius: var(--nav-pill-radius);
+  background: color-mix(in srgb, var(--page-bg) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--page-ink) 16%, transparent);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.25);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.root[data-mode='collapsed'] .menu .link {
+  height: var(--menu-h);
+  padding: 0 12px;
+}
+
+.root[data-mode='collapsed'] .menu .link[aria-current='page']::after {
+  display: none;
+}
+
+.root[data-mode='collapsed'] .menu .link[aria-current='page'] {
+  background: color-mix(in srgb, var(--page-ink) 8%, transparent);
+}
+
+/* --- flat: an outline, the ink of the page ------------------------------ */
+.root[data-tier='flat'] .kbd {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pill,
+  .row,
+  .link {
+    transition: none;
+  }
+}
