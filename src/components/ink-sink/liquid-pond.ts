@@ -76,6 +76,7 @@ uniform float uDimple;     // (port) depth of the dent the pointer makes in the 
 uniform float uSlabOn;     // (port) 0: no slab at all, the liquid alone (the ground, the nav pill)
 uniform vec2  uShiftPx;    // (port) well: this canvas's centre from the page ground's, device px
 uniform vec2  uVigRes;     // (port) the vignette's frame: the ground's canvas when in a well
+uniform float uFeather;    // (port) well: fade the layer out over this many device px at its edge
 // (port) a masked switch of body: where the mask's alpha is 1 the liquid is
 // uModeTo instead of uMode. The mask is the ink splat, in screen space;
 // uMaskRect is this canvas's place in it (x, y from the top, w, h, all 0..1)
@@ -433,6 +434,12 @@ void main(){
   // (port) the dry face is a hole in the layer: the DOM slab shows through it.
   // Covered, the liquid closes over it, faintly translucent while shallow.
   float alpha = 1.0 - slabRaw * (1.0 - covered) - slabRaw * covered * seen * 0.4;
+  // (port) in a well the slab's collar and cling reach past the canvas; the
+  // layer feathers out at its edge onto the ground, which is the same liquid
+  if (uFeather > 0.0) {
+    float edge = min(min(gl_FragCoord.x, uRes.x - gl_FragCoord.x), min(gl_FragCoord.y, uRes.y - gl_FragCoord.y));
+    alpha *= smoothstep(0.0, uFeather, edge);
+  }
   fragColor = vec4(outC * alpha, alpha);
 }
 `;
@@ -1312,6 +1319,7 @@ export class LiquidPond {
       'uSlabOn',
       'uShiftPx',
       'uVigRes',
+      'uFeather',
       'uMask',
       'uMaskOn',
       'uModeTo',
@@ -1460,6 +1468,7 @@ export class LiquidPond {
       gl.uniform2f(u.uShiftPx, this._ox * this._unit * dpx, this._oy * this._unit * dpx);
       if (this.opts.well) gl.uniform2f(u.uVigRes, this._vw * dpx, this._vh * dpx);
       else gl.uniform2f(u.uVigRes, this.canvas.width, this.canvas.height);
+      gl.uniform1f(u.uFeather, this.opts.well ? 48 * dpx : 0);
       gl.uniform1f(u.uTime, t);
       gl.uniform2f(u.uPtr, s.ptr[0], s.ptr[1]);
       gl.uniform1f(u.uPtrOn, s.ptrOn);
