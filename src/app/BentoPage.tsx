@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import {
   Announcement,
   InkCallout,
+  Logo,
   NACRE_DEFAULT,
   Nav,
   NacreCallout,
@@ -74,18 +75,6 @@ function useNacreTweaks() {
     if (qualityChanged) stage.refresh();
   }, [c]);
 }
-
-const Logo = ({ size = 22 }: { size?: number }) => (
-  <svg viewBox="0 0 1 1" width={size} height={size} aria-hidden="true">
-    <g fill="currentColor">
-      <rect x="0.35" y="0" width="0.65" height="0.288" />
-      <rect x="0.7" y="0" width="0.3" height="0.64" />
-      <rect x="0.35" y="0.339" width="0.3" height="0.3" />
-      <rect x="0" y="0.339" width="0.3" height="0.3" />
-      <rect x="0.35" y="0.689" width="0.3" height="0.308" />
-    </g>
-  </svg>
-);
 
 /**
  * `/dev/bento`: the shader bento, every element one `Surface` in a shape and
@@ -212,7 +201,7 @@ export function BentoPage() {
                   className={tab === i ? 'active' : ''}
                   onClick={() => setTab(i)}
                 >
-                  {i === 0 ? <Logo size={18} /> : t}
+                  {i === 0 ? <Logo width={18} height={18} /> : t}
                 </button>
               ))}
             </div>
