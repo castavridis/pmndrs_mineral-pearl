@@ -5,5 +5,8 @@ export * from './ink-engulf';
 export * from './ink-sink';
 export * from './nacre-callout';
 export * from './surface';
+export * from './nav';
+export * from './announcement';
+export * from './callout';
 export * from './theme';
 export { useReducedMotion, useWebGL } from './gate';

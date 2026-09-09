@@ -1,0 +1,97 @@
+.root {
+  position: relative;
+  container-type: inline-size;
+}
+
+.card {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+/* the nacre slab is drawn beneath by the page's stage; the DOM is a bordered
+   card over it, its text light on the black mineral in any scheme */
+.nacre {
+  z-index: 1;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  color: #eeeeea;
+}
+
+/* the lens: a ring at the corner, the kind's tint pooled in it */
+.lens {
+  position: absolute;
+  z-index: 2;
+  left: calc(var(--icon-x) - var(--icon) / 2);
+  top: calc(var(--icon-y) - var(--icon) / 2);
+  width: var(--icon);
+  height: var(--icon);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--tint);
+  box-shadow:
+    inset 0 0 0 2px currentColor,
+    inset 0 0 0 10px color-mix(in srgb, currentColor 10%, transparent);
+  background: radial-gradient(
+    circle at 35% 30%,
+    color-mix(in srgb, currentColor 22%, transparent),
+    color-mix(in srgb, currentColor 6%, transparent) 60%,
+    transparent 72%
+  );
+  pointer-events: none;
+}
+
+.symbol {
+  width: calc(var(--icon) * 0.38);
+  height: calc(var(--icon) * 0.38);
+  fill: currentColor;
+  filter: drop-shadow(0 1px 0 color-mix(in srgb, var(--page-bg) 60%, transparent));
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  padding: var(--pad);
+  padding-left: calc(var(--icon-x) + var(--icon) * 0.75);
+  min-height: calc(var(--icon-y) + var(--icon) / 2 + var(--pad));
+}
+
+@container (max-width: 439px) {
+  .content {
+    padding: calc(var(--pad) * 0.7);
+    padding-top: calc(var(--icon-y) + var(--icon) / 2 + 12px);
+  }
+}
+
+.kind {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tint);
+}
+
+.title {
+  margin: 0 0 12px;
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.body {
+  font-size: 15px;
+  line-height: 1.5;
+  opacity: 0.85;
+}
+
+.body p {
+  margin: 0 0 10px;
+}
+
+.body > :last-child {
+  margin-bottom: 0;
+}
