@@ -49,3 +49,62 @@ export const presetable = (values: PresetValues): PresetValues => {
   for (const [k, v] of Object.entries(values)) if (k !== 'sunk') out[k] = v;
   return out;
 };
+
+import type { PageLook } from '../components';
+
+/** The sink panel's flat values, regrouped as a page look (missing keys left out). */
+export function lookFromPanel(
+  v: PresetValues
+): Partial<{ [K in keyof PageLook]: Partial<PageLook[K]> }> {
+  const n = (k: string) => (typeof v[k] === 'number' ? (v[k] as number) : undefined);
+  const c = (k: string) => (typeof v[k] === 'string' ? (v[k] as string) : undefined);
+  const strip = <T extends object>(o: T): T =>
+    Object.fromEntries(Object.entries(o).filter(([, x]) => x !== undefined)) as T;
+  return {
+    viscosity: n('viscosity'),
+    mineral: strip({
+      base: c('minBase'),
+      highlight: c('minHigh'),
+      stoneGray: n('minStone'),
+      iridescence: n('minIrid'),
+      specular: n('minSpec'),
+      gamma: n('minGamma'),
+    }),
+    pearl: strip({
+      cream: c('pearlCream'),
+      shade: c('pearlShade'),
+      clouding: n('pearlCloud'),
+      nacre: n('pearlNacre'),
+      iridescence: n('pearlIrid'),
+      specular: n('pearlSpec'),
+    }),
+    mercury: strip({
+      floor: c('mcFloor'),
+      sky: c('mcSky'),
+      horizon: n('mcHorizon'),
+      topLight: n('mcTop'),
+      specular: n('mcSpec'),
+      iridescence: n('mcIrid'),
+    }),
+    spectrum: strip({
+      white: n('spWhite'),
+      spread: n('spSpread'),
+      swirl: n('spSwirl'),
+      cursorGlow: n('spGlow'),
+      grainSize: n('spGrainSize'),
+      grainDensity: n('spGrainDens'),
+      glitterDensity: n('spGlitterDens'),
+      facetSharpness: n('spFacet'),
+      glint: n('spGlint'),
+      glintFollowsPointer: n('spGlintPtr'),
+      lamina: n('spLamina'),
+    }),
+    pointer: strip({
+      reaction: n('ptReaction'),
+      dimple: n('ptDimple'),
+      wake: n('ptWake'),
+      tilt: n('ptTilt'),
+      drift: n('ptDrift'),
+    }),
+  };
+}

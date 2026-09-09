@@ -8,7 +8,7 @@
 // glass but the black mineral nacre of the liquid pond: dark body, nacre
 // noise, brand iridescence, facet glitter.
 
-import { MINERAL_DEFAULT, SPECTRUM_DEFAULT } from '../ink-sink/liquid-pond';
+import { useLook } from '../theme/look';
 
 const TRAIL = 12;
 const BLOBS = 5;
@@ -763,21 +763,22 @@ export class NacreStage {
     gl.uniform3fv(u.uLightColor, hexToRgb(cfg.lightColor));
     gl.uniform1i(u.uSteps, q.steps);
     gl.uniform1i(u.uGhost, 0);
-    // the nacre
-    gl.uniform3fv(u.uMinBase, hexToRgb(MINERAL_DEFAULT.base));
-    gl.uniform3fv(u.uMinHigh, hexToRgb(MINERAL_DEFAULT.highlight));
-    gl.uniform1f(u.uStoneGray, MINERAL_DEFAULT.stoneGray);
-    gl.uniform1f(u.uMinIrid, MINERAL_DEFAULT.iridescence);
-    gl.uniform1f(u.uWhite, SPECTRUM_DEFAULT.white);
-    gl.uniform1f(u.uSpread, SPECTRUM_DEFAULT.spread);
+    // the nacre: the page look's mineral and spectrum, the stage's own knobs on top
+    const look = useLook.getState().look;
+    gl.uniform3fv(u.uMinBase, hexToRgb(look.mineral.base));
+    gl.uniform3fv(u.uMinHigh, hexToRgb(look.mineral.highlight));
+    gl.uniform1f(u.uStoneGray, look.mineral.stoneGray);
+    gl.uniform1f(u.uMinIrid, look.mineral.iridescence);
+    gl.uniform1f(u.uWhite, look.spectrum.white);
+    gl.uniform1f(u.uSpread, look.spectrum.spread);
     gl.uniform1f(u.uSwirl, cfg.swirl);
     gl.uniform1f(u.uLamina, cfg.lamina);
     gl.uniform1f(u.uStriation, cfg.striation);
-    gl.uniform1f(u.uGrainSize, SPECTRUM_DEFAULT.grainSize);
-    gl.uniform1f(u.uGrainDens, SPECTRUM_DEFAULT.grainDensity);
-    gl.uniform1f(u.uGlitterDens, SPECTRUM_DEFAULT.glitterDensity);
-    gl.uniform1f(u.uFacetSharp, SPECTRUM_DEFAULT.facetSharpness);
-    gl.uniform1f(u.uGlint, cfg.glint);
+    gl.uniform1f(u.uGrainSize, look.spectrum.grainSize);
+    gl.uniform1f(u.uGrainDens, look.spectrum.grainDensity);
+    gl.uniform1f(u.uGlitterDens, look.spectrum.glitterDensity);
+    gl.uniform1f(u.uFacetSharp, look.spectrum.facetSharpness);
+    gl.uniform1f(u.uGlint, cfg.glint * look.spectrum.glint);
 
     for (const c of this._cards.values()) {
       const el = c.card.el;

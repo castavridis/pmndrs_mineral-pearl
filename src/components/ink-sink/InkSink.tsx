@@ -10,6 +10,7 @@ import {
   type Ref,
 } from 'react';
 import { useResolvedTheme } from '../theme';
+import { usePageLook } from '../theme/look';
 import {
   LiquidPond,
   MERCURY_DEFAULT,
@@ -94,7 +95,7 @@ export function InkSink({
   ref,
   children,
   liquid = 'auto',
-  viscosity = 0.4,
+  viscosity,
   mercuryOnSink = true,
   globSize = 1,
   globDensity = 0.5,
@@ -115,6 +116,16 @@ export function InkSink({
 }: InkSinkProps) {
   const theme = useResolvedTheme();
   const liq: Liquid = liquid === 'auto' ? (theme === 'dark' ? 'mineral' : 'pearl') : liquid;
+  // the page look is the default; a prop on this pond wins over it
+  const look = usePageLook();
+  const visc = viscosity ?? look.viscosity;
+  const merged = () => ({
+    mineral: { ...MINERAL_DEFAULT, ...look.mineral, ...mineral },
+    pearl: { ...PEARL_DEFAULT, ...look.pearl, ...pearl },
+    mercury: { ...MERCURY_DEFAULT, ...look.mercury, ...mercury },
+    spectrum: { ...SPECTRUM_DEFAULT, ...look.spectrum, ...spectrum },
+    pointer: { ...POINTER_DEFAULT, ...look.pointer, ...pointer },
+  });
   const hostRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const slabRef = useRef<HTMLDivElement>(null);
@@ -130,7 +141,7 @@ export function InkSink({
     if (!host || !canvas || !slab) return;
     const pond = new LiquidPond(host, canvas, slab, {
       liquid: liq,
-      viscosity,
+      viscosity: visc,
       mercuryOnSink,
       globSize,
       globDensity,
@@ -138,11 +149,7 @@ export function InkSink({
       globShading,
       radius,
       maxDpr: 2,
-      mineral: { ...MINERAL_DEFAULT, ...mineral },
-      pearl: { ...PEARL_DEFAULT, ...pearl },
-      spectrum: { ...SPECTRUM_DEFAULT, ...spectrum },
-      pointer: { ...POINTER_DEFAULT, ...pointer },
-      mercury: { ...MERCURY_DEFAULT, ...mercury },
+      ...merged(),
     });
     pond.face = faceRef.current;
     pondRef.current = pond;
@@ -157,28 +164,27 @@ export function InkSink({
   useEffect(() => {
     const pond = pondRef.current;
     if (!pond) return;
-    pond.opts.viscosity = viscosity;
+    pond.opts.viscosity = visc;
     pond.opts.mercuryOnSink = mercuryOnSink;
     pond.opts.globSize = globSize;
     pond.opts.globDensity = globDensity;
     pond.opts.globHeight = globHeight;
     pond.opts.globShading = globShading;
     pond.opts.radius = radius;
-    pond.opts.mineral = { ...MINERAL_DEFAULT, ...mineral };
-    pond.opts.pearl = { ...PEARL_DEFAULT, ...pearl };
-    pond.opts.spectrum = { ...SPECTRUM_DEFAULT, ...spectrum };
-    pond.opts.pointer = { ...POINTER_DEFAULT, ...pointer };
-    pond.opts.mercury = { ...MERCURY_DEFAULT, ...mercury };
+    Object.assign(pond.opts, merged());
     pond.setLiquid(liq);
+    // merged() reads the look and the props listed here
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     liq,
-    viscosity,
+    visc,
     mercuryOnSink,
     globSize,
     globDensity,
     globHeight,
     globShading,
     radius,
+    look,
     mineral,
     pearl,
     spectrum,

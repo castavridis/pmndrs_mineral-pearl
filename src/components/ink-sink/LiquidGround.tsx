@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type CSSProperties } from 'react';
 import { useResolvedTheme, useThemeStore } from '../theme';
+import { usePageLook } from '../theme/look';
 import { useWebGL } from '../gate';
 import { registerGround } from './grounds';
 import {
@@ -49,7 +50,7 @@ export function LiquidGround({
   fixed = false,
   pointer = fixed ? 'window' : 'self',
   maxDpr = fixed ? 1 : 2,
-  viscosity = 0.4,
+  viscosity,
   mineral,
   pearl,
   mercury,
@@ -58,6 +59,16 @@ export function LiquidGround({
   className,
   style,
 }: LiquidGroundProps) {
+  // the page look is the default; a prop on this ground wins over it
+  const look = usePageLook();
+  const visc = viscosity ?? look.viscosity;
+  const merged = () => ({
+    mineral: { ...MINERAL_DEFAULT, ...look.mineral, ...mineral },
+    pearl: { ...PEARL_DEFAULT, ...look.pearl, ...pearl },
+    mercury: { ...MERCURY_DEFAULT, ...look.mercury, ...mercury },
+    spectrum: { ...SPECTRUM_DEFAULT, ...look.spectrum, ...spectrum },
+    pointer: { ...POINTER_DEFAULT, ...look.pointer, ...reaction },
+  });
   const theme = useResolvedTheme();
   const liq: Liquid = liquid === 'auto' ? (theme === 'dark' ? 'mineral' : 'pearl') : liquid;
   const shaders = useThemeStore((s) => s.shaders);
@@ -73,7 +84,7 @@ export function LiquidGround({
     if (!host || !canvas || !live) return;
     const pond = new LiquidPond(host, canvas, null, {
       liquid: liq,
-      viscosity,
+      viscosity: visc,
       mercuryOnSink: false,
       globSize: 1,
       globDensity: 0.5,
@@ -83,11 +94,7 @@ export function LiquidGround({
       maxDpr,
       // the fixed ground is read back by the theme transition's splat
       preserveDrawingBuffer: fixed,
-      mineral: { ...MINERAL_DEFAULT, ...mineral },
-      pearl: { ...PEARL_DEFAULT, ...pearl },
-      mercury: { ...MERCURY_DEFAULT, ...mercury },
-      spectrum: { ...SPECTRUM_DEFAULT, ...spectrum },
-      pointer: { ...POINTER_DEFAULT, ...reaction },
+      ...merged(),
     });
     pondRef.current = pond;
     // only a scheme-following ground takes part in the theme's masked switch
@@ -113,15 +120,12 @@ export function LiquidGround({
   useEffect(() => {
     const pond = pondRef.current;
     if (!pond) return;
-    pond.opts.viscosity = viscosity;
+    pond.opts.viscosity = visc;
     pond.opts.maxDpr = maxDpr;
-    pond.opts.mineral = { ...MINERAL_DEFAULT, ...mineral };
-    pond.opts.pearl = { ...PEARL_DEFAULT, ...pearl };
-    pond.opts.mercury = { ...MERCURY_DEFAULT, ...mercury };
-    pond.opts.spectrum = { ...SPECTRUM_DEFAULT, ...spectrum };
-    pond.opts.pointer = { ...POINTER_DEFAULT, ...reaction };
+    Object.assign(pond.opts, merged());
     pond.setLiquid(liq);
-  }, [liq, viscosity, maxDpr, mineral, pearl, mercury, spectrum, reaction]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liq, visc, maxDpr, look, mineral, pearl, mercury, spectrum, reaction]);
 
   return (
     <div

@@ -10,12 +10,13 @@ import {
   POINTER_DEFAULT,
   SPECTRUM_DEFAULT,
   page,
+  useLook,
   type InkEngulfHandle,
   type InkSinkHandle,
   type Liquid,
   useResolvedTheme,
 } from '../components';
-import { latest, presetable, usePresets } from './presets';
+import { latest, lookFromPanel, presetable, usePresets } from './presets';
 import { call, register, useThemeTweak } from './tweaks';
 
 // restore remounts the engulfed block; leva's button needs a setter it can
@@ -255,6 +256,8 @@ export function EngulfPage() {
         if (v) latest.set?.(v);
       }),
       delete: button(() => usePresets.getState().remove(chosen())),
+      'apply to page': button(() => useLook.getState().setLook(lookFromPanel(latest.values))),
+      'reset page': button(() => useLook.getState().reset()),
       'copy JSON': button(
         () => void navigator.clipboard?.writeText(JSON.stringify(presetable(latest.values), null, 2))
       ),
