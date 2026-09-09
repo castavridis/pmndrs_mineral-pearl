@@ -29,6 +29,7 @@ precision highp float;
 out vec4 fragColor;
 
 uniform vec2  uRes;
+uniform float uUnit;     // (port) device px per uv unit: the study used the canvas height
 uniform float uTime;
 uniform vec2  uPtr;      // pointer in aspect-corrected uv
 uniform float uPtrOn;
@@ -198,7 +199,7 @@ vec3 inkField(vec2 p){
 }
 
 void main(){
-  vec2  uv = (gl_FragCoord.xy - 0.5 * uRes) / uRes.y;
+  vec2  uv = (gl_FragCoord.xy - 0.5 * uRes) / uUnit;
   float t  = uTime;
   // (port) the study's vignette assumed a near-square canvas; on a wide pill
   // uv.x runs to several units and the ends went black. Measure the vignette
@@ -284,7 +285,7 @@ void main(){
   float slabA = 1.0;
   vec2  rp    = uv;
   float bd    = sdRound(rp - uBtnC, uBtnHalf, uBtnR);
-  float px    = 1.6 / uRes.y;
+  float px    = 1.6 / uUnit;
   float slabRaw = smoothstep(px, -px, bd) * slabA * uSlabOn;
   // (port) the ground closes over the slab: wherever the surface stands higher
   // than the slab's face it is under, and the ink mass covers the rest. Fully
@@ -553,6 +554,12 @@ export interface PondOptions {
   maxDpr: number;
   /** Keep the drawing buffer after each frame so another context can read this canvas. */
   preserveDrawingBuffer?: boolean;
+  /**
+   * CSS px per uv unit: the size of every feature (nacre, glitter, ripples,
+   * the pointer's dimple). The study used the canvas height, which makes a
+   * page-sized ground three times coarser than a card; set it to match.
+   */
+  unit?: number;
   mineral: MineralLook;
   pearl: PearlLook;
   spectrum: SpectrumLook;
@@ -642,6 +649,8 @@ export class LiquidPond {
   private _reduce: boolean;
   private _cx = 0;
   private _cy = 0;
+  /** CSS px per uv unit (opts.unit, else the host height) */
+  private _unit = 1;
   private _halfX = 0.3;
   private _halfY = 0.086;
   private _radius = 0.082;
@@ -735,8 +744,8 @@ export class LiquidPond {
     const r = this.host.getBoundingClientRect();
     if (!r.height) return [0, 0];
     return [
-      (e.clientX - r.left - r.width / 2) / r.height,
-      -(e.clientY - r.top - r.height / 2) / r.height,
+      (e.clientX - r.left - r.width / 2) / this._unit,
+      -(e.clientY - r.top - r.height / 2) / this._unit,
     ];
   }
 
@@ -774,8 +783,8 @@ export class LiquidPond {
   point(e: PointerEvent) {
     const r = this.host.getBoundingClientRect();
     if (!r.height) return;
-    const x = (e.clientX - r.left - r.width / 2) / r.height;
-    const y = -(e.clientY - r.top - r.height / 2) / r.height;
+    const x = (e.clientX - r.left - r.width / 2) / this._unit;
+    const y = -(e.clientY - r.top - r.height / 2) / this._unit;
     this._state.ptr = [x, y];
     this._ptrOn = 1;
     const b = this.slab?.getBoundingClientRect();
@@ -1189,6 +1198,7 @@ export class LiquidPond {
     this._u = {};
     [
       'uRes',
+      'uUnit',
       'uTime',
       'uPtr',
       'uPtrOn',
@@ -1257,14 +1267,15 @@ export class LiquidPond {
     const w = this.host.clientWidth;
     const h = this.host.clientHeight;
     if (!w || !h) return false;
+    this._unit = this.opts.unit ?? h;
     if (this.slab) {
       // untransformed size: the slab may be scaled/tilted at the moment of measuring
       const b = this.slab.getBoundingClientRect();
       const sw = this.slab.offsetWidth || b.width;
       const sh = this.slab.offsetHeight || b.height;
-      this._halfX = Math.max(0.02, sw / 2 / h);
-      this._halfY = Math.max(0.02, sh / 2 / h);
-      this._radius = Math.min(this.opts.radius / h, this._halfX, this._halfY);
+      this._halfX = Math.max(0.02, sw / 2 / this._unit);
+      this._halfY = Math.max(0.02, sh / 2 / this._unit);
+      this._radius = Math.min(this.opts.radius / this._unit, this._halfX, this._halfY);
     } else {
       this._halfX = this._halfY = this._radius = 0;
     }
@@ -1368,6 +1379,7 @@ export class LiquidPond {
 
       const u = this._u;
       gl.uniform2f(u.uRes, this.canvas.width, this.canvas.height);
+      gl.uniform1f(u.uUnit, this._unit * (this.canvas.height / Math.max(1, this.host.clientHeight)));
       gl.uniform1f(u.uTime, t);
       gl.uniform2f(u.uPtr, s.ptr[0], s.ptr[1]);
       gl.uniform1f(u.uPtrOn, s.ptrOn);
@@ -1432,7 +1444,7 @@ export class LiquidPond {
       // the DOM content follows the slab down; (port) it recedes harder than
       // the study's label, so it reads as going into the ground, not hovering
       const sub = Math.max(0, -s.y) / 0.34;
-      const H = this.host.clientHeight;
+      const H = this._unit;
       if (this.slab)
         this.slab.style.transform =
           'translate(' +

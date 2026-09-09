@@ -70,6 +70,8 @@ export interface InkSinkProps {
   radius?: number;
   /** Liquid around the content, px. Default 96. */
   bleed?: number;
+  /** CSS px per unit of the liquid's features. Default: the pond's height. */
+  unit?: number;
   /** Start (or become) sunk. Uncontrolled when omitted; use the ref. */
   sunk?: boolean;
   /** Reported when a click sinks or raises the slab, so a controlled `sunk` can follow. */
@@ -108,6 +110,7 @@ export function InkSink({
   mercury,
   radius = 16,
   bleed = 96,
+  unit,
   sunk,
   onSunkChange,
   sinkOnClick = true,
@@ -149,6 +152,7 @@ export function InkSink({
       globShading,
       radius,
       maxDpr: 2,
+      unit,
       ...merged(),
     });
     pond.face = faceRef.current;
@@ -171,6 +175,7 @@ export function InkSink({
     pond.opts.globHeight = globHeight;
     pond.opts.globShading = globShading;
     pond.opts.radius = radius;
+    pond.opts.unit = unit;
     Object.assign(pond.opts, merged());
     pond.setLiquid(liq);
     // merged() reads the look and the props listed here
@@ -184,6 +189,7 @@ export function InkSink({
     globHeight,
     globShading,
     radius,
+    unit,
     look,
     mineral,
     pearl,

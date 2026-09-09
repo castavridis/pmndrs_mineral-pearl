@@ -30,6 +30,12 @@ export interface LiquidGroundProps {
   pointer?: 'window' | 'self';
   /** Cap on device pixel ratio; the shader is heavy, so the ground defaults to 1. */
   maxDpr?: number;
+  /**
+   * CSS px per unit of the liquid's features. Default: this ground's height.
+   * The fixed page ground defaults to 420 so its nacre, glitter and dimple
+   * match a card-sized pond instead of scaling with the viewport.
+   */
+  unit?: number;
   viscosity?: number;
   mineral?: Partial<MineralLook>;
   pearl?: Partial<PearlLook>;
@@ -50,6 +56,7 @@ export function LiquidGround({
   fixed = false,
   pointer = fixed ? 'window' : 'self',
   maxDpr = fixed ? 1 : 2,
+  unit = fixed ? 420 : undefined,
   viscosity,
   mineral,
   pearl,
@@ -92,6 +99,7 @@ export function LiquidGround({
       globShading: false,
       radius: 0,
       maxDpr,
+      unit,
       // the fixed ground is read back by the theme transition's splat
       preserveDrawingBuffer: fixed,
       ...merged(),
@@ -122,10 +130,11 @@ export function LiquidGround({
     if (!pond) return;
     pond.opts.viscosity = visc;
     pond.opts.maxDpr = maxDpr;
+    pond.opts.unit = unit;
     Object.assign(pond.opts, merged());
     pond.setLiquid(liq);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [liq, visc, maxDpr, look, mineral, pearl, mercury, spectrum, reaction]);
+  }, [liq, visc, maxDpr, unit, look, mineral, pearl, mercury, spectrum, reaction]);
 
   return (
     <div
