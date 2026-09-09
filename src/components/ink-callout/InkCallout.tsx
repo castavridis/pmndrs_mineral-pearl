@@ -74,6 +74,8 @@ export function InkCallout({
     () => ({
       splat: () => splatRef.current?.splat(),
       drain: () => splatRef.current?.drain(),
+      point: (at) => splatRef.current?.point(at),
+      leave: () => splatRef.current?.leave(),
     }),
     []
   );
@@ -114,6 +116,8 @@ export function InkCallout({
       ref={rootRef}
       className={`${styles.root} ${className ?? ''}`}
       style={{ maxWidth, ...vars, ...style }}
+      onPointerMove={(e) => splatRef.current?.point(e.nativeEvent)}
+      onPointerLeave={() => splatRef.current?.leave()}
     >
       {!isStatic && (
         <div className={styles.canvas} style={{ inset: -bleed }} aria-hidden="true">

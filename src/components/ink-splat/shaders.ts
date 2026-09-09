@@ -71,6 +71,9 @@ uniform vec3 uMark;
 uniform float uSheen;
 // nacre: how much the surface shows tension and iridescence (0: matte ink)
 uniform float uNacre;
+// the pointer over the ink, shader units, and whether it is there
+uniform vec2 uPtr;
+uniform float uPtrOn;
 // optional: the ink takes its colour from a screen-sized canvas beneath
 // (a WebGL canvas, whose upload puts its top row at t = 0)
 uniform sampler2D uFill;
@@ -201,6 +204,11 @@ void main() {
   // own colour stays the body of it
   if (uNacre > 0.001) {
     float h = smoothstep(0.35, 1.1, raw);
+    // the pointer dents the surface: a narrow dimple, a wider softer bowl
+    float pd = length(p - uPtr);
+    float dent = uPtrOn * (0.5 * exp(-pd * pd * 900.0) + 0.5 * exp(-pd * pd * 120.0));
+    h -= dent * 0.6;
+    float halo = uPtrOn * exp(-pd * pd * 40.0);
     float bump = fbm(p * 5.0 + vec2(uTime * 0.05, -uTime * 0.04) + uSeed * 2.0);
     float bump2 = fbm(p * 5.0 + vec2(0.37, 0.11) + vec2(uTime * 0.05, -uTime * 0.04) + uSeed * 2.0);
     vec2 bn = vec2(bump2 - bump, fbm(p * 5.0 + vec2(0.0, 0.37) + uSeed * 2.0) - bump) * 1.6;
@@ -213,16 +221,22 @@ void main() {
     float rimHi = smoothstep(0.5, 0.56, raw) * (1.0 - smoothstep(0.56, 0.66, raw));
     float spec = pow(max(dot(reflect(-L, N), V), 0.0), 48.0);
     // the spectrum turns with the view angle and the bumps, like nacre
-    float phase = fres * 5.0 + bump * 7.0 + uTime * 0.15;
+    float phase = fres * 5.0 + bump * 7.0 + halo * 4.0 + uTime * 0.15;
     vec3 irid = 0.5 + 0.5 * cos(phase + vec3(0.0, 2.1, 4.2));
     float lum = dot(ink, vec3(0.299, 0.587, 0.114));
     // light ink takes a darker lip, dark ink a brighter one
     float lipK = lum > 0.5 ? -0.10 : 0.10;
-    vec3 tinted = mix(ink, ink * (0.6 + 0.8 * irid), clamp(fres * 0.9 + 0.12, 0.0, 1.0));
+    // a dark, mineral ink cannot be tinted by multiplying: its nacre is an
+    // added film of colour where the surface curves away, like the pond's
+    float dark = 1.0 - smoothstep(0.05, 0.4, lum);
+    vec3 film = irid * 0.34 * dark;
+    vec3 tinted = mix(ink, ink * (0.6 + 0.8 * irid) + film, clamp(fres * 0.9 + 0.12, 0.0, 1.0));
     ink = mix(ink, tinted, 0.55 * uNacre);
     ink += ink * lipK * lip * uNacre * 1.4;
     ink += vec3(0.16) * rimHi * uNacre;
     ink += (vec3(0.6) + irid * 0.4) * spec * 0.22 * uNacre;
+    // the pointer's halo: the film gathers round it
+    ink += irid * halo * (0.10 + 0.14 * dark) * alpha * uNacre;
   }
 
   // logo rising through the ink in 3D: starts deep and tilted away,

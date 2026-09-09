@@ -44,6 +44,13 @@ export interface InkSplatHandle {
    * spatter. Only meaningful once the ink has settled.
    */
   drain: () => void;
+  /**
+   * The pointer over the ink, in the canvas's client coordinates: with
+   * `nacre` the surface dents under it and its iridescence turns around it.
+   */
+  point: (at: { clientX: number; clientY: number }) => void;
+  /** The pointer has left. */
+  leave: () => void;
 }
 
 /**
@@ -172,6 +179,8 @@ export function InkSplat({
         else wantedRef.current = true;
       },
       drain: () => controlsRef.current?.drain(),
+      point: (at) => controlsRef.current?.point(at),
+      leave: () => controlsRef.current?.leave(),
     }),
     []
   );
@@ -325,6 +334,8 @@ function createResources(): Resources {
       uMark: { value: new THREE.Vector3(1, 1, 1) },
       uSheen: { value: 0.16 },
       uNacre: { value: 0 },
+      uPtr: { value: new THREE.Vector2(-9, -9) },
+      uPtrOn: { value: 0 },
       uClipHalf: { value: new THREE.Vector2(0, 0) },
       uClipRadius: { value: 0 },
       uClipOn: { value: 0 },
@@ -576,8 +587,29 @@ function InkSplatLayer({
     invalidate();
   }, [ink, mark, logo, nacre, invalidate]);
 
+  // the pointer in shader units (the longer edge times `scale` is one unit)
+  const point = useCallback(
+    (at: { clientX: number; clientY: number }) => {
+      const res = resRef.current;
+      if (!res) return;
+      const r = gl.domElement.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      const unit = Math.max(r.width, r.height) * scale;
+      res.inkMaterial.uniforms.uPtr.value.set((at.clientX - r.left) / unit, (at.clientY - r.top) / unit);
+      res.inkMaterial.uniforms.uPtrOn.value = 1;
+      invalidate();
+    },
+    [gl, scale, invalidate]
+  );
+  const leave = useCallback(() => {
+    const res = resRef.current;
+    if (!res) return;
+    res.inkMaterial.uniforms.uPtrOn.value = 0;
+    invalidate();
+  }, [invalidate]);
+
   useEffect(() => {
-    controlsRef.current = { splat, drain };
+    controlsRef.current = { splat, drain, point, leave };
     if (wantedRef.current) {
       wantedRef.current = false;
       splat();
@@ -585,7 +617,7 @@ function InkSplatLayer({
     return () => {
       controlsRef.current = null;
     };
-  }, [controlsRef, wantedRef, splat, drain]);
+  }, [controlsRef, wantedRef, splat, drain, point, leave]);
 
   useEffect(() => {
     if (!interactive) return;
