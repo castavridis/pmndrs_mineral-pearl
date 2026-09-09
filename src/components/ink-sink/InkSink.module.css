@@ -1,0 +1,51 @@
+/* the pond: an opaque liquid panel the content floats on, its rim rounded
+   like the study's host */
+.root {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--pond-radius, 16px);
+  background: var(--pond-bg, #0c0a06);
+  line-height: 1.5;
+  touch-action: pan-y;
+}
+
+/* the liquid layer sits over the content, with a hole where the slab's face
+   is still dry; it never eats clicks */
+.canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+
+/* the content is the slab: real DOM in the study's slab colours, transformed
+   by the pond to follow it down into the ground */
+.slab {
+  position: relative;
+  z-index: 1;
+  margin: 0 auto;
+  border-radius: var(--pond-radius, 16px);
+  background: var(--slab-bg, #faf5ea);
+  color: var(--slab-fg, #12100c);
+  transform-origin: 50% 50%;
+  will-change: transform, filter;
+}
+
+/* the face tilts under the pointer like the study's label; the body above
+   stays flat so it always fills the hole the liquid leaves for it */
+.face {
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+
+.slab[data-clickable] {
+  cursor: pointer;
+}
+
+.slab[data-sunk] {
+  cursor: pointer;
+}

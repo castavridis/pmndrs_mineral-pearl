@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/pmndrs-design-system-3824a2ba-d4cc-401b-acdc-0a97c7ed78f2/tokens/tokens.css">
+<link rel="stylesheet" href="_ds/pmndrs-design-system-3824a2ba-d4cc-401b-acdc-0a97c7ed78f2/fonts/fonts.css">
+<link rel="stylesheet" href="_ds/pmndrs-design-system-3824a2ba-d4cc-401b-acdc-0a97c7ed78f2/_ds_bundle.css">
+<link rel="stylesheet" href="_ds/pmndrs-design-system-3824a2ba-d4cc-401b-acdc-0a97c7ed78f2/styles.css">
+<script src="_ds/pmndrs-design-system-3824a2ba-d4cc-401b-acdc-0a97c7ed78f2/_ds_bundle.js"></script>
+<style>
+  body { margin: 0; background: var(--page); }
+  a { color: var(--accent-teal); text-decoration: none; }
+  a:hover { color: var(--accent-blue); text-decoration: underline; }
+</style>
+</helmet>
+<div data-theme="dark" style="min-height: 100vh; background: var(--page); color: var(--text-body); font-family: var(--fonts-sans); padding: 56px 40px 72px; box-sizing: border-box;">
+  <div style="max-width: 1220px; margin: 0 auto; display: grid; gap: 40px;">
+
+    <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--line-soft);">
+      <div style="display: flex; align-items: baseline; gap: 14px;">
+        <span style="font-family: var(--fonts-serif); font-size: 20px; color: var(--text);">pmndrs</span>
+        <span style="font-family: var(--fonts-mono); font-size: 13px; color: var(--text-faint);">/ lab / viscous / ink</span>
+      </div>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <x-import component-from-global-scope="PmndrsDS.Badge" ramp="purple" hint-size="auto,24px">WebGL2</x-import>
+        <x-import component-from-global-scope="PmndrsDS.Badge" ramp="green" hint-size="auto,24px">a11y</x-import>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.85fr); gap: 44px; align-items: start;">
+
+      <div style="display: grid; gap: 18px;">
+        <div style="position: relative; height: 500px; border: 1px solid var(--line); border-radius: var(--radius-base); overflow: hidden; box-shadow: 0 30px 60px -30px rgba(0,0,0,0.8);">
+          <x-import component-from-global-scope="ink-liquid-button" from="./ink-liquid-button.js" label="{{ label }}" disabled="{{ isDisabled }}" liquid="{{ liquid }}" sinkmercury="{{ mercuryOnSink }}" globsize="{{ globSize }}" globdensity="{{ globDensity }}" globheight="{{ globHeight }}" viscosity="{{ viscosity }}" hint-size="100%,100%"></x-import>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px;">
+          <span onClick="{{ toggle }}" style="display: inline-flex;">
+            <x-import component-from-global-scope="PmndrsDS.Button" variant="{{ toggleVariant }}" hint-size="auto,40px">{{ toggleLabel }}</x-import>
+          </span>
+          <span onClick="{{ focusSlab }}" style="display: inline-flex;">
+            <x-import component-from-global-scope="PmndrsDS.Button" variant="ghost" hint-size="auto,40px">Focus the button</x-import>
+          </span>
+          <span onClick="{{ toggleLiquid }}" style="display: inline-flex;">
+            <x-import component-from-global-scope="PmndrsDS.Button" variant="ghost" hint-size="auto,40px">{{ liquidLabel }}</x-import>
+          </span>
+          <span style="flex: 1;"></span>
+          <span style="display: flex; flex-direction: column; gap: 2px; align-items: flex-end; font-family: var(--fonts-mono); font-size: 12px; letter-spacing: 0.04em;">
+            <span style="color: var(--accent-teal);">{{ lcLine }}</span>
+            <span style="color: var(--text-faint);">{{ pressLine }}</span>
+          </span>
+        </div>
+      </div>
+
+      <div style="display: grid; gap: 22px;">
+        <x-import component-from-global-scope="PmndrsDS.Eyebrow" hint-size="auto,20px">Component study · ink-splat variant</x-import>
+        <h1 style="margin: -8px 0 0; font-family: var(--fonts-serif); font-weight: 400; font-size: 46px; line-height: 1.04; letter-spacing: -0.01em; color: var(--text); text-wrap: pretty;">A button swallowed by ink</h1>
+        <x-import component-from-global-scope="PmndrsDS.Intro" hint-size="100%,60px">A rounded slab rests on a thin, heavy liquid. Hover and it tips under the pointer's weight like a plank with a ball on it. Click and it goes under with a splash: droplets burst from the rim, fly, strand and pinch off, then are drawn back onto the slab and merge until the mass has closed over it. Let go and they slide off and thin away as it bobs back up. Disable it and it stays under.</x-import>
+
+        <x-import component-from-global-scope="PmndrsDS.Gha" keyword="TIP" hint-size="100%,110px">Everything you see is one fragment shader over a fullscreen triangle generated from <code>gl_VertexID</code> — liquid, slab, meniscus and glitter alike. The control on top is a real <code>&lt;button&gt;</code>: Tab to it, press Enter or Space, and it sinks. Sunk, it keeps <code>aria-disabled</code> rather than <code>disabled</code>, so it stays findable and can say why it is unavailable.</x-import>
+
+        <x-import component-from-global-scope="PmndrsDS.Prose" hint-size="100%,320px">
+          <h3>Low viscosity, high tension</h3>
+          <ul>
+            <li><strong>Hover tips, click dunks</strong> — the pointer is a ball rolling on a plank: the edge under it dips and the far edge lifts, rocking before it settles, but the slab stays afloat. A click sends it fully under for a beat, then it bobs back.</li>
+            <li><strong>Underdamped spring</strong> — at viscosity 0.4 the slab overshoots and jiggles before it settles, the way a mercury bead quivers.</li>
+            <li><strong>Particle-fluid swallow</strong> — ported from the ink-splat experiment. On impact ~100 droplets are launched from the slab's rim (drag, weak surface tension, all in JS) and rendered as a metaball density field, so strands, necks, bulbs and pinch-offs come out of the motion rather than being drawn. As the slab sinks the droplets are pulled onto it and swell until they merge into one mass; released, they slide off and thin. Droplet size, density and heap height are tweakable. The slab is never re-shaded — the mass occludes it and it fades beneath.</li>
+            <li><strong>Mercury body</strong> — a third liquid, alongside mineral and pearl: a chrome reflection of a soft studio — bright above, dark below, a hard horizon band, tight speculars.</li>
+            <li><strong>Transition on sink</strong> — with <code>sinkmercury</code> set, mineral or pearl turn to mercury as the slab goes under and back as it rises. Afloat, they keep their own look.</li>
+            <li><strong>Fast ripples</strong> — thinner liquid means quicker, higher-frequency, longer-lived rings; thicker liquid slows and damps them.</li>
+          </ul>
+          <p>The pointer dents a narrow, deep dimple rather than a wide bowl, and sheds a wake behind it.</p>
+        </x-import>
+
+        <x-import component-from-global-scope="PmndrsDS.Gha" keyword="NOTE" hint-size="100%,110px">The label is DOM text over the canvas, so it stays crisp and selectable. Every twelfth frame the component reads the rendered pixels behind it, picks its ink by APCA, and — if the liquid has darkened past legibility — fades in exactly enough scrim to clear <strong>Lc 78</strong>. Submerged text stays readable by measurement, not by hope.</x-import>
+
+        <x-import component-from-global-scope="PmndrsDS.Code" language="jsx" hint-size="100%,140px">&lt;ink-liquid-button label="Submit" disabled={!canSubmit} liquid="mineral" /&gt;
+// depth: pointer proximity -> target, underdamped spring at low viscosity
+// surf(): ripples + collar + velocity drag; metaball field adds heap + normals
+// splat: 128 droplets, drag + surface tension in JS, (1-q²)² kernel on the GPU
+// readPixels -> APCA -> ink + scrim, target Lc 78</x-import>
+
+        <p style="margin: 0; font-family: var(--fonts-mono); font-size: 12px; color: var(--text-faint);">Prefers-reduced-motion: surface drift and facet twinkle freeze, ripples drop to a third. The sink and the rise remain — they carry state.</p>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;label&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Submit&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;liquid&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;mineral&quot;,&quot;pearl&quot;,&quot;mercury&quot;],&quot;default&quot;:&quot;mineral&quot;,&quot;tsType&quot;:&quot;\&quot;mineral\&quot; | \&quot;pearl\&quot; | \&quot;mercury\&quot;&quot;},&quot;mercuryOnSink&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;viscosity&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;min&quot;:0.15,&quot;max&quot;:2,&quot;step&quot;:0.05,&quot;default&quot;:0.4,&quot;tsType&quot;:&quot;number&quot;},&quot;globSize&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;min&quot;:0.4,&quot;max&quot;:2.5,&quot;step&quot;:0.1,&quot;default&quot;:1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Globs&quot;},&quot;globDensity&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;min&quot;:0,&quot;max&quot;:1,&quot;step&quot;:0.05,&quot;default&quot;:0.25,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Globs&quot;},&quot;globHeight&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;min&quot;:0,&quot;max&quot;:2.5,&quot;step&quot;:0.1,&quot;default&quot;:0,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Globs&quot;},&quot;startSunk&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  state = { disabled: null, presses: 0, lc: 0, liquid: null };
+
+  componentDidMount() {
+    this._onPress = () => this.setState(s => ({ presses: s.presses + 1 }));
+    this._onLc = (e) => {
+      if (e.detail.lc !== this.state.lc) this.setState({ lc: e.detail.lc });
+    };
+    document.addEventListener("liquidpress", this._onPress);
+    document.addEventListener("liquidcontrast", this._onLc);
+  }
+  componentDidUpdate(prev) {
+    // a Tweaks change to the liquid wins over the in-page cycle button
+    if (prev.liquid !== this.props.liquid && this.state.liquid !== null) this.setState({ liquid: null });
+    if (prev.startSunk !== this.props.startSunk && this.state.disabled !== null) this.setState({ disabled: null });
+  }
+  componentWillUnmount() {
+    document.removeEventListener("liquidpress", this._onPress);
+    document.removeEventListener("liquidcontrast", this._onLc);
+  }
+
+  renderVals() {
+    const d = this.state.disabled ?? (this.props.startSunk === true);
+    const liquid = this.state.liquid ?? (this.props.liquid ?? "mineral");
+    return {
+      label: this.props.label ?? "Submit",
+      liquid,
+      viscosity: this.props.viscosity ?? 0.4,
+      mercuryOnSink: this.props.mercuryOnSink ?? true,
+      globSize: this.props.globSize ?? 1,
+      globDensity: this.props.globDensity ?? 0.5,
+      globHeight: this.props.globHeight ?? 1,
+      isDisabled: d,
+      toggle: () => this.setState({ disabled: !d }),
+      toggleLabel: d ? "Let it surface" : "Sink the button",
+      toggleVariant: d ? "default" : "secondary",
+      toggleLiquid: () => this.setState({ liquid: liquid === "mineral" ? "pearl" : liquid === "pearl" ? "mercury" : "mineral" }),
+      liquidLabel: liquid === "mineral" ? "Pearl liquid" : liquid === "pearl" ? "Mercury liquid" : "Mineral liquid",
+      focusSlab: () => {
+        const b = document.querySelector("ink-liquid-button button");
+        if (b) b.focus();
+      },
+      lcLine: this.state.lc
+        ? "APCA Lc " + this.state.lc + " · measured " + (d ? "submerged" : "afloat")
+        : "measuring APCA…",
+      pressLine: this.state.presses === 0
+        ? "no presses yet"
+        : this.state.presses + (this.state.presses === 1 ? " press" : " presses")
+    };
+  }
+}
+</script>
+</body>
+</html>
