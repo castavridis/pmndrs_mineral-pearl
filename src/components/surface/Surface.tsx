@@ -37,6 +37,8 @@ export interface SurfaceProps {
   expressiveness?: SurfaceTier;
   /** CSS px per unit of the liquid's features; default the surface's height. */
   unit?: number;
+  /** Corner radius, px; default by shape (pill round, card 14, key 8). */
+  radius?: number;
   className?: string;
   style?: CSSProperties;
   children?: ReactNode;
@@ -68,6 +70,7 @@ export function Surface({
   material = 'auto',
   expressiveness = 'full',
   unit,
+  radius: radiusProp,
   className,
   style,
   children,
@@ -79,13 +82,14 @@ export function Surface({
   const tier = useSurfaceTier(expressiveness);
   const unavailable = exit === 'disable' || exit === 'pending';
   const engulfed = exit !== 'none';
-  const radius = shape === 'pill' ? 999 : shape === 'card' ? 14 : 8;
+  const radius = radiusProp ?? (shape === 'pill' ? 999 : shape === 'card' ? 14 : 8);
+  const vars = radiusProp !== undefined ? { '--surface-radius': `${radiusProp}px` } : undefined;
   // any intrinsic or component tag; attributes are passed through untyped
   const Tag = as as unknown as FC<Record<string, unknown>>;
   return (
     <Tag
       className={`${styles.surface} ${className ?? ''}`}
-      style={style}
+      style={vars ? { ...vars, ...style } : style}
       data-shape={shape}
       data-tier={tier}
       aria-disabled={unavailable ? 'true' : undefined}

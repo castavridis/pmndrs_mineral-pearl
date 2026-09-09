@@ -12,15 +12,15 @@
 }
 
 .surface[data-shape='pill'] {
-  border-radius: 999px;
+  border-radius: var(--surface-radius, 999px);
 }
 
 .surface[data-shape='card'] {
-  border-radius: 14px;
+  border-radius: var(--surface-radius, 14px);
 }
 
 .surface[data-shape='key'] {
-  border-radius: 8px;
+  border-radius: var(--surface-radius, 8px);
 }
 
 /* flat: tokens only, no canvas */
