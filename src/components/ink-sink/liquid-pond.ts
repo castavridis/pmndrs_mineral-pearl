@@ -74,6 +74,8 @@ uniform float uLamina;     // (port) striation density: the laminar lines' frequ
 uniform float uGlintPtr;   // (port) how much the facets light from over the pointer (0: the study's fixed light)
 uniform float uDimple;     // (port) depth of the dent the pointer makes in the surface (study 1)
 uniform float uSlabOn;     // (port) 0: no slab at all, the liquid alone (the ground, the nav pill)
+uniform vec2  uShiftPx;    // (port) well: this canvas's centre from the page ground's, device px
+uniform vec2  uVigRes;     // (port) the vignette's frame: the ground's canvas when in a well
 // (port) a masked switch of body: where the mask's alpha is 1 the liquid is
 // uModeTo instead of uMode. The mask is the ink splat, in screen space;
 // uMaskRect is this canvas's place in it (x, y from the top, w, h, all 0..1)
@@ -199,12 +201,15 @@ vec3 inkField(vec2 p){
 }
 
 void main(){
-  vec2  uv = (gl_FragCoord.xy - 0.5 * uRes) / uUnit;
+  // (port) in a well the frame is the page ground's: the same point of the
+  // page samples the same liquid in both canvases, so the two are one surface
+  vec2  fc = gl_FragCoord.xy - 0.5 * uRes + uShiftPx;
+  vec2  uv = fc / uUnit;
   float t  = uTime;
   // (port) the study's vignette assumed a near-square canvas; on a wide pill
   // uv.x runs to several units and the ends went black. Measure the vignette
   // against the longer edge instead.
-  vec2  vuv = (gl_FragCoord.xy - 0.5 * uRes) / max(uRes.x, uRes.y);
+  vec2  vuv = fc / max(uVigRes.x, uVigRes.y);
   float vig = dot(vuv, vuv) * 4.0;
 
   float hgt = surf(uv);
@@ -432,6 +437,8 @@ void main(){
 }
 `;
 
+// one clock for every pond, so a pond in a well runs in step with the ground
+const EPOCH = performance.now();
 const MAXP = 128;
 const KQ = 0.541;
 const TAU = Math.PI * 2;
@@ -570,6 +577,12 @@ export interface PondOptions {
    * page-sized ground three times coarser than a card; set it to match.
    */
   unit?: number;
+  /**
+   * (port) The pond is a patch of the page ground: its liquid is drawn in the
+   * viewport's frame (features, vignette, pointer, clock) so it continues the
+   * fixed ground's surface seamlessly; only the slab is its own.
+   */
+  well?: boolean;
   mineral: MineralLook;
   pearl: PearlLook;
   spectrum: SpectrumLook;
@@ -659,6 +672,14 @@ export class LiquidPond {
   private _reduce: boolean;
   private _cx = 0;
   private _cy = 0;
+  /** (port) well: the host's centre from the viewport's, uv (the slab's frame offset) */
+  private _ox = 0;
+  private _oy = 0;
+  /** (port) well: the viewport in CSS px (the vignette's frame) */
+  private _vw = 0;
+  private _vh = 0;
+  /** (port) well: ripples belong to the ground; this pond spawns no wake of its own */
+  private _noWake = false;
   /** CSS px per uv unit (opts.unit, else the host height) */
   private _unit = 1;
   private _halfX = 0.3;
@@ -751,6 +772,7 @@ export class LiquidPond {
 
   /** Pointer position in the study's uv (height = 1, y up, origin at the host centre). */
   uv(e: { clientX: number; clientY: number }): [number, number] {
+    if (this.opts.well) return this._wellUv(e);
     const r = this.host.getBoundingClientRect();
     if (!r.height) return [0, 0];
     return [
@@ -766,8 +788,8 @@ export class LiquidPond {
    */
   impact(pt: [number, number]) {
     const s = this._state;
-    const dx = pt[0] - this._cx;
-    const dy = pt[1] - this._cy;
+    const dx = pt[0] - this._bx;
+    const dy = pt[1] - this._by;
     // tip toward the hit: the tilt is the face's height gradient, so the
     // side under the pointer goes lowest. An impulse, not a target: the tilt
     // spring rocks it back while the whole slab goes down.
@@ -793,8 +815,12 @@ export class LiquidPond {
   point(e: PointerEvent) {
     const r = this.host.getBoundingClientRect();
     if (!r.height) return;
-    const x = (e.clientX - r.left - r.width / 2) / this._unit;
-    const y = -(e.clientY - r.top - r.height / 2) / this._unit;
+    const [x, y] = this.opts.well
+      ? this._wellUv(e)
+      : [
+          (e.clientX - r.left - r.width / 2) / this._unit,
+          -(e.clientY - r.top - r.height / 2) / this._unit,
+        ];
     this._state.ptr = [x, y];
     this._ptrOn = 1;
     const b = this.slab?.getBoundingClientRect();
@@ -807,17 +833,42 @@ export class LiquidPond {
     this._pt = inside ? [x, y] : null;
     // proximity to the slab (0 far, 1 over it) — the pointer pushes it under
     const s = this._state;
-    const qx = Math.abs(x - this._cx) - this._halfX + this._radius;
-    const qy = Math.abs(y - this._cy) - this._halfY + this._radius;
+    const qx = Math.abs(x - this._bx) - this._halfX + this._radius;
+    const qy = Math.abs(y - this._by) - this._halfY + this._radius;
     const sd =
       Math.min(Math.max(qx, qy), 0) + Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) - this._radius;
     s.prox = Math.max(0, Math.min(1, 1 - sd / 0.14));
     // dragging across the liquid sheds a slow wake
     const last = this._wake;
-    if (!inside && (!last || Math.hypot(x - last[0], y - last[1]) > 0.16)) {
+    if (!this._noWake && !inside && (!last || Math.hypot(x - last[0], y - last[1]) > 0.16)) {
       this._wake = [x, y];
       this._spawn(x, y, 0.16 * this._pr('wake'));
     }
+  }
+
+  /** (port) well: a pointer position in the viewport's frame, uv */
+  private _wellUv(e: { clientX: number; clientY: number }): [number, number] {
+    const W = window.innerWidth || 1;
+    const H = window.innerHeight || 1;
+    return [(e.clientX - W / 2) / this._unit, -(e.clientY - H / 2) / this._unit];
+  }
+
+  /** the slab's centre in the shader's frame: its drift plus, in a well, the host's offset */
+  private get _bx() {
+    return this._ox + this._cx;
+  }
+  private get _by() {
+    return this._oy + this._cy;
+  }
+
+  /**
+   * (port) Join a ground's well: ripples are the ground's (one array, so an
+   * impact here rings out across the page and the page's wake crosses here),
+   * and this pond spawns no wake of its own.
+   */
+  joinWell(ground: LiquidPond) {
+    this._state.ripples = ground._state.ripples;
+    this._noWake = true;
   }
 
   leave() {
@@ -899,7 +950,10 @@ export class LiquidPond {
   /** (port) a pointer response, scaled by the master `reaction`. */
   private _pr(k: 'dimple' | 'wake' | 'tilt' | 'drift') {
     const p = this.opts.pointer;
-    return p.reaction * p[k];
+    const r = p.reaction * p[k];
+    // (port) in a well the page's reaction scales the liquid (the dimple must
+    // match the ground's), not how far a thing afloat on it tips or drifts
+    return this.opts.well && (k === 'tilt' || k === 'drift') ? Math.min(1, r) : r;
   }
 
   // --- internals (the study's methods, attribute reads replaced by opts) -----
@@ -937,8 +991,8 @@ export class LiquidPond {
     if (!P) return;
     if (this._reduce) strength *= 0.5;
     const R = Math.random;
-    const cx = this._cx,
-      cy = this._cy,
+    const cx = this._bx,
+      cy = this._by,
       hx = this._halfX,
       hy = this._halfY;
     const size = this.opts.globSize;
@@ -1091,8 +1145,8 @@ export class LiquidPond {
         vy[j] -= (ay / mj) * dt;
       }
     }
-    const cx = this._cx,
-      cy = this._cy,
+    const cx = this._bx,
+      cy = this._by,
       hx = this._halfX * 0.9,
       hy = this._halfY * 0.85;
     // as the slab sinks the core droplets are assigned spots that tile its
@@ -1256,6 +1310,8 @@ export class LiquidPond {
       'uLamina',
       'uDimple',
       'uSlabOn',
+      'uShiftPx',
+      'uVigRes',
       'uMask',
       'uMaskOn',
       'uModeTo',
@@ -1289,6 +1345,15 @@ export class LiquidPond {
     } else {
       this._halfX = this._halfY = this._radius = 0;
     }
+    if (this.opts.well) {
+      const r = this.host.getBoundingClientRect();
+      this._vw = window.innerWidth || 1;
+      this._vh = window.innerHeight || 1;
+      this._ox = (r.left + r.width / 2 - this._vw / 2) / this._unit;
+      this._oy = -(r.top + r.height / 2 - this._vh / 2) / this._unit;
+    } else {
+      this._ox = this._oy = 0;
+    }
     const dpr = Math.min(window.devicePixelRatio || 1, this.opts.maxDpr);
     const pw = Math.round(w * dpr);
     const ph = Math.round(h * dpr);
@@ -1318,8 +1383,8 @@ export class LiquidPond {
   private _loop() {
     const gl = this._gl!;
     const s = this._state;
-    const t0 = performance.now();
-    let last = t0;
+    const t0 = EPOCH;
+    let last = performance.now();
 
     const step = () => {
       if (this._destroyed) return;
@@ -1337,7 +1402,7 @@ export class LiquidPond {
       const hoverY = 0.014 - s.prox * 0.022 * this._pr('tilt');
       const target = this._sunk ? -0.34 : pressed ? -0.3 : hoverY;
       const k = this._sunk ? 7.5 : pressed ? 18 : 22;
-      if (s.prox > 0.6 && !this._wasUnder) this._spawn(this._cx, this._cy, 0.25 * this._pr('wake'));
+      if (s.prox > 0.6 && !this._wasUnder) this._spawn(this._bx, this._by, 0.25 * this._pr('wake'));
       this._wasUnder = s.prox > 0.6;
       let left = dt;
       while (left > 0) {
@@ -1355,8 +1420,8 @@ export class LiquidPond {
         // (port) 0.55 in the study; with the liquid closing over whatever dips
         // below the surface, that much tilt drowns a whole side on a hover
         const tiltK = 0.22 * this._pr('tilt');
-        const tx = -(s.ptr[0] - this._cx) * under * tiltK;
-        const ty = -(s.ptr[1] - this._cy) * under * tiltK;
+        const tx = -(s.ptr[0] - this._bx) * under * tiltK;
+        const ty = -(s.ptr[1] - this._by) * under * tiltK;
         const tk = 60;
         const tc = 5.5 * visc;
         s.tiltV[0] += (tx - s.tilt[0]) * tk * h - s.tiltV[0] * tc * h;
@@ -1374,8 +1439,8 @@ export class LiquidPond {
 
       // the slab drifts a little toward the pointer — the liquid drags it
       const pull = this._sunk ? 0 : 0.045 * this._pr('drift');
-      const tx = this._pt ? s.ptr[0] * pull : 0;
-      const ty = this._pt ? s.ptr[1] * pull : 0;
+      const tx = this._pt ? (s.ptr[0] - this._ox) * pull : 0;
+      const ty = this._pt ? (s.ptr[1] - this._oy) * pull : 0;
       this._cx += (tx - this._cx) * 0.04;
       this._cy += (ty - this._cy) * 0.04;
 
@@ -1389,11 +1454,16 @@ export class LiquidPond {
 
       const u = this._u;
       gl.uniform2f(u.uRes, this.canvas.width, this.canvas.height);
-      gl.uniform1f(u.uUnit, this._unit * (this.canvas.height / Math.max(1, this.host.clientHeight)));
+      const dpx = this.canvas.height / Math.max(1, this.host.clientHeight);
+      gl.uniform1f(u.uUnit, this._unit * dpx);
+      // (port) well: shift into the ground's frame; the vignette is the viewport's
+      gl.uniform2f(u.uShiftPx, this._ox * this._unit * dpx, this._oy * this._unit * dpx);
+      if (this.opts.well) gl.uniform2f(u.uVigRes, this._vw * dpx, this._vh * dpx);
+      else gl.uniform2f(u.uVigRes, this.canvas.width, this.canvas.height);
       gl.uniform1f(u.uTime, t);
       gl.uniform2f(u.uPtr, s.ptr[0], s.ptr[1]);
       gl.uniform1f(u.uPtrOn, s.ptrOn);
-      gl.uniform2f(u.uBtnC, this._cx, this._cy);
+      gl.uniform2f(u.uBtnC, this._bx, this._by);
       // (port) the hole follows the receding card, so the liquid closes right
       // up to it instead of leaving a band of page around it
       const sub0 = Math.max(0, -s.y) / 0.34;

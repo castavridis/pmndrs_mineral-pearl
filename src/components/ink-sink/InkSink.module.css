@@ -10,6 +10,14 @@
   touch-action: pan-y;
 }
 
+/* in a well there is no panel: the page ground is the liquid, this canvas
+   only continues it around the slab and closes over the slab as it sinks */
+.root[data-well] {
+  background: transparent;
+  border-radius: 0;
+  overflow: visible;
+}
+
 /* the liquid layer sits over the content, with a hole where the slab's face
    is still dry; it never eats clicks */
 .canvas {

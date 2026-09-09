@@ -11,6 +11,7 @@ import {
 } from 'react';
 import { useResolvedTheme } from '../theme';
 import { usePageLook } from '../theme/look';
+import { getFixedGround, registerGround, useGroundCount } from './grounds';
 import {
   LiquidPond,
   MERCURY_DEFAULT,
@@ -36,6 +37,8 @@ export interface InkSinkHandle {
   rise: () => void;
   /** A press: a beat under with a splash, then it bobs back. */
   press: () => void;
+  /** An impact where the pointer is: the slab takes the hit there and goes under, and stays. */
+  impact: (at: { clientX: number; clientY: number }) => void;
 }
 
 export interface InkSinkProps {
@@ -78,8 +81,17 @@ export interface InkSinkProps {
   onSunkChange?: (sunk: boolean) => void;
   /** A click on the content is an impact that sinks it there; a click when sunk raises it. Default true. */
   sinkOnClick?: boolean;
+  /**
+   * The whole page is the well: no pond panel of its own, the liquid around
+   * the slab continues the fixed page ground's surface (same frame, clock,
+   * pointer, ripples, unit and resolution) and the slab sinks into the page.
+   * Needs a fixed `LiquidGround` on the page; without one it is a plain slab.
+   */
+  well?: boolean;
   className?: string;
   style?: CSSProperties;
+  /** On the host: a fade set through `style` ending, for instance. */
+  onTransitionEnd?: () => void;
 }
 
 /**
@@ -114,11 +126,15 @@ export function InkSink({
   sunk,
   onSunkChange,
   sinkOnClick = true,
+  well = false,
   className,
   style,
+  onTransitionEnd,
 }: InkSinkProps) {
   const theme = useResolvedTheme();
   const liq: Liquid = liquid === 'auto' ? (theme === 'dark' ? 'mineral' : 'pearl') : liquid;
+  // in a well the pond is built once the page ground is there, and rebuilt if it changes
+  const grounds = useGroundCount();
   // the page look is the default; a prop on this pond wins over it
   const look = usePageLook();
   const visc = viscosity ?? look.viscosity;
@@ -142,28 +158,52 @@ export function InkSink({
     const canvas = canvasRef.current;
     const slab = slabRef.current;
     if (!host || !canvas || !slab) return;
+    // read here, not in render: the registry is not reactive to the compiler
+    const ground = well ? getFixedGround() : null;
+    if (well && !ground) return;
     const pond = new LiquidPond(host, canvas, slab, {
       liquid: liq,
       viscosity: visc,
-      mercuryOnSink,
+      mercuryOnSink: well ? false : mercuryOnSink,
       globSize,
       globDensity,
       globHeight,
       globShading,
       radius,
-      maxDpr: 2,
-      unit,
+      // in a well the liquid must sample like the ground: its unit and resolution
+      maxDpr: ground ? ground.opts.maxDpr : 2,
+      unit: ground ? ground.opts.unit : unit,
+      well,
       ...merged(),
     });
     pond.face = faceRef.current;
     pondRef.current = pond;
+    if (!ground) {
+      return () => {
+        pond.destroy();
+        pondRef.current = null;
+      };
+    }
+    // the well: the ground's ripples, the window's pointer, and the theme's
+    // masked switch (registered like a ground, so it rolls over with the page)
+    pond.joinWell(ground);
+    const unregister = liquid === 'auto' ? registerGround(pond) : () => {};
+    const move = (e: Event) => pond.point(e as PointerEvent);
+    const leave = () => pond.leave();
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerdown', move);
+    window.addEventListener('pointerleave', leave);
     return () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerdown', move);
+      window.removeEventListener('pointerleave', leave);
+      unregister();
       pond.destroy();
       pondRef.current = null;
     };
-    // the pond is built once; options are pushed into it below
+    // the pond is built once (per ground); options are pushed into it below
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [well, grounds]);
 
   useEffect(() => {
     const pond = pondRef.current;
@@ -175,7 +215,7 @@ export function InkSink({
     pond.opts.globHeight = globHeight;
     pond.opts.globShading = globShading;
     pond.opts.radius = radius;
-    pond.opts.unit = unit;
+    if (!pond.opts.well) pond.opts.unit = unit;
     Object.assign(pond.opts, merged());
     pond.setLiquid(liq);
     // merged() reads the look and the props listed here
@@ -209,6 +249,11 @@ export function InkSink({
       sink: () => setIsSunk(true),
       rise: () => setIsSunk(false),
       press: () => pondRef.current?.press(),
+      impact: (at) => {
+        const pond = pondRef.current;
+        if (pond) pond.impact(pond.uv(at));
+        setIsSunk(true);
+      },
     }),
     []
   );
@@ -234,14 +279,18 @@ export function InkSink({
     '--slab-bg': SLAB_LOOK[liq].bg,
     '--slab-fg': SLAB_LOOK[liq].fg,
   } as CSSProperties;
+  // in a well the window's pointer drives the pond (attached above)
+  const own = !well;
   return (
     <div
       ref={hostRef}
       className={`${styles.root} ${className ?? ''}`}
       style={{ padding: bleed, ...vars, ...style }}
-      onPointerMove={(e) => pondRef.current?.point(e.nativeEvent)}
-      onPointerDown={(e) => pondRef.current?.point(e.nativeEvent)}
-      onPointerLeave={() => pondRef.current?.leave()}
+      data-well={well || undefined}
+      onTransitionEnd={onTransitionEnd}
+      onPointerMove={own ? (e) => pondRef.current?.point(e.nativeEvent) : undefined}
+      onPointerDown={own ? (e) => pondRef.current?.point(e.nativeEvent) : undefined}
+      onPointerLeave={own ? () => pondRef.current?.leave() : undefined}
       onFocus={() => pondRef.current?.setFocus(true)}
       onBlur={() => pondRef.current?.setFocus(false)}
     >
