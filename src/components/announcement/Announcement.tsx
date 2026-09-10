@@ -54,6 +54,11 @@ const COLLAPSE_MS = 620;
 const OPEN_MS = 620;
 /** The close starts before the fade is quite done, so the two read as one move. */
 const COLLAPSE_AT = 460;
+/** A theme change takes the banner under once its ink has landed, and gives it
+    back a beat after the new scheme is revealed, ms. The first wait also means
+    a change that skips the ink (reduced motion) never touches the banner. */
+const THEME_SINK_AT = 150;
+const THEME_RISE_AT = 300;
 
 /**
  * A wide banner afloat on the page: the page's liquid ground is the well and
@@ -84,6 +89,20 @@ export function Announcement({
   const webgl = useWebGL();
   const shaders = useThemeStore((s) => s.shaders);
   const theme = useResolvedTheme();
+  // A theme change is a new liquid: the ink rolls over the page, the banner
+  // goes under it, and once the change is over it surfaces into the new
+  // scheme the way it did on load. Its room stays open throughout — the page
+  // does not move for a change of colour.
+  const themeChanging = useThemeStore((s) => s.pending !== null);
+  const [underForTheme, setUnderForTheme] = useState(false);
+  useEffect(() => {
+    if (!liquid) return;
+    const t = window.setTimeout(
+      () => setUnderForTheme(themeChanging),
+      themeChanging ? THEME_SINK_AT : THEME_RISE_AT
+    );
+    return () => window.clearTimeout(t);
+  }, [liquid, themeChanging]);
   const dressed = liquid && webgl !== false && shaders;
   const face = !dressed ? null : theme === 'dark' ? 'nacre' : 'mineral';
   const faceInk = SLAB_LOOK.mineral.bg;
@@ -347,7 +366,7 @@ export function Announcement({
         viscosity={look.viscosity}
         sinkDepth={look.sinkDepth}
         pressDepth={look.pressDepth}
-        sunk={dismissed || !surfaced}
+        sunk={dismissed || !surfaced || underForTheme}
         tier={variant}
         onSunkSettled={onSunkSettled}
         onReady={() => setSinkReady(true)}
