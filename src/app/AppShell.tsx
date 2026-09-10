@@ -15,7 +15,13 @@ export function AppShell({ children, toggle = true }: { children: ReactNode; tog
       <LiquidGround fixed />
       {children}
       <InkThemeTransition />
-      {toggle && <InkThemeToggle style={{ position: 'fixed', top: 16, left: 16, zIndex: 60 }} />}
+      {toggle && (
+        // dark and light only: the system's preference is not followed for now
+        <InkThemeToggle
+          modes={['dark', 'light']}
+          style={{ position: 'fixed', top: 16, left: 16, zIndex: 60 }}
+        />
+      )}
     </>
   );
 }

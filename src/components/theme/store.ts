@@ -32,7 +32,9 @@ interface ThemeState {
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set, get) => ({
-      theme: 'system',
+      // Dark, and the system's preference is not consulted for now: the page is
+      // designed on the black mineral first, and a first visit should see it.
+      theme: 'dark',
       pending: null,
       requestTheme: (theme, origin) => {
         if (get().pending) return;
@@ -47,7 +49,21 @@ export const useThemeStore = create<ThemeState>()(
       shaders: true,
       setShaders: (shaders) => set({ shaders }),
     }),
-    { name: 'pmndrs-theme', partialize: (s) => ({ theme: s.theme, shaders: s.shaders }) }
+    {
+      name: 'pmndrs-theme',
+      partialize: (s) => ({ theme: s.theme, shaders: s.shaders }),
+      // v0 defaulted to following the system. A visitor still on that choice
+      // is moved to dark rather than kept on the OS's preference; one who
+      // picked light or dark keeps it.
+      version: 1,
+      migrate: (persisted) => {
+        const p = (persisted ?? {}) as Partial<Pick<ThemeState, 'theme' | 'shaders'>>;
+        return {
+          theme: p.theme === 'system' || !p.theme ? 'dark' : p.theme,
+          shaders: p.shaders ?? true,
+        } as ThemeState;
+      },
+    }
   )
 );
 

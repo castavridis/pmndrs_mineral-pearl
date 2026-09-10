@@ -66,38 +66,50 @@ const DARK: PageLook = {
   pointer: { reaction: 3, dimple: 3, wake: 1, tilt: 1, drift: 0.75 },
 };
 
-/** The light ground: cream nacre, thick, fine soft glitter, a pointer halo ("sunken spot (nacre)"). */
+/**
+ * The light ground: "light pearl" — a brighter cream than the study's, heavily
+ * clouded and deeply nacred, with coarse, sparse glitter that catches hard and
+ * a pointer halo. Thick (1.3), as the nacre ground has always been.
+ */
 const LIGHT: PageLook = {
   viscosity: 1.3,
   mineral: {
     base: '#080709',
     highlight: '#000000',
     stoneGray: 1.65,
-    iridescence: 0.85,
+    iridescence: 0.9,
     specular: 0.2,
     gamma: 0.58,
   },
   pearl: {
-    cream: '#faf5ea',
+    cream: '#fefcf8',
     shade: '#faf5ea',
-    clouding: 0.75,
-    nacre: 0.08,
-    iridescence: 1.4,
-    specular: 1.2,
+    clouding: 0.85,
+    nacre: 0.24,
+    iridescence: 0.45,
+    specular: 1,
   },
-  mercury: { ...MERCURY_DEFAULT, floor: '#0f0f12', sky: '#edeff5' },
+  mercury: {
+    ...MERCURY_DEFAULT,
+    floor: '#0f0f12',
+    sky: '#edeff5',
+    horizon: 0.55,
+    topLight: 0.9,
+    specular: 0.8,
+    iridescence: 0.1,
+  },
   spectrum: {
-    white: 0.3,
-    spread: 0.65,
+    white: 0.26,
+    spread: 1.3,
     swirl: 2.1,
     cursorGlow: 1.55,
-    grainSize: 115,
-    grainDensity: 1,
+    grainSize: 230,
+    grainDensity: 0.1,
     glitterDensity: 1,
-    facetSharpness: 10,
-    glint: 0.7,
+    facetSharpness: 150,
+    glint: 2.2,
     glintFollowsPointer: 1,
-    lamina: 212,
+    lamina: 370,
   },
   pointer: { reaction: 3, dimple: 3, wake: 0.6, tilt: 0.95, drift: 1.9 },
 };

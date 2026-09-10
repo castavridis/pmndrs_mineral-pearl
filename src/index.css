@@ -1,6 +1,7 @@
 :root {
   /* Page palette; src/components/theme/tokens.ts carries the same values for the ink.
-     Dark before JS; ThemeApplier stamps data-theme once the stored choice is known. */
+     Dark before JS, whatever the system prefers: dark is the default for now, and
+     ThemeApplier stamps data-theme once a stored choice is known. */
   --page-bg: #0c0a06;
   --page-ink: #eeeeea;
   color-scheme: dark;
@@ -12,14 +13,6 @@
     sans-serif;
   background: var(--page-bg);
   color: var(--page-ink);
-}
-
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme='dark']) {
-    --page-bg: #faf5ea;
-    --page-ink: #12100c;
-    color-scheme: light;
-  }
 }
 
 :root[data-theme='light'] {
