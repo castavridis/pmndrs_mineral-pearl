@@ -9,10 +9,6 @@
   --fs: var(--nav-font-size-full);
   --menu-h: 40px;
   position: relative;
-  /* the wake carries the bar; offsets rather than a transform, so the stage's
-     canvas can still reach inside it (see useWake) */
-  left: var(--wake-x, 0px);
-  top: var(--wake-y, 0px);
   display: flex;
   justify-content: center;
   width: 100%;
@@ -148,7 +144,7 @@
   /* wider than the bar is tall, so it carries past the edge */
   width: 168px;
   height: 168px;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) translate(var(--wake-x, 0px), var(--wake-y, 0px));
   pointer-events: none;
 }
 
@@ -201,7 +197,8 @@
   /* the slab itself is the shader's; this element only says where it is */
   background: transparent;
   transition:
-    transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    left 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    top 420ms cubic-bezier(0.22, 1, 0.36, 1),
     width 420ms cubic-bezier(0.22, 1, 0.36, 1),
     height 260ms ease,
     opacity 220ms ease;

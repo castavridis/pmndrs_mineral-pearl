@@ -323,7 +323,11 @@ a {
 .afloat {
   position: relative;
   z-index: 1;
+  will-change: transform;
+}
+
+/* one that sits in a row beside something else takes only the room it needs */
+.afloat-inline {
   width: max-content;
   max-width: 100%;
-  will-change: transform;
 }

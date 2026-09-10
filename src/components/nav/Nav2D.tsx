@@ -45,10 +45,6 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
   const rootRef = useRef<HTMLDivElement>(null);
   const pillRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLElement>(null);
-  // the bar floats on the page like everything else: the wake carries it. In
-  // offset mode, since a transform here would seal the nacre stage's canvas
-  // out of the bar and take the moving pill with it.
-  useWake(rootRef, 0.7, 'offset');
   const rowRef = useRef<HTMLDivElement>(null);
   const indicatorRef = useRef<HTMLSpanElement>(null);
   const hovered = useNavStore((s) => s.hovered);
@@ -74,7 +70,8 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
       pill.style.opacity = '1';
       pill.style.width = `${el.offsetWidth + 24}px`;
       pill.style.height = `${el.offsetHeight + 12}px`;
-      pill.style.transform = `translate(${el.offsetLeft - 12}px, ${el.offsetTop - 6}px)`;
+      pill.style.left = `${el.offsetLeft - 12}px`;
+      pill.style.top = `${el.offsetTop - 6}px`;
     };
     place();
     const ro = new ResizeObserver(place);
@@ -93,6 +90,12 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
   }, [tier]);
   const logoRef = useRef<HTMLAnchorElement>(null);
   const blotRef = useRef<HTMLSpanElement>(null);
+
+  // The bar holds still; what floats on it does not. The pill is placed with
+  // `left`/`top` so the wake can have its transform to itself, and the mark's
+  // blot composes the wake with the translate that centres it.
+  useWake(indicatorRef, 0.9);
+  useWake(blotRef, 1.3, 'offset');
 
   // The mark's blot lives outside the bar and behind it, so the bar's liquid
   // covers the part that lands on it and only the spill shows. It has to be

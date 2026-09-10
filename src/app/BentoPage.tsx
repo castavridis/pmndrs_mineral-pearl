@@ -194,7 +194,7 @@ export function BentoPage() {
               />
             </div>
             <div className="bento-inline">
-              <div ref={launcherWake} className="afloat">
+              <div ref={launcherWake} className="afloat afloat-inline">
                 <InkSink
                   ref={launcherSink}
                   well
