@@ -38,6 +38,13 @@ export interface NacreConfig {
   film: number;
   /** (port) Film thickness in nm; the study's default is 380. */
   filmNm: number;
+  /**
+   * (port) Width of the sensor band the interference is integrated against, in
+   * nm (Belcour and Barla). 0 samples three delta wavelengths, which keeps the
+   * colour vivid at any thickness; wider washes the higher orders toward pearl,
+   * as a broadband eye actually sees them.
+   */
+  filmBand: number;
   intensity: number;
   thickness: number;
   cornerN: number;
@@ -76,6 +83,7 @@ export const NACRE_DEFAULT: NacreConfig = {
   iridescence: 1.0,
   film: 0.5,
   filmNm: 380,
+  filmBand: 40,
   intensity: 0.9,
   thickness: 0.15,
   cornerN: 2.9,
@@ -136,6 +144,7 @@ uniform float uIridescence;
 // (port) the iridescence study's thin film: strength, and thickness in nm
 uniform float uFilm;
 uniform float uFilmNm;
+uniform float uFilmBand;
 uniform float uIntensity;
 uniform vec3 uSheenA;
 uniform vec3 uSheenB;
@@ -275,7 +284,18 @@ vec3 thinFilm(float cosV, float nm){
   float cosT = sqrt(max(1.0 - sinT2, 0.0));
   float opd = 2.0 * filmIor * nm * cosT;
   vec3 lambda = vec3(650.0, 545.0, 460.0);
-  return 0.5 + 0.5 * cos(6.2831853 * opd / lambda + 3.14159265);
+  // (port) Belcour and Barla, "A Practical Extension to Microfacet Theory for
+  // the Modeling of Varying Iridescence" (SIGGRAPH 2017): sampling three delta
+  // wavelengths is the naive reading of the interference, and it disagrees
+  // with a spectral render — the colour stays vivid however thick the film
+  // gets. Integrating against the sensor's response instead damps the
+  // oscillation as the path difference grows, which is why the higher orders
+  // of Newton's series wash toward pearl. A Gaussian sensor of width
+  // uFilmBand nanometres transforms to this envelope in closed form.
+  vec3 dnu = uFilmBand / (lambda * lambda);
+  vec3 phase = 3.14159265 * opd * dnu;
+  vec3 envelope = exp(-2.0 * phase * phase);
+  return 0.5 + 0.5 * envelope * cos(6.2831853 * opd / lambda + 3.14159265);
 }
 
 float rnd3(vec3 p){ return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453123); }
@@ -806,6 +826,7 @@ export class NacreStage {
     // the film is the light page's iridescence; the dark page keeps the nacre's
     gl.uniform1f(u.uFilm, cfg.film * (dark ? 0.3 : 1));
     gl.uniform1f(u.uFilmNm, cfg.filmNm);
+    gl.uniform1f(u.uFilmBand, cfg.filmBand);
     gl.uniform1f(u.uIntensity, cfg.intensity);
     gl.uniform1f(u.uSheenTime, this._sheenClock);
     gl.uniform3f(u.uLight, lv[0] / ll, lv[1] / ll, lv[2] / ll);

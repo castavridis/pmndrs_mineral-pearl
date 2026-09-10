@@ -76,6 +76,8 @@ With `prefers-reduced-motion` the splat lands already settled. A `splat()` asked
 
 `nacre` (0..1) gives the ink a surface: from a height built on the density field (steep at the meniscus, flat inside) and slow bumps of surface tension across the mass the shader takes a normal, darkens a lip just inside the rim, catches a thin highlight on the rim, adds a specular and mixes in a spectral iridescence where the surface curves away, weighted so the ink's own colour stays the body of it. `InkCallout` uses 0.8 by default (its panel has the slider); the theme flood and engulf stay matte.
 
+The droplet kernels are anisotropic, after Yu and Turk: each is oriented and stretched by the run of droplets around it, so a strand reads as a strand rather than a row of lumps, and `anisotropy` dials that from the ballistic shape alone up to the neighbourhood's. Before the field is thresholded it takes `smooth` steps of mean curvature flow, after van der Laan et al., which rounds the lumps between kernels without moving the surface. Both are in the panel on `/dev/splat`. See the changelog for the citations.
+
 `flood={false}` keeps the ink a blot: the front never starts and the droplets are never shoved outward, so the mass settles where it landed with its spatter around it. That is the decorative form, used for the announcement's blot and the mark's.
 
 ### `<InkThemeToggle>` and `<InkThemeTransition>`

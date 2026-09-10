@@ -86,6 +86,7 @@ function useNacreTweaks() {
       glint: { value: d.glint, min: 0, max: 4, step: 0.1, label: 'facet glitter' },
       film: { value: d.film, min: 0, max: 2, step: 0.05, label: 'thin film' },
       filmNm: { value: d.filmNm, min: 120, max: 900, step: 5, label: 'film nm' },
+      filmBand: { value: d.filmBand, min: 0, max: 120, step: 2, label: 'film band nm' },
     }),
     ghost: folder({
       textGhost: { value: d.textGhost, label: 'text ghost' },

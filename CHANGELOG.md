@@ -170,6 +170,15 @@ sources for the methods, not citations made by the studies themselves.
 - *Specular.* Half-vector Blinn-Phong — J. F. Blinn, "Models of light reflection for
   computer synthesized pictures", SIGGRAPH 1977. The pond's `uGlintFollowsPointer`
   interpolates the half-vector between a fixed light and one hanging over the cursor.
+- *Spectral pre-integration of the film.* L. Belcour and P. Barla, "A Practical
+  Extension to Microfacet Theory for the Modeling of Varying Iridescence",
+  *ACM TOG* 36(4), SIGGRAPH 2017. Sampling interference at three delta
+  wavelengths keeps the colour vivid however thick the film gets, which
+  disagrees with a spectral render. The nacre stage now integrates against a
+  Gaussian sensor band instead, which transforms in closed form to an envelope
+  damping the oscillation as the optical path difference grows. Verified: at
+  200 nm the saturation is essentially unchanged (0.343 → 0.322) and at 800 nm
+  it collapses (0.873 → 0.251), which is Newton's series washing to pearl.
 - *Thin-film interference (nacre).* A stylized model of the physics: nacre's colour comes
   from interference between light reflected off stacked aragonite platelets, so the
   spectrum shifts with view angle and layer thickness. Here the phase is driven by the
@@ -181,6 +190,27 @@ sources for the methods, not citations made by the studies themselves.
   real-time stand-in for wavelength-dependent refraction (Cauchy's relation is the physics).
 - *Premultiplied alpha compositing.* The ink material blends `One / OneMinusSrcAlpha` and
   outputs `col * alpha` — Porter and Duff, "Compositing Digital Images", SIGGRAPH 1984.
+
+**Fluid surfaces from particles**
+
+- *Anisotropic kernels.* J. Yu and G. Turk, "Reconstructing Surfaces of
+  Particle-Based Fluids Using Anisotropic Kernels", *ACM TOG* 32(1), 2013.
+  Implemented in `ink-splat/particles.ts`: a weighted covariance about the
+  weighted mean, decomposed as a symmetric 2×2 in closed form, with their clamp
+  on the axis ratio and their neighbour-count rule, so a strand of droplets gets
+  a kernel stretched along the strand and a lone one stays round. Centres are
+  drawn toward the weighted mean as they do. A stretched kernel is thinned so it
+  gains no mass. Verified: horizontal, vertical and diagonal runs orient to 0°,
+  90° and 45°; a clump stays at ratio 1.06.
+- *Curvature-flow smoothing.* W. J. van der Laan, S. Green and M. Sainz, "Screen
+  Space Fluid Rendering with Curvature Flow", *I3D* 2009 (not SIGGRAPH).
+  Implemented in `ink-splat/shaders.ts` as `SMOOTH_FRAG`: mean curvature motion
+  over the density field before it is thresholded. They smooth a depth buffer
+  with a perspective correction; this field is flat and orthographic, so it is
+  the plain level-set form, `df/dt = div(∇f/|∇f|)·|∇f|`. Verified: one step cut
+  the mean absolute Laplacian of a lumpy field from 68.6 to 36.9 while coverage
+  above the iso-contour held at 355 → 356, which is what separates curvature
+  flow from a blur.
 
 **Simulation**
 
@@ -219,6 +249,28 @@ sources for the methods, not citations made by the studies themselves.
   down rather than off.
 - *Tearing-free external state.* `useSyncExternalStore` for the ground registry, the
   media queries and the WebGL probe.
+
+## Background: read, not implemented
+
+Offline simulation, well out of a fragment shader's reach, but these are the
+papers that characterise what the components imitate. Worth reading before
+changing the behaviour they stand in for.
+
+- *An object taken by liquid.* M. Carlson, P. J. Mucha and G. Turk, "Rigid
+  Fluid: Animating the Interplay Between Rigid Bodies and Fluid", SIGGRAPH 2004.
+  Two-way coupling through distributed Lagrange multipliers: the body displaces
+  the liquid and the liquid pushes back. This is the sinking slab.
+- *A surface closing over and pinching off.* D. Enright, S. Marschner and
+  R. Fedkiw, "Animation and Rendering of Complex Water Surfaces", SIGGRAPH 2002.
+  The particle level set, which is how a surface closes over a thing and sheds
+  droplets without losing volume.
+- *The topology change itself.* C. Wojtan, N. Thürey, M. Gross and G. Turk,
+  "Deforming Meshes that Split and Merge", SIGGRAPH 2009. Detecting merges and
+  splits and stitching the surface back together — what the metaball threshold
+  gets for free and cannot control.
+- *Beading and contact angle.* H. Wang, P. J. Mucha and G. Turk, "Water Drops on
+  Surfaces", SIGGRAPH 2005. The interfacial tensions behind a bead holding a
+  shape and then relaxing, which is what `globSettle` fakes.
 
 ## Browser and platform facts that shaped the code
 
