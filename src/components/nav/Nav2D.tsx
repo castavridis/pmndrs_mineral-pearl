@@ -4,6 +4,9 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperti
 import { Surface, type SurfaceTier } from '../surface/Surface';
 import { POND_BG, type Liquid } from '../ink-sink/liquid-pond';
 import { onInk, useResolvedTheme } from '../theme';
+import { palette } from '../theme/palette';
+import { getNacreStage } from '../nacre-callout/stage';
+import { InkSplat } from '../ink-splat';
 import { useNavStore, useNavStoreApi, resolveMode } from './store';
 import { tokens, tokensToCssVars } from './tokens';
 import { NAV_MODES, type NavLink, type NavMode } from './types';
@@ -40,6 +43,28 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
 
   const rootRef = useRef<HTMLDivElement>(null);
   const pillRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLElement>(null);
+
+  /**
+   * A click is a blow: the bar gives in the direction of the hit, then drifts
+   * back. The offset is tiny — it is a bar of liquid, not a door.
+   */
+  const impact = (e: React.PointerEvent) => {
+    const el = navRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    const dx = (e.clientX - (r.left + r.width / 2)) / r.width;
+    const dy = (e.clientY - (r.top + r.height / 2)) / r.height;
+    el.style.setProperty('--nudge-x', `${(-dx * 14).toFixed(2)}px`);
+    el.style.setProperty('--nudge-y', `${(-dy * 7).toFixed(2)}px`);
+    el.dataset.impact = '';
+    window.setTimeout(() => {
+      el.style.setProperty('--nudge-x', '0px');
+      el.style.setProperty('--nudge-y', '0px');
+      delete el.dataset.impact;
+    }, 110);
+  };
   /** Measured pill width per mode. Reset whenever links change. */
   const required = useRef<Partial<Record<NavMode, number>>>({});
 
@@ -49,6 +74,9 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
         ...tokensToCssVars(),
         '--nav-ink': onInk(POND_BG[bar]),
         '--nav-active-ink': onInk(POND_BG[active]),
+        // the sliding pill is drawn by the nacre stage, which is the black
+        // mineral body in either scheme, so its label is light in both
+        '--nav-pill-ink': onInk(POND_BG.mineral),
       }) as CSSProperties,
     [bar, active]
   );
@@ -132,7 +160,7 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
       data-tier={tier}
       style={cssVars}
     >
-      <nav aria-label="Main" className={styles.nav}>
+      <nav aria-label="Main" className={styles.nav} ref={navRef} onPointerDown={impact}>
         <Surface
           ref={pillRef}
           shape="pill"
@@ -142,16 +170,31 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
           className={styles.pill}
         >
           <div className={styles.row}>
-            <a
-              className={styles.logo}
-              href="/"
-              aria-label="pmndrs home"
-              data-id="logo"
-              onFocus={() => setFocused('logo')}
-              onBlur={() => setFocused(null)}
-            >
-              <Logo />
-            </a>
+            <span className={styles.logoWrap}>
+              {tier !== 'flat' && (
+                <span className={styles.logoBlot} aria-hidden="true">
+                  <InkSplat
+                    autoplay
+                    interactive={false}
+                    logo={false}
+                    flood={false}
+                    ink={POND_BG[active]}
+                    nacre={0.85}
+                    scale={0.5}
+                  />
+                </span>
+              )}
+              <a
+                className={styles.logo}
+                href="/"
+                aria-label="pmndrs home"
+                data-id="logo"
+                onFocus={() => setFocused('logo')}
+                onBlur={() => setFocused(null)}
+              >
+                <Logo />
+              </a>
+            </span>
 
             <button
               type="button"
@@ -175,7 +218,7 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
             </button>
 
             {/* Always in the DOM so every mode can be measured; CSS hides it in collapsed. */}
-            <LinkList links={links} active={current} liquid={active} tier={tier} />
+            <LinkList links={links} active={current} tier={tier} />
 
             <button
               type="button"
@@ -201,9 +244,7 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
           data-open={menuOpen}
           hidden={mode !== 'collapsed' || !menuOpen}
         >
-          {mode === 'collapsed' && (
-            <LinkList links={links} active={current} liquid={active} tier={tier} />
-          )}
+          {mode === 'collapsed' && <LinkList links={links} active={current} tier={tier} />}
         </div>
       </nav>
       <CmdPalette />
@@ -214,53 +255,81 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
 function LinkList({
   links,
   active,
-  liquid,
   tier,
 }: {
   links: NavLink[];
   active: string | null;
-  /** The active item's pill: the liquid the bar is not. */
-  liquid: Liquid;
   tier: SurfaceTier;
 }) {
-  const setHovered = useNavStore((s) => s.setHovered);
-  const setFocused = useNavStore((s) => s.setFocused);
+  const hovered = useNavStore((st) => st.hovered);
+  const setHovered = useNavStore((st) => st.setHovered);
+  const setFocused = useNavStore((st) => st.setFocused);
+  const listRef = useRef<HTMLUListElement>(null);
+  const pillRef = useRef<HTMLSpanElement>(null);
+
+  // The pill is one element that moves: it sits behind whichever item the
+  // pointer is over, and falls back to the current page when the pointer
+  // leaves. Measuring the anchor rather than tracking per-item pills keeps a
+  // single slab for the shader to draw, so it stretches between items.
+  const target = hovered ?? active;
+  useEffect(() => {
+    const list = listRef.current;
+    const pill = pillRef.current;
+    if (!list || !pill) return;
+    const place = () => {
+      const el = target ? list.querySelector<HTMLElement>(`[data-id="${CSS.escape(target)}"]`) : null;
+      if (!el) {
+        pill.style.opacity = '0';
+        return;
+      }
+      pill.style.opacity = '1';
+      pill.style.width = `${el.offsetWidth + 24}px`;
+      pill.style.height = `${el.offsetHeight + 12}px`;
+      pill.style.transform = `translate(${el.offsetLeft - 12}px, ${el.offsetTop - 6}px)`;
+    };
+    place();
+    // labels and the mode change the boxes; follow them
+    const ro = new ResizeObserver(place);
+    ro.observe(list);
+    return () => ro.disconnect();
+  }, [target, links]);
+
+  // The gooey callout shader draws it: the page's single nacre stage, one more
+  // card, with a pill's own corner radius.
+  useEffect(() => {
+    const pill = pillRef.current;
+    if (!pill || tier === 'flat') return;
+    const stage = getNacreStage();
+    if (!stage) return;
+    return stage.register({ el: pill, icon: null, accent: palette.dark, radius: 999 });
+  }, [tier]);
+
   return (
-    <ul className={styles.links}>
-      {links.map((l) => {
-        const isActive = active === l.id;
-        const anchor = (
+    <ul ref={listRef} className={styles.links}>
+      <span ref={pillRef} className={styles.pillIndicator} data-flat={tier === 'flat' || undefined} aria-hidden="true" />
+      {links.map((l) => (
+        <li key={l.id}>
           <a
             className={styles.link}
             href={l.href}
             data-id={l.id}
-            aria-current={isActive ? 'page' : undefined}
+            data-lit={target === l.id || undefined}
+            aria-current={active === l.id ? 'page' : undefined}
             onPointerEnter={() => setHovered(l.id)}
             onPointerLeave={() => setHovered(null)}
-            onFocus={() => setFocused(l.id)}
-            onBlur={() => setFocused(null)}
+            onFocus={() => {
+              setFocused(l.id);
+              setHovered(l.id);
+            }}
+            onBlur={() => {
+              setFocused(null);
+              setHovered(null);
+            }}
           >
             {l.label}
           </a>
-        );
-        return (
-          <li key={l.id}>
-            {isActive ? (
-              <Surface
-                shape="pill"
-                material={liquid}
-                expressiveness={tier}
-                unit={tokens.pillHeight * 2}
-                className={styles.active}
-              >
-                {anchor}
-              </Surface>
-            ) : (
-              anchor
-            )}
-          </li>
-        );
-      })}
+        </li>
+      ))}
     </ul>
   );
 }

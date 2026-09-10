@@ -1,0 +1,1720 @@
+<meta charset="utf-8">
+<title>Callout shaders — iridescence</title>
+<style>
+  :root {
+    --bg:#ffffff; --fg:#1f2328; --fg-dim:#59636e;
+    --rule:rgba(31,35,40,.12); --panel:#f6f8fa; --radius:10px;
+    --font: ui-sans-serif, -apple-system, "Segoe UI", Inter, system-ui, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0d1117; --fg:#e6edf3; --fg-dim:#9198a1; --rule:rgba(230,237,243,.14); --panel:#161b22; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:0; background:var(--bg); color:var(--fg);
+    font-family:var(--font); font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+  .wrap { display:flex; align-items:flex-start; gap:0; max-width:none; margin:0; }
+  #panel { position:sticky; top:0; flex:0 0 292px; height:100vh; overflow-y:auto;
+    padding:10px 10px 28px; border-right:1px solid var(--rule); background:var(--panel); }
+  #panel::-webkit-scrollbar { width:8px; }
+  #panel::-webkit-scrollbar-thumb { background:var(--rule); border-radius:4px; }
+  #main { flex:1; min-width:0; max-width:900px; padding:34px 30px 90px; }
+  @media (max-width:900px) {
+    .wrap { display:block; }
+    #panel { position:static; height:auto; flex:none; border-right:none; border-bottom:1px solid var(--rule); }
+    #main { max-width:none; padding:24px 20px 70px; }
+  }
+  h1 { font-size:19px; font-weight:600; margin:0 0 4px; letter-spacing:-.01em; }
+  .sub { color:var(--fg-dim); font-size:13px; margin:0 0 28px; }
+  .controls { display:flex; flex-wrap:wrap; gap:4px; padding:6px; margin:0 0 8px;
+    background:none; border:1px solid var(--rule); border-radius:8px; }
+  .tog { display:inline-flex; align-items:center; gap:5px; padding:3px 8px; border-radius:999px;
+    border:1px solid var(--rule); background:var(--bg); font-size:11px; cursor:pointer;
+    user-select:none; transition:opacity .15s; line-height:1.5; }
+  .tog:focus-within { outline:2px solid #4493f8; outline-offset:2px; }
+  .tog input { position:absolute; opacity:0; width:0; height:0; }
+  .dot { width:6px; height:6px; border-radius:50%; background:var(--fg-dim); opacity:.3; transition:opacity .15s, background .15s; }
+  .tog[data-on="1"] .dot { opacity:1; background:#3fb950; }
+  .tog[data-on="0"] { opacity:.55; }
+  .slider { display:flex; align-items:center; gap:6px; padding:2px 3px; margin:0;
+    background:none; border:none; border-radius:0; font-size:11px; line-height:1.5; }
+  .slider + .slider { border-top:1px solid var(--rule); }
+  .slider > label { flex:0 0 84px; color:var(--fg-dim); }
+  .slider > span { display:none; }
+  .slider input[type=range] { flex:1; min-width:52px; height:13px; accent-color:#3fb950; margin:0; }
+  .slider input[type=color] { flex:0 0 26px !important; height:17px !important; }
+  .slider select { font-size:10.5px !important; padding:2px !important; }
+  .slider.off > label, .slider.off > input[type=range], .slider.off > output { opacity:.35; }
+  .bp { flex:0 0 auto; width:12px; height:12px; margin:0 2px 0 0; accent-color:#3fb950; cursor:pointer; }
+  #panel.hidden { display:none; }
+  #panel-toggle { position:fixed; top:14px; right:14px; z-index:6; font:inherit; font-size:12px;
+    padding:6px 13px; border-radius:999px; border:1px solid var(--rule); background:var(--panel);
+    color:var(--fg); cursor:pointer; opacity:.85; }
+  #panel-toggle:hover { opacity:1; }
+  .slider button { font:inherit; font-size:10.5px; padding:2px 8px; border-radius:999px;
+    border:1px solid var(--rule); background:var(--bg); color:var(--fg); cursor:pointer; }
+  .slider button:hover { border-color:var(--fg-dim); }
+  .slider output { flex:0 0 64px; font-size:10px; text-align:right; font-family:var(--mono); font-size:12px; color:var(--fg-dim); }
+  .hint { color:var(--fg-dim); font-size:10px; margin:8px 0 0; font-family:var(--mono); line-height:1.5; }
+  .cal { position:relative; display:flex; gap:14px; padding:16px 18px; margin:0 0 16px;
+    border-radius:var(--radius); overflow:hidden; isolation:isolate; background:transparent;
+    border:1px solid color-mix(in srgb, var(--accent) 34%, transparent); }
+  .cal canvas { position:absolute; inset:0; width:100%; height:100%; z-index:-1; pointer-events:none; }
+  .ico { flex:0 0 24px; width:24px; height:24px; display:grid; place-items:center; color:var(--accent); margin-top:1px; }
+  .ico svg { width:17px; height:17px; fill:currentColor; }
+  .body { min-width:0; }
+  .body .lbl { font-weight:600; font-size:14px; color:var(--accent); margin:0 0 3px; }
+  .body p { margin:0; font-size:14.5px; }
+  footer { margin-top:36px; padding-top:18px; border-top:1px solid var(--rule); color:var(--fg-dim); font-size:12.5px; }
+  footer p { margin:0 0 6px; }
+  footer code { font-family:var(--mono); font-size:12px; }
+</style>
+
+<div class="wrap">
+  <h1>Callout shaders — iridescence</h1>
+  <p class="sub">Thin-film interference on the surface, wavelength-accurate and view-dependent, plus sparkle scattered through the volume beneath it.</p>
+
+  <div class="controls">
+    <label class="tog" data-on="1"><input type="checkbox" id="t-container" checked><span class="dot"></span>Container</label>
+    <label class="tog" data-on="1"><input type="checkbox" id="t-icon" checked><span class="dot"></span>Icon</label>
+    <label class="tog" data-on="1"><input type="checkbox" id="t-stroke" checked><span class="dot"></span>Stroke</label>
+    <label class="tog" data-on="1"><input type="checkbox" id="t-drop" checked><span class="dot"></span>Droplet</label>
+    <label class="tog" data-on="1"><input type="checkbox" id="t-ghost" checked><span class="dot"></span>Text ghost</label>
+    <label class="tog" data-on="1"><input type="checkbox" id="t-glittop" checked><span class="dot"></span>Glitter on top</label>
+    <label class="tog" data-on="1"><input type="checkbox" id="t-decouple" checked><span class="dot"></span>Decouple droplet</label>
+    <label class="tog" data-on="1"><input type="checkbox" id="t-blobs" checked><span class="dot"></span>Living blobs</label>
+    <label class="tog" data-on="1"><input type="checkbox" id="t-whole" checked><span class="dot"></span>Whole callout</label>
+    <label class="tog" data-on="0"><input type="checkbox" id="t-motion"><span class="dot"></span>Ambient motion</label>
+  </div>
+  <div class="slider">
+    <label for="amb">Ambient life</label>
+    <input type="range" id="amb" min="0" max="100" step="1" value="26">
+    <output id="amb-out">subtle</output>
+  </div>
+  <div class="slider">
+    <label for="refr">Refraction</label>
+    <input type="range" id="refr" min="0" max="70" step="1" value="26">
+    <output id="refr-out">natural</output>
+  </div>
+  <div class="slider">
+    <label for="ior">Index (IOR)</label>
+    <input type="range" id="ior" min="100" max="250" step="1" value="133">
+    <output id="ior-out">1.33 water</output>
+  </div>
+  <div class="slider">
+    <label for="dsize">Droplet size</label>
+    <input type="range" id="dsize" min="6" max="60" step="1" value="21">
+    <output id="dsize-out">21px</output>
+  </div>
+  <div class="slider">
+    <label for="dcount">Trail count</label>
+    <input type="range" id="dcount" min="1" max="24" step="1" value="12">
+    <output id="dcount-out">12</output>
+  </div>
+  <div class="slider">
+    <label for="bcount">Blob count</label>
+    <input type="range" id="bcount" min="0" max="8" step="1" value="5">
+    <output id="bcount-out">5</output>
+  </div>
+  <div class="slider">
+    <label for="bmin">Blob size min</label>
+    <input type="range" id="bmin" min="15" max="150" step="1" value="48">
+    <output id="bmin-out">0.48&times;</output>
+  </div>
+  <div class="slider">
+    <label for="bmax">Blob size max</label>
+    <input type="range" id="bmax" min="20" max="240" step="1" value="120">
+    <output id="bmax-out">1.20&times;</output>
+  </div>
+  <div class="slider">
+    <label for="film">Film strength</label>
+    <input type="range" id="film" min="0" max="100" step="1" value="45">
+    <output id="film-out">0.45</output>
+  </div>
+  <div class="slider">
+    <label for="filmnm">Film thickness</label>
+    <input type="range" id="filmnm" min="120" max="900" step="5" value="380">
+    <output id="filmnm-out">380nm</output>
+  </div>
+  <div class="slider">
+    <label for="filmvar">Film variation</label>
+    <input type="range" id="filmvar" min="0" max="100" step="1" value="35">
+    <output id="filmvar-out">35%</output>
+  </div>
+  <div class="slider">
+    <label for="glit">Glitter</label>
+    <input type="range" id="glit" min="0" max="100" step="1" value="40">
+    <output id="glit-out">0.40</output>
+  </div>
+  <div class="slider">
+    <label for="veinpull">Vein pull</label>
+    <input type="range" id="veinpull" min="0" max="100" step="1" value="65">
+    <output id="veinpull-out">0.65</output>
+  </div>
+  <div class="slider">
+    <label for="veinscale">Vein scale</label>
+    <input type="range" id="veinscale" min="1" max="30" step="1" value="7">
+    <output id="veinscale-out">7</output>
+  </div>
+  <div class="slider">
+    <label for="veinsharp">Vein sharp</label>
+    <input type="range" id="veinsharp" min="1" max="48" step="1" value="9">
+    <output id="veinsharp-out">9 · seams</output>
+  </div>
+  <div class="slider">
+    <label for="veinglow">Vein glow</label>
+    <input type="range" id="veinglow" min="0" max="100" step="1" value="26">
+    <output id="veinglow-out">0.26</output>
+  </div>
+  <div class="slider">
+    <label for="veincol">Vein col.</label>
+    <input type="color" id="veincol" value="#c9a227" style="flex:0 0 44px; height:26px; padding:0; border:1px solid var(--rule); border-radius:6px; background:none; cursor:pointer;">
+    <span style="flex:1; color:var(--fg-dim); font-size:12px;">gold reads kintsugi, white reads marble</span>
+    <output id="veincol-out">#c9a227</output>
+  </div>
+  <div class="slider">
+    <label for="scouple">Sheen couple</label>
+    <input type="range" id="scouple" min="0" max="100" step="1" value="50">
+    <output id="scouple-out">0.50</output>
+  </div>
+  <div class="slider">
+    <label for="fopac">Flake opacity</label>
+    <input type="range" id="fopac" min="0" max="100" step="1" value="45">
+    <output id="fopac-out">0.45</output>
+  </div>
+  <div class="slider">
+    <label for="fchroma">Flake chroma</label>
+    <input type="range" id="fchroma" min="0" max="100" step="1" value="35">
+    <output id="fchroma-out">0.35</output>
+  </div>
+  <div class="slider">
+    <label for="fcol">Flake col.</label>
+    <input type="color" id="fcol" value="#a8a49b" style="flex:0 0 44px; height:26px; padding:0; border:1px solid var(--rule); border-radius:6px; background:none; cursor:pointer;">
+    <output id="fcol-out">#a8a49b</output>
+  </div>
+  <div class="slider">
+    <label for="glitfill">Glitter fill</label>
+    <input type="range" id="glitfill" min="4" max="100" step="1" value="32">
+    <output id="glitfill-out">32%</output>
+  </div>
+  <div class="slider">
+    <label for="glitfacet">Flake facet</label>
+    <input type="range" id="glitfacet" min="6" max="120" step="1" value="30">
+    <output id="glitfacet-out">30</output>
+  </div>
+  <div class="slider">
+    <label for="glitd">Glitter density</label>
+    <input type="range" id="glitd" min="2" max="150" step="1" value="14">
+    <output id="glitd-out">14</output>
+  </div>
+  <div class="slider">
+    <label for="tint">Card tint</label>
+    <input type="range" id="tint" min="0" max="200" step="1" value="100">
+    <output id="tint-out">100%</output>
+  </div>
+  <div class="slider">
+    <label for="sheenamt">Sheen intensity</label>
+    <input type="range" id="sheenamt" min="0" max="150" step="1" value="55">
+    <output id="sheenamt-out">0.55</output>
+  </div>
+  <div class="slider">
+    <label for="cradius">Corner radius</label>
+    <input type="range" id="cradius" min="0" max="30" step="1" value="14">
+    <output id="cradius-out">14px</output>
+  </div>
+  <div class="slider">
+    <label for="bheight">Blob height</label>
+    <input type="range" id="bheight" min="8" max="100" step="1" value="45">
+    <output id="bheight-out">45%</output>
+  </div>
+  <div class="slider">
+    <label for="corner">Corner</label>
+    <input type="range" id="corner" min="200" max="450" step="5" value="290">
+    <output id="corner-out">2.90 continuous</output>
+  </div>
+  <div class="slider">
+    <label for="roll">Edge roll</label>
+    <input type="range" id="roll" min="10" max="100" step="1" value="100">
+    <output id="roll-out">100% bullnose</output>
+  </div>
+  <div class="slider">
+    <label for="bgcol">Background</label>
+    <input type="color" id="bgcol" value="#ffffff" style="flex:0 0 44px; height:26px; padding:0; border:1px solid var(--rule); border-radius:6px; background:none; cursor:pointer;">
+    <button type="button" id="bgauto">Match system</button>
+    <output id="bgcol-out">#ffffff</output>
+  </div>
+  <div class="slider">
+    <label for="sheen">Sheen speed</label>
+    <input type="range" id="sheen" min="0" max="300" step="1" value="100">
+    <output id="sheen-out">rolling</output>
+  </div>
+  <div class="slider">
+    <label for="light">Light angle</label>
+    <input type="range" id="light" min="0" max="359" step="1" value="325">
+    <label style="flex:0 0 auto; display:inline-flex; align-items:center; gap:5px; font-size:12px; color:var(--fg-dim);">
+      <input type="checkbox" id="f-sheen" class="bp" checked>opposite sheen
+    </label>
+    <output id="light-out">325°</output>
+  </div>
+  <div class="slider">
+    <label for="lcol">Light col.</label>
+    <input type="color" id="lcol" value="#ffffff" style="flex:0 0 44px; height:26px; padding:0; border:1px solid var(--rule); border-radius:6px; background:none; cursor:pointer;">
+    <span style="flex:1; color:var(--fg-dim); font-size:12px;">tints the specular only, not the sheen</span>
+    <output id="lcol-out">#ffffff</output>
+  </div>
+  <div class="slider">
+    <label for="gop">Ghost opacity</label>
+    <input type="range" id="gop" min="0" max="100" step="1" value="45">
+    <output id="gop-out">45%</output>
+  </div>
+  <div class="slider">
+    <label for="gsc">Ghost scale</label>
+    <input type="range" id="gsc" min="70" max="150" step="1" value="106">
+    <output id="gsc-out">1.06&times;</output>
+  </div>
+  <div class="slider">
+    <label for="gbl">Ghost blur</label>
+    <input type="range" id="gbl" min="0" max="14" step="1" value="3">
+    <output id="gbl-out">3px</output>
+  </div>
+  <div class="slider" style="gap:8px;">
+    <label>Presets</label>
+    <select id="preset" style="flex:0 0 150px; font:inherit; font-size:12px; padding:4px; background:var(--bg); color:var(--fg); border:1px solid var(--rule); border-radius:6px;">
+      <option value="">Load a preset…</option>
+      <option value="deep-film">Deep film</option>
+      <option value="pearl-dust">Pearl dust</option>
+      <option value="factory">Factory</option>
+    </select>
+    <span style="flex:1; color:var(--fg-dim); font-size:12px;">loads into every control at once</span>
+  </div>
+  <div class="slider" style="gap:8px;">
+    <label>Defaults</label>
+    <button type="button" id="save">Save</button>
+    <button type="button" id="reset">Reset</button>
+    <button type="button" id="copy">Copy config</button>
+    <output id="save-out" style="flex:1; text-align:left;"></output>
+  </div>
+  <div class="slider" style="gap:8px;">
+    <label>All properties</label>
+    <button type="button" id="all-off">All off</button>
+    <button type="button" id="all-on">All on</button>
+    <span style="flex:1; color:var(--fg-dim); font-size:12px;">strips every layer back to a bare callout</span>
+  </div>
+  <p class="hint" id="status">initialising</p>
+
+  <div class="cal" data-v="0" style="--accent:#1f6feb">
+    <canvas></canvas>
+    <span class="ico"><svg viewBox="0 0 16 16"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg></span>
+    <div class="body"><p class="lbl">Note</p><p>The droplet bends the mesh gradient beneath it. Sheen colors derive from the callout accent.</p></div>
+  </div>
+
+  <div class="cal" data-v="1" style="--accent:#238636">
+    <canvas></canvas>
+    <span class="ico"><svg viewBox="0 0 16 16"><path d="M8 1.5c-2.363 0-4 1.69-4 3.75 0 .984.424 1.625.984 2.304l.214.253c.223.264.47.556.673.848.284.411.537.896.621 1.49a.75.75 0 0 1-1.484.211c-.04-.282-.163-.547-.37-.847a8.456 8.456 0 0 0-.542-.68c-.084-.1-.173-.205-.268-.32C3.201 7.75 2.5 6.766 2.5 5.25 2.5 2.31 4.863 0 8 0s5.5 2.31 5.5 5.25c0 1.516-.701 2.5-1.328 3.259-.095.115-.184.22-.268.319-.207.245-.383.453-.541.681-.208.3-.33.565-.37.847a.751.751 0 0 1-1.485-.212c.084-.593.337-1.078.621-1.489.203-.292.45-.584.673-.848.075-.088.147-.173.213-.253.561-.679.985-1.32.985-2.304 0-2.06-1.637-3.75-4-3.75ZM5.75 12h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1 0-1.5ZM6 15.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z"/></svg></span>
+    <div class="body"><p class="lbl">Tip</p><p>Caustics under glass. The two moving systems read as one liquid surface rather than two effects.</p></div>
+  </div>
+
+  <div class="cal" data-v="2" style="--accent:#8957e5">
+    <canvas></canvas>
+    <span class="ico"><svg viewBox="0 0 16 16"><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm9 3a1 1 0 1 0-2 0 1 1 0 0 0 2 0ZM7.25 6.5a.75.75 0 0 0 0 1.5h.25v2.25a.75.75 0 0 0 1.5 0V7.25a.75.75 0 0 0-.75-.75Z"/></svg></span>
+    <div class="body"><p class="lbl">Important</p><p>Concentric rings magnify hard through the lens — the strongest refraction read of the five.</p></div>
+  </div>
+
+  <div class="cal" data-v="3" style="--accent:#d29922">
+    <canvas></canvas>
+    <span class="ico"><svg viewBox="0 0 16 16"><path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/></svg></span>
+    <div class="body"><p class="lbl">Warning</p><p>Moire through a moving lens produces beat patterns the flat version never shows.</p></div>
+  </div>
+
+  <div class="cal" data-v="4" style="--accent:#da3633">
+    <canvas></canvas>
+    <span class="ico"><svg viewBox="0 0 16 16"><path d="M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg></span>
+    <div class="body"><p class="lbl">Caution</p><p>Fractal noise magnified by the lens. Worth asking whether this one should have a droplet at all.</p></div>
+  </div>
+
+  <footer>
+    <p>Two passes: the card base and layers, then the droplet scissored to its own bounding box so the raymarch only runs where the droplet actually is.</p>
+    <p>Refraction sets optical thickness in pixels and samples the shader-generated background, not the DOM. Chromatic dispersion scales with it, since the colour split is a fraction of the bend. At zero the droplet keeps its sheen and rim but stops bending anything.</p>
+    <p>Save writes the current settings to localStorage and they load on refresh. Copy config emits the same values as component props for porting into the real callout. Reset clears storage and returns to the values this page shipped with.</p>
+    <p>The text ghost is the callout's own copy rasterized to a 2D canvas — computed font, weight, colour and layout box read straight off each element, re-wrapped at the real width. It composites inside <code>card()</code>, so the droplet refracts it along with everything else. The real DOM text sits above the canvas, untouched and selectable.</p>
+    <p>Thin-film colour comes from optical path difference: light reflecting off the back of a film 380nm thick travels far enough to interfere with light off the front, cancelling some wavelengths and reinforcing others. Sampling that at 650, 545 and 460nm gives the RGB directly, so hue tracks view angle rather than being painted on.</p>
+    <p>Glitter marches six steps along the refracted ray into the body, testing a hash grid for occupied cells. Flakes are attenuated by depth and twinkle on their own phase, so they read as suspended inside rather than printed on the surface.</p>
+    <p>Sheen speed drives its own clock, independent of the pattern motion toggle, so the surface can roll while the shaders underneath stay still. Light angle rotates the specular around the droplet; 0° puts it at the top.</p>
+    <p>Five ambient blobs per callout drift on slow Lissajous paths, seeded per variant so no two callouts breathe in sync. They melt into the slab and the cursor droplet through the same <code>smin</code>.</p>
+    <p>Ambient life scales drift speed, travel distance, and how far blobs rise out of the slab. It also caps the idle frame rate — from 50fps at lively down to 8fps at still — since slow motion needs no more. Hovering always restores 60.</p>
+    <p>Callouts are gated by an IntersectionObserver, so offscreen ones stop entirely. At zero the loop stops altogether. Reduced motion freezes the blobs and parks the droplet on the icon.</p>
+  </footer>
+</div>
+
+<script>
+const TRAIL_MAX = 24;
+const BLOB_MAX = 8;
+
+const VERT = `
+attribute vec2 aPos;
+varying vec2 vUv;
+void main(){ vUv = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }
+`;
+
+const COMMON = `
+precision highp float;
+varying vec2 vUv;
+uniform vec2 uSize;
+uniform float uTime;
+uniform int uVariant;
+uniform vec3 uColor;
+uniform vec3 uBg;
+uniform vec3 uToggle;
+uniform float uDark;
+uniform vec2 uIcon;
+uniform float uIconR;
+uniform float uRadius;
+uniform float uStroke;
+uniform sampler2D uGhost;
+uniform float uGhostOn;
+uniform float uGhostOpacity;
+uniform float uGhostScale;
+uniform float uGhostBlur;
+uniform float uTintAmt;
+
+vec4 ghostSample(vec2 q){
+  vec2 texel = 1.0 / uSize;
+  if(uGhostBlur < 0.01) return texture2D(uGhost, q * texel);
+  vec4 acc = texture2D(uGhost, q * texel) * 0.28;
+  for(int i = 0; i < 8; i++){
+    float a = float(i) * 0.78539816;
+    vec2 o = vec2(cos(a), sin(a)) * uGhostBlur;
+    acc += texture2D(uGhost, (q + o) * texel) * 0.09;
+  }
+  return acc;
+}
+
+mat2 rot(float a){ float c = cos(a), s = sin(a); return mat2(c, -s, s, c); }
+
+float hash21(vec2 p){
+  p = fract(p * vec2(123.34, 456.21));
+  p += dot(p, p + 45.32);
+  return fract(p.x * p.y);
+}
+
+float vnoise(vec2 p){
+  vec2 i = floor(p), f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  float a = hash21(i);
+  float b = hash21(i + vec2(1.0, 0.0));
+  float c = hash21(i + vec2(0.0, 1.0));
+  float d = hash21(i + vec2(1.0, 1.0));
+  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+float fbm(vec2 p){
+  float s = 0.0, a = 0.5;
+  for(int i = 0; i < 5; i++){ s += a * vnoise(p); p *= 2.03; a *= 0.5; }
+  return s;
+}
+
+float sdRoundBox(vec2 p, vec2 b, float r){
+  vec2 q = abs(p) - b + r;
+  return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r;
+}
+
+float containerPattern(vec2 p, float t){
+  vec2 uv = p / uSize.y;
+  if(uVariant == 0){
+    float g = sin(uv.x * 1.7 + t * 0.13) * cos(uv.y * 2.3 - t * 0.09);
+    float h = sin(uv.x * 0.6 - uv.y * 1.1 + t * 0.07);
+    return clamp(0.45 + 0.28 * g + 0.18 * h, 0.0, 1.0);
+  }
+  if(uVariant == 1){
+    vec2 q = uv * 7.0;
+    float acc = 0.0;
+    for(int i = 0; i < 5; i++){
+      float fi = float(i);
+      q += vec2(sin(q.y * 1.3 + t * 0.35 + fi), cos(q.x * 1.15 - t * 0.28 + fi));
+      acc += 0.55 / max(length(q * 0.42), 0.35);
+    }
+    return clamp(pow(acc * 0.16, 1.6) - 0.05, 0.0, 1.0);
+  }
+  if(uVariant == 2){
+    float r = length(p - uIcon) / uSize.y;
+    float rings = 0.5 + 0.5 * sin(r * 44.0 - t * 0.9);
+    return rings * exp(-r * 1.5);
+  }
+  if(uVariant == 3){
+    vec2 a = rot(0.14) * p;
+    vec2 b = rot(-0.10) * p;
+    float g = sin(a.x * 0.92 + t * 0.10) * sin(b.x * 0.97 - t * 0.13);
+    return clamp(0.5 + 0.55 * g, 0.0, 1.0);
+  }
+  float n = fbm(uv * 5.5 + vec2(t * 0.11, -t * 0.07));
+  float w = 0.5 + 0.5 * sin(uv.x * 5.0 - t * 0.6 + n * 3.0);
+  return clamp(smoothstep(0.32, 0.78, n) * (0.6 + 0.4 * w), 0.0, 1.0);
+}
+
+float strokePattern(vec2 p, float t){
+  if(uVariant == 0) return 1.0;
+  if(uVariant == 1) return 0.35 + 0.65 * (p.x / uSize.x);
+  if(uVariant == 2){
+    float r = length(p - uIcon) * 0.05;
+    return 0.45 + 0.55 * (0.5 + 0.5 * sin(r * 6.0 - t * 1.4));
+  }
+  if(uVariant == 3){
+    float s = sin((p.x + p.y) * 0.34 - t * 0.9);
+    return smoothstep(-0.15, 0.35, s) * 0.9 + 0.1;
+  }
+  float j = hash21(floor(vec2((p.x + p.y) * 0.13, t * 2.0)));
+  float n = vnoise(vec2((p.x + p.y) * 0.09, t * 0.8));
+  return clamp(0.35 + 0.75 * n + 0.25 * j, 0.0, 1.2);
+}
+
+float iconPattern(vec2 p, float t){
+  vec2 d = p - uIcon;
+  float r = length(d);
+  if(uVariant == 0) return 0.55 + 0.45 * (1.0 - smoothstep(0.0, uIconR, r));
+  if(uVariant == 1) return exp(-r / uIconR * 1.9) * (0.75 + 0.25 * sin(t * 1.2));
+  if(uVariant == 2){
+    float lam = 0.5 + 0.5 * dot(normalize(d + 0.0001), vec2(0.68, -0.73));
+    return 0.35 + 0.75 * lam;
+  }
+  if(uVariant == 3){
+    vec2 g = mod(d, 3.6) - 1.8;
+    float dots = 1.0 - smoothstep(0.45, 1.25, length(g));
+    return 0.25 + 0.9 * dots;
+  }
+  float ripple = 0.5 + 0.5 * sin(r * 1.7 - t * 3.2);
+  return 0.3 + 0.85 * ripple * (1.0 - smoothstep(0.0, uIconR * 1.15, r));
+}
+
+vec4 card(vec2 p, float t){
+  vec2 hs = uSize * 0.5;
+  float d = sdRoundBox(p - hs, hs, uRadius);
+  float inside = 1.0 - smoothstep(0.0, 1.2, d);
+  if(inside <= 0.001) return vec4(0.0);
+
+  vec3 base = mix(uBg, uColor, mix(0.05, 0.09, uDark) * uTintAmt);
+  vec3 tint = mix(uColor, vec3(1.0), uDark * 0.25);
+  vec3 col = base;
+
+  if(uToggle.x > 0.5){
+    float a = clamp(containerPattern(p, t) * mix(0.15, 0.26, uDark), 0.0, 1.0);
+    col = mix(col, tint, a);
+  }
+  if(uToggle.z > 0.5){
+    float band = abs(d + uStroke * 0.5) - uStroke * 0.5;
+    float m = 1.0 - smoothstep(0.0, 1.2, band);
+    float a = clamp(strokePattern(p, t), 0.0, 1.6) * mix(0.55, 0.72, uDark) * m;
+    col = mix(col, tint, clamp(a, 0.0, 1.0));
+  }
+  if(uToggle.y > 0.5){
+    float ring = length(p - uIcon) - uIconR;
+    float m = 1.0 - smoothstep(-1.0, 1.0, ring);
+    float a = clamp(iconPattern(p, t), 0.0, 1.4) * mix(0.30, 0.42, uDark) * m;
+    col = mix(col, tint, clamp(a, 0.0, 1.0));
+  }
+  if(uGhostOn > 0.5){
+    vec2 mid = uSize * 0.5;
+    vec4 g = ghostSample(mid + (p - mid) / max(uGhostScale, 0.05));
+    col = col * (1.0 - g.a * uGhostOpacity) + g.rgb * uGhostOpacity;
+  }
+  return vec4(col, inside);
+}
+`;
+
+const BASE_FRAG = COMMON + `
+void main(){
+  vec2 p = vec2(vUv.x, 1.0 - vUv.y) * uSize;
+  vec4 c = card(p, uTime);
+  gl_FragColor = vec4(c.rgb * c.a, c.a);
+}
+`;
+
+const DROP_FRAG = COMMON + `
+uniform vec2 uTrail[${TRAIL_MAX}];
+uniform int uCount;
+uniform float uBaseRadius;
+uniform float uBlend;
+uniform float uRefraction;
+uniform float uDispersion;
+uniform float uShine;
+uniform float uRim;
+uniform float uIridescence;
+uniform float uIntensity;
+uniform vec3 uSheenA;
+uniform vec3 uSheenB;
+uniform float uHasRefract;
+uniform float uWhole;
+uniform float uThick;
+uniform float uCornerN;
+uniform float uEdgeRoll;
+uniform vec2 uBlob[${BLOB_MAX}];
+uniform float uBlobR[${BLOB_MAX}];
+uniform int uBlobCount;
+uniform float uGoo;
+uniform float uSheenTime;
+uniform vec3 uLight;
+uniform vec3 uLightColor;
+uniform float uIOR;
+uniform float uFilm;
+uniform float uFilmNm;
+uniform float uFilmVar;
+uniform float uGlitter;
+uniform float uGlitterDensity;
+uniform float uGlitterFacet;
+uniform float uGlitterFill;
+uniform int uGlitterSteps;
+uniform float uSheenCouple;
+uniform float uBlobHeight;
+uniform float uDecouple;
+uniform float uVeinPull;
+uniform float uVeinScale;
+uniform float uVeinSharp;
+uniform float uVeinGlow;
+uniform vec3 uVeinColor;
+uniform float uGlitterTop;
+uniform float uFlakeOpacity;
+uniform float uFlakeChroma;
+uniform vec3 uFlakeColor;
+
+vec4 cardS(vec2 q, float t){
+  return card(clamp(q, vec2(1.0), uSize - vec2(1.0)), t);
+}
+
+float sdSquircle(vec2 p, vec2 b, float r, float n){
+  vec2 q = abs(p) - b + r;
+  vec2 m = max(q, 0.0);
+  float outside = pow(pow(m.x, n) + pow(m.y, n), 1.0 / n);
+  return min(max(q.x, q.y), 0.0) + outside - r;
+}
+
+float sdSlab(vec3 p, vec2 b, float thick, float r, float n, float roll){
+  float rz = clamp(roll, 0.02, 1.0) * thick;
+  float d2 = sdSquircle(p.xy, b, r, n);
+  vec2 w = vec2(d2 + rz, abs(p.z) - (thick - rz));
+  return min(max(w.x, w.y), 0.0) + length(max(w, 0.0)) - rz;
+}
+
+float rnd3(vec3 p){ return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453123); }
+
+float noise3(vec3 p){
+  vec3 i = floor(p), f = fract(p);
+  vec3 u = f * f * (3.0 - 2.0 * f);
+  float a = mix(mix(rnd3(i), rnd3(i + vec3(1,0,0)), u.x), mix(rnd3(i + vec3(0,1,0)), rnd3(i + vec3(1,1,0)), u.x), u.y);
+  float b = mix(mix(rnd3(i + vec3(0,0,1)), rnd3(i + vec3(1,0,1)), u.x), mix(rnd3(i + vec3(0,1,1)), rnd3(i + vec3(1,1,1)), u.x), u.y);
+  return mix(a, b, u.z);
+}
+
+float veinField(vec3 p){
+  vec3 q = p * uVeinScale;
+  float w = noise3(q * 0.6);
+  q += vec3(w, w * 1.3, w * 0.7) * 1.6;
+  float n = noise3(q) * 2.0 - 1.0;
+  return pow(clamp(1.0 - abs(n), 0.0, 1.0), uVeinSharp);
+}
+
+vec3 thinFilm(float cosV, float nm){
+  float filmIor = 1.38;
+  float sinT2 = (1.0 - cosV * cosV) / (filmIor * filmIor);
+  float cosT = sqrt(max(1.0 - sinT2, 0.0));
+  float opd = 2.0 * filmIor * nm * cosT;
+  vec3 lambda = vec3(650.0, 545.0, 460.0);
+  return 0.5 + 0.5 * cos(6.2831853 * opd / lambda + 3.14159265);
+}
+
+vec2 cellSparkle(vec3 q, float t, vec3 hv, vec3 hv2, float couple){
+  vec3 i = floor(q), f = fract(q);
+  float alive = step(1.0 - uGlitterFill, rnd3(i + 5.1));
+  vec3 o = vec3(rnd3(i), rnd3(i + 11.3), rnd3(i + 27.7));
+  float shape = 1.0 - smoothstep(0.0, 0.30, length(f - o));
+  float dens = alive * shape;
+  vec3 fn = normalize(vec3(rnd3(i + 1.9), rnd3(i + 7.3), rnd3(i + 13.1)) * 2.0 - 1.0);
+  float facet = pow(max(dot(fn, hv), 0.0), uGlitterFacet)
+    + couple * pow(max(dot(fn, hv2), 0.0), uGlitterFacet);
+  float tw = 0.55 + 0.45 * (0.5 + 0.5 * sin(t * 2.0 + rnd3(i + 3.7) * 6.2831853));
+  return vec2(dens * facet * tw, dens);
+}
+
+vec2 subsurface(vec3 p0, vec3 rd, float t, vec3 hv, vec3 hv2, float couple){
+  vec2 acc = vec2(0.0);
+  float span = 0.34 / float(uGlitterSteps);
+  for(int i = 0; i < 14; i++){
+    if(i >= uGlitterSteps) break;
+    float depth = (float(i) + 0.5) * span;
+    vec3 at = p0 + rd * depth;
+    float bias = uVeinPull > 0.001 ? mix(1.0, veinField(at) * 2.2, uVeinPull) : 1.0;
+    vec2 c = cellSparkle(at * uGlitterDensity, t, hv, hv2, couple);
+    acc.x += c.x * exp(-depth * 4.2) * bias;
+    acc.y += c.y * bias;
+  }
+  float inv = 1.0 / float(uGlitterSteps);
+  return vec2(acc.x * 6.0 * inv, acc.y * inv);
+}
+
+float smin(float a, float b, float k){
+  float h = exp(-k * a) + exp(-k * b);
+  return -log(max(h, 1e-12)) / k;
+}
+
+float mapD(vec3 p){
+  float dTrail = 4.0;
+  for(int i = 0; i < ${TRAIL_MAX}; i++){
+    if(i >= uCount) break;
+    float r = uBaseRadius * float(uCount) - uBaseRadius * float(i);
+    dTrail = smin(dTrail, length(p - vec3(uTrail[i], 0.0)) - r, uBlend);
+  }
+
+  float dBlob = 4.0;
+  for(int i = 0; i < ${BLOB_MAX}; i++){
+    if(i >= uBlobCount) break;
+    float rad = uBlobR[i];
+    vec3 rv = vec3(rad, rad, max(rad * uBlobHeight, 0.003));
+    vec3 dv = p - vec3(uBlob[i], 0.0);
+    dBlob = smin(dBlob, (length(dv / rv) - 1.0) * min(min(rv.x, rv.y), rv.z), uGoo);
+  }
+
+  float dSlab = 4.0;
+  if(uWhole > 0.5){
+    float hw = uSize.x / uSize.y * 0.5;
+    dSlab = sdSlab(p - vec3(hw, 0.5, 0.0), vec2(hw, 0.5), uThick, uRadius / uSize.y, uCornerN, uEdgeRoll);
+  }
+
+  if(uDecouple > 0.5){
+    return min(smin(dTrail, dSlab, uBlend), smin(dBlob, dSlab, uGoo));
+  }
+  return smin(smin(dTrail, dBlob, uGoo), dSlab, uGoo);
+}
+
+vec3 normalD(vec3 p){
+  float e = 0.0015;
+  return normalize(vec3(
+    mapD(p + vec3(e,0,0)) - mapD(p - vec3(e,0,0)),
+    mapD(p + vec3(0,e,0)) - mapD(p - vec3(0,e,0)),
+    mapD(p + vec3(0,0,e)) - mapD(p - vec3(0,0,e))));
+}
+
+void main(){
+  vec2 p = vec2(vUv.x, 1.0 - vUv.y) * uSize;
+  vec3 ray = vec3(p / uSize.y, 1.0);
+  vec3 dir = vec3(0.0, 0.0, -1.0);
+
+  float dist = 0.0;
+  for(int i = 0; i < 16; i++){
+    dist = mapD(ray);
+    ray += dir * dist;
+    if(dist < 0.0008 || dist > 4.0) break;
+  }
+
+  float cov = 1.0 - smoothstep(0.0, 3.0 / uSize.y, dist);
+  if(cov <= 0.002){ gl_FragColor = vec4(0.0); return; }
+
+  vec3 n = normalD(ray);
+  vec3 refl = reflect(dir, n);
+  vec3 sheen = (uSheenA * noise3(refl * 2.0 + uSheenTime) + uSheenB * noise3(refl * 2.0 - uSheenTime)) * uIntensity;
+  vec3 glints = pow(max(sheen, 0.0), vec3(7.0));
+
+  vec3 L = uLight;
+  float spec = pow(max(dot(reflect(-L, n), vec3(0.0, 0.0, 1.0)), 0.0), 60.0);
+  float edge = pow(1.0 - clamp(n.z, 0.0, 1.0), 1.5);
+
+  vec3 col;
+  if(uHasRefract > 0.5){
+    float depth = uRefraction;
+    float ior = max(uIOR, 1.0);
+    float ca = uDispersion * 0.03 * (ior - 1.0) / 0.33;
+    vec3 rR = refract(dir, n, 1.0 / max(ior - ca, 1.0));
+    vec3 rG = refract(dir, n, 1.0 / ior);
+    vec3 rB = refract(dir, n, 1.0 / (ior + ca));
+    vec2 oR = rR.xy * (depth / max(abs(rR.z), 0.35));
+    vec2 oG = rG.xy * (depth / max(abs(rG.z), 0.35));
+    vec2 oB = rB.xy * (depth / max(abs(rB.z), 0.35));
+    vec3 cR = cardS(p + oR, uTime).rgb;
+    vec3 cG = cardS(p + oG, uTime).rgb;
+    vec3 cB = cardS(p + oB, uTime).rgb;
+    col = vec3(cR.r, cG.g, cB.b);
+    col *= 1.0 - 0.35 * uRim * edge;
+  } else {
+    col = card(p, uTime).rgb * (1.0 - 0.3 * uRim * edge);
+  }
+
+  float calm = mix(1.0, 0.5, uWhole);
+  col += glints * uIridescence * calm;
+
+  float cosV = clamp(dot(n, -dir), 0.0, 1.0);
+  float nm = uFilmNm * mix(1.0, 0.35 + 1.3 * noise3(ray * 7.0 + uSheenTime * 0.35), uFilmVar);
+  vec3 film = thinFilm(cosV, nm);
+  float fres = 0.14 + 0.86 * pow(1.0 - cosV, 3.0);
+  col += film * fres * uFilm * calm;
+
+  vec3 glitterCol = vec3(0.0);
+  if(uGlitter > 0.001 || uFlakeOpacity > 0.001 || uFlakeChroma > 0.001){
+    float bodyIor = max(uIOR, 1.0);
+    vec3 into = refract(dir, n, 1.0 / bodyIor);
+    if(dot(into, into) < 0.0001) into = dir;
+    vec3 lin = refract(-uLight, n, 1.0 / bodyIor);
+    if(dot(lin, lin) < 0.0001) lin = -uLight;
+    vec3 hv = normalize(-lin - into);
+
+    vec3 sdir = refract(-refl, n, 1.0 / bodyIor);
+    if(dot(sdir, sdir) < 0.0001) sdir = -refl;
+    vec3 hv2 = normalize(-sdir - into);
+    float sheenLum = clamp(dot(glints, vec3(0.3333)) * 3.0, 0.0, 1.5);
+    float couple = uSheenCouple * (0.2 + sheenLum);
+
+    vec2 sub = subsurface(ray, into, uSheenTime, hv, hv2, couple);
+    float dens = sub.y;
+
+    col *= exp(-dens * uFlakeOpacity * 5.0);
+    col = mix(col, uFlakeColor, clamp(dens * uFlakeChroma * 2.5, 0.0, 1.0));
+
+    vec3 sheenTint = mix(uSheenA, uSheenB, 0.5);
+    vec3 tintG = mix(mix(sheenTint, uLightColor, 0.6), sheenTint, uSheenCouple * 0.55);
+    glitterCol = sub.x * uGlitter * mix(vec3(1.0), film, 0.5) * tintG * 3.4;
+    col += glitterCol * (1.0 - uGlitterTop);
+  }
+
+  if(uVeinGlow > 0.001){
+    float seam = veinField(ray);
+    col += seam * uVeinColor * uVeinGlow * (0.35 + 0.65 * fres) * mix(vec3(1.0), film, 0.35);
+  }
+
+  col += uLightColor * (spec * uShine * calm);
+
+  float a = cov;
+  vec3 premul = max(col, 0.0) * a + max(glitterCol, 0.0) * uGlitterTop;
+  gl_FragColor = vec4(premul, a);
+}
+`;
+
+const hexToRgb = (h) => {
+  const n = parseInt(h.replace('#', ''), 16);
+  return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
+};
+
+function pageBg() {
+  const c = getComputedStyle(document.body).backgroundColor.match(/[\d.]+/g);
+  return c ? [c[0] / 255, c[1] / 255, c[2] / 255] : [1, 1, 1];
+}
+
+function rasterizeGhost(el, cv) {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = Math.max(1, el.offsetWidth), h = Math.max(1, el.offsetHeight);
+  cv.width = Math.round(w * dpr);
+  cv.height = Math.round(h * dpr);
+  const g = cv.getContext('2d');
+  if (!g) return cv;
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, w, h);
+
+  const icon = el.querySelector('.ico');
+  const path = icon && icon.querySelector('path');
+  if (path) {
+    const box = icon.querySelector('svg').getBoundingClientRect();
+    const side = box.width || 17;
+    const k = side / 16;
+    g.save();
+    g.translate(icon.offsetLeft + (icon.offsetWidth - side) / 2,
+                icon.offsetTop + (icon.offsetHeight - side) / 2);
+    g.scale(k, k);
+    g.fillStyle = getComputedStyle(icon).color;
+    try { g.fill(new Path2D(path.getAttribute('d'))); } catch {}
+    g.restore();
+  }
+
+  const calRect = el.getBoundingClientRect();
+  el.querySelectorAll('.body p').forEach((node) => {
+    const cs = getComputedStyle(node);
+    const size = parseFloat(cs.fontSize);
+    g.font = `${cs.fontStyle} ${cs.fontWeight} ${size}px ${cs.fontFamily}`;
+    g.fillStyle = cs.color;
+    g.textBaseline = 'alphabetic';
+
+    const probe = g.measureText('Mg');
+    const ascent = probe.fontBoundingBoxAscent || probe.actualBoundingBoxAscent || size * 0.8;
+    const descent = probe.fontBoundingBoxDescent || probe.actualBoundingBoxDescent || size * 0.2;
+    const fontH = ascent + descent;
+
+    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+    const range = document.createRange();
+    let textNode, drew = 0;
+    while ((textNode = walker.nextNode())) {
+      const str = textNode.nodeValue || '';
+      const re = /\S+/g;
+      let m;
+      while ((m = re.exec(str))) {
+        range.setStart(textNode, m.index);
+        range.setEnd(textNode, m.index + m[0].length);
+        const r = range.getBoundingClientRect();
+        if (!r.width) continue;
+        const baseline = r.top - calRect.top + (r.height - fontH) / 2 + ascent;
+        g.fillText(m[0], r.left - calRect.left, baseline);
+        drew++;
+      }
+    }
+    if (!drew) g.fillText(node.textContent || '', node.offsetLeft, node.offsetTop + size);
+  });
+
+  return cv;
+}
+
+function compile(gl, type, src) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+  return s;
+}
+
+function makeProgram(gl, frag) {
+  const p = gl.createProgram();
+  gl.attachShader(p, compile(gl, gl.VERTEX_SHADER, VERT));
+  gl.attachShader(p, compile(gl, gl.FRAGMENT_SHADER, frag));
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  const loc = gl.getAttribLocation(p, 'aPos');
+  const u = new Proxy({}, { get: (c, k) => (k in c ? c[k] : (c[k] = gl.getUniformLocation(p, k))) });
+  return { p, loc, u };
+}
+
+const CFG = { size: 21, blend: 9, goo: 4.2, dispersion: 1,
+  shine: 0.3, rim: 0.55, iridescence: 1.0, intensity: 0.9, thickness: 0.15 };
+
+const GHOST = { on: true, opacity: 0.45, scale: 1.06, blur: 3 };
+
+function seeded(n) {
+  let x = Math.sin(n * 127.1 + 311.7) * 43758.5453;
+  return () => { x = Math.sin(x * 12.9898 + 78.233) * 43758.5453; return x - Math.floor(x); };
+}
+
+function build(el) {
+  const canvas = el.querySelector('canvas');
+  const gl = canvas.getContext('webgl', { alpha: true, antialias: false, premultipliedAlpha: true });
+  if (!gl) throw new Error('webgl unavailable');
+
+  const base = makeProgram(gl, BASE_FRAG);
+  const drop = makeProgram(gl, DROP_FRAG);
+
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+
+  const accent = getComputedStyle(el).getPropertyValue('--accent').trim();
+  const rgb = hexToRgb(accent);
+  const sheenA = rgb.map((v) => Math.min(1, v * 0.55 + 0.30));
+  const sheenB = [rgb[2] * 0.5 + 0.32, rgb[0] * 0.5 + 0.30, rgb[1] * 0.5 + 0.34];
+  const variant = parseInt(el.dataset.v, 10);
+  const iconEl = el.querySelector('.ico');
+
+  const rnd = seeded(variant + 1);
+  const blobs = [];
+  for (let i = 0; i < BLOB_MAX; i++) {
+    blobs.push({
+      u: rnd(),
+      cx: 0.14 + rnd() * 0.72, cy: 0.28 + rnd() * 0.44,
+      ax: 0.06 + rnd() * 0.13, ay: 0.10 + rnd() * 0.16,
+      fx: 0.09 + rnd() * 0.13, fy: 0.07 + rnd() * 0.14,
+      px: rnd() * 6.283, py: rnd() * 6.283,
+    });
+  }
+  const ghostCanvas = document.createElement('canvas');
+  const ghostTex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, ghostTex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+  const refreshGhost = () => {
+    rasterizeGhost(el, ghostCanvas);
+    gl.bindTexture(gl.TEXTURE_2D, ghostTex);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, ghostCanvas);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+  };
+
+  const blobPos = new Float32Array(BLOB_MAX * 2);
+  const blobRad = new Float32Array(BLOB_MAX);
+
+  let w = 1, h = 1, dpr = 1;
+  const tx = new Float32Array(TRAIL_MAX);
+  const ty = new Float32Array(TRAIL_MAX);
+  const packed = new Float32Array(TRAIL_MAX * 2);
+
+  const resize = () => {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    w = Math.max(1, el.offsetWidth);
+    h = Math.max(1, el.offsetHeight);
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+  };
+
+  const home = () => [iconEl.offsetLeft + iconEl.offsetWidth / 2, iconEl.offsetTop + iconEl.offsetHeight / 2];
+
+  const bind = (prog) => {
+    gl.useProgram(prog.p);
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.enableVertexAttribArray(prog.loc);
+    gl.vertexAttribPointer(prog.loc, 2, gl.FLOAT, false, 0, 0);
+  };
+
+  const shared = (prog, time, toggles, dark, bg) => {
+    gl.uniform2f(prog.u.uSize, w, h);
+    gl.uniform1f(prog.u.uTime, time);
+    gl.uniform1i(prog.u.uVariant, variant);
+    gl.uniform3fv(prog.u.uColor, rgb);
+    gl.uniform3fv(prog.u.uBg, bg);
+    gl.uniform3fv(prog.u.uToggle, toggles);
+    gl.uniform1f(prog.u.uDark, dark);
+    const c = home();
+    gl.uniform2f(prog.u.uIcon, c[0], c[1]);
+    gl.uniform1f(prog.u.uIconR, 15.0);
+    gl.uniform1f(prog.u.uRadius, cornerRadius());
+    gl.uniform1f(prog.u.uTintAmt, tintAmt());
+    gl.uniform1f(prog.u.uStroke, 1.6);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, ghostTex);
+    gl.uniform1i(prog.u.uGhost, 0);
+    gl.uniform1f(prog.u.uGhostOn, GHOST.on ? 1 : 0);
+    gl.uniform1f(prog.u.uGhostOpacity, GHOST.opacity);
+    gl.uniform1f(prog.u.uGhostScale, GHOST.scale);
+    gl.uniform1f(prog.u.uGhostBlur, GHOST.blur);
+  };
+
+  const draw = (time, toggles, dark, bg, dropOn, refr, wholeOn, blobOn, bt, amb, st, light, ior, lcolor) => {
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.disable(gl.BLEND);
+    gl.disable(gl.SCISSOR_TEST);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    bind(base);
+    shared(base, time, toggles, dark, bg);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    if (!dropOn && !wholeOn && !blobOn) return;
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (let i = 0; i < TRAIL_MAX; i++) {
+      packed[i * 2] = tx[i] / h;
+      packed[i * 2 + 1] = ty[i] / h;
+      minX = Math.min(minX, tx[i]); maxX = Math.max(maxX, tx[i]);
+      minY = Math.min(minY, ty[i]); maxY = Math.max(maxY, ty[i]);
+    }
+
+    if (wholeOn || blobOn) {
+      gl.disable(gl.SCISSOR_TEST);
+    } else {
+      const pad = dropSize() * 2 + refr + (Math.log(TRAIL_MAX + 1) / CFG.blend) * h + 12;
+      const sx = Math.max(0, Math.floor((minX - pad) * dpr));
+      const sy = Math.max(0, Math.floor((h - maxY - pad) * dpr));
+      const sw = Math.min(canvas.width - sx, Math.ceil((maxX - minX + pad * 2) * dpr));
+      const sh = Math.min(canvas.height - sy, Math.ceil((maxY - minY + pad * 2) * dpr));
+      if (sw <= 0 || sh <= 0) return;
+      gl.enable(gl.SCISSOR_TEST);
+      gl.scissor(sx, sy, sw, sh);
+    }
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+
+    bind(drop);
+    shared(drop, time, toggles, dark, bg);
+    gl.uniform2fv(drop.u['uTrail[0]'], packed);
+    const tc = trailCount();
+    gl.uniform1i(drop.u.uCount, dropOn ? tc : 0);
+    gl.uniform1f(drop.u.uBaseRadius, (dropSize() / h) / tc);
+    gl.uniform1f(drop.u.uBlend, CFG.blend);
+    gl.uniform1f(drop.u.uRefraction, refr);
+    gl.uniform1f(drop.u.uDispersion, CFG.dispersion);
+    gl.uniform1f(drop.u.uShine, enabled('light') ? CFG.shine : 0);
+    gl.uniform1f(drop.u.uRim, CFG.rim);
+    gl.uniform1f(drop.u.uIridescence, sheenAmt());
+    gl.uniform1f(drop.u.uIntensity, CFG.intensity);
+    gl.uniform3fv(drop.u.uSheenA, sheenA);
+    gl.uniform3fv(drop.u.uSheenB, sheenB);
+    gl.uniform1f(drop.u.uHasRefract, refr > 0.5 ? 1 : 0);
+    gl.uniform1f(drop.u.uWhole, wholeOn ? 1 : 0);
+    gl.uniform1f(drop.u.uThick, CFG.thickness);
+    gl.uniform1f(drop.u.uCornerN, cornerN());
+    gl.uniform1f(drop.u.uEdgeRoll, edgeRoll());
+    gl.uniform1f(drop.u.uFilm, filmAmt());
+    gl.uniform1f(drop.u.uFilmNm, filmNm());
+    gl.uniform1f(drop.u.uFilmVar, filmVar());
+    gl.uniform1f(drop.u.uGlitter, glitAmt());
+    gl.uniform1f(drop.u.uGlitterDensity, glitDensity());
+    gl.uniform1f(drop.u.uGlitterFacet, glitFacet());
+    gl.uniform1f(drop.u.uGlitterFill, glitFill());
+    gl.uniform1f(drop.u.uSheenCouple, sheenCouple());
+    gl.uniform1f(drop.u.uVeinPull, veinPull());
+    gl.uniform1f(drop.u.uVeinScale, veinScale());
+    gl.uniform1f(drop.u.uVeinSharp, veinSharp());
+    gl.uniform1f(drop.u.uVeinGlow, veinGlow());
+    gl.uniform3fv(drop.u.uVeinColor, veinColor());
+    gl.uniform1f(drop.u.uBlobHeight, blobHeight());
+    gl.uniform1f(drop.u.uDecouple, inputs.decouple.checked ? 1 : 0);
+    gl.uniform1f(drop.u.uGlitterTop, inputs.glittop.checked ? 1 : 0);
+    gl.uniform1f(drop.u.uFlakeOpacity, flakeOpacity());
+    gl.uniform1f(drop.u.uFlakeChroma, flakeChroma());
+    gl.uniform3fv(drop.u.uFlakeColor, flakeColor());
+    gl.uniform1i(drop.u.uGlitterSteps, glitSteps());
+    gl.uniform1f(drop.u.uGoo, CFG.goo);
+    gl.uniform1f(drop.u.uSheenTime, st);
+    gl.uniform3fv(drop.u.uLight, light);
+    gl.uniform3fv(drop.u.uLightColor, lcolor);
+    gl.uniform1f(drop.u.uIOR, ior);
+    if (blobOn) {
+      const bn = blobCount();
+      const lo = blobMin(), hi = Math.max(blobMin(), blobMax());
+      for (let i = 0; i < BLOB_MAX; i++) {
+        if (i >= bn) { blobRad[i] = 0; blobPos[i * 2] = -9; blobPos[i * 2 + 1] = -9; continue; }
+        const b = blobs[i];
+        const r = dropSize() * (lo + (hi - lo) * b.u) * (0.78 + 0.22 * amb);
+        const travel = 0.22 + 0.78 * amb;
+        const mx = (r + 3) / w, my = (r + 3) / h;
+        const x = Math.min(1 - mx, Math.max(mx, b.cx + b.ax * travel * Math.sin(bt * b.fx + b.px)));
+        const y = Math.min(1 - my, Math.max(my, b.cy + b.ay * travel * Math.sin(bt * b.fy + b.py)));
+        blobPos[i * 2] = (x * w) / h;
+        blobPos[i * 2 + 1] = y;
+        blobRad[i] = r / h;
+      }
+    }
+    gl.uniform2fv(drop.u['uBlob[0]'], blobPos);
+    gl.uniform1fv(drop.u['uBlobR[0]'], blobRad);
+    gl.uniform1i(drop.u.uBlobCount, blobOn ? blobCount() : 0);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    gl.disable(gl.SCISSOR_TEST);
+    gl.disable(gl.BLEND);
+  };
+
+  resize();
+  refreshGhost();
+  const c = home();
+  tx.fill(c[0]); ty.fill(c[1]);
+
+  return { el, canvas, resize, draw, home, tx, ty, refreshGhost, visible: true,
+    hx: c[0], hy: c[1], target: null, moving: 0,
+    get w() { return w; }, get h() { return h; } };
+}
+
+const cells = [];
+let firstError = '';
+document.querySelectorAll('.cal').forEach((el) => {
+  try { cells.push(build(el)); }
+  catch (e) { firstError = firstError || String(e.message || e).split('\n')[0]; console.error(e); }
+});
+
+const status = document.getElementById('status');
+status.textContent = cells.length
+  ? `${cells.length} callouts — up to ${TRAIL_MAX} trail + ${BLOB_MAX} blobs, 16-step march`
+  : `failed — ${firstError}`;
+
+const inputs = {
+  container: document.getElementById('t-container'),
+  icon: document.getElementById('t-icon'),
+  stroke: document.getElementById('t-stroke'),
+  drop: document.getElementById('t-drop'),
+  ghost: document.getElementById('t-ghost'),
+  glittop: document.getElementById('t-glittop'),
+  decouple: document.getElementById('t-decouple'),
+  blobs: document.getElementById('t-blobs'),
+  whole: document.getElementById('t-whole'),
+  motion: document.getElementById('t-motion'),
+};
+
+const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+const darkMq = window.matchMedia('(prefers-color-scheme: dark)');
+const toggles = () => new Float32Array([
+  inputs.container.checked ? 1 : 0,
+  inputs.icon.checked ? 1 : 0,
+  inputs.stroke.checked ? 1 : 0,
+]);
+
+for (const c of cells) {
+  c.el.addEventListener('pointermove', (e) => {
+    if (e.pointerType === 'touch' || reduced.matches) return;
+    const par = c.el.offsetParent || document.body;
+    const pr = par.getBoundingClientRect();
+    const m = dropSize() * 0.5;
+    c.target = [
+      Math.max(m, Math.min(c.w - m, e.clientX - (pr.left + c.el.offsetLeft))),
+      Math.max(m, Math.min(c.h - m, e.clientY - (pr.top + c.el.offsetTop))),
+    ];
+    kick();
+  }, { passive: true });
+  c.el.addEventListener('pointerleave', () => { c.target = null; kick(); }, { passive: true });
+}
+
+const ambInput = document.getElementById('amb');
+const ambOut = document.getElementById('amb-out');
+const LABELS = [[0, 'still'], [15, 'barely there'], [35, 'subtle'], [60, 'gentle'], [85, 'lively']];
+
+function amb() { return enabled('amb') ? parseInt(ambInput.value, 10) / 100 : 0; }
+
+const refrInput = document.getElementById('refr');
+const refrOut = document.getElementById('refr-out');
+const REFR_LABELS = [[0, 'off'], [1, 'faint'], [14, 'watery'], [24, 'natural'], [40, 'thick'], [56, 'fishbowl']];
+
+function refrValue() { return enabled('refr') ? parseInt(refrInput.value, 10) : 0; }
+
+const sheenInput = document.getElementById('sheen');
+const sheenOut = document.getElementById('sheen-out');
+const lightInput = document.getElementById('light');
+const lightOut = document.getElementById('light-out');
+const SHEEN_LABELS = [[0, 'frozen'], [1, 'creeping'], [55, 'slow'], [90, 'rolling'], [170, 'restless'], [250, 'boiling']];
+
+function sheenSpeed() { return enabled('sheen') ? parseInt(sheenInput.value, 10) / 100 : 0; }
+
+function sheenLabel(v) {
+  let out = SHEEN_LABELS[0][1];
+  for (const [t, l] of SHEEN_LABELS) if (v * 100 >= t) out = l;
+  return out;
+}
+
+const gop = document.getElementById('gop');
+const gsc = document.getElementById('gsc');
+const gbl = document.getElementById('gbl');
+const gopOut = document.getElementById('gop-out');
+const gscOut = document.getElementById('gsc-out');
+const gblOut = document.getElementById('gbl-out');
+
+function syncGhost() {
+  GHOST.on = inputs.ghost.checked;
+  GHOST.opacity = parseInt(gop.value, 10) / 100;
+  GHOST.scale = parseInt(gsc.value, 10) / 100;
+  GHOST.blur = parseInt(gbl.value, 10);
+  gopOut.textContent = gop.value + '%';
+  gscOut.textContent = GHOST.scale.toFixed(2) + '\u00d7';
+  gblOut.textContent = gbl.value + 'px';
+}
+
+for (const input of [gop, gsc, gbl]) {
+  input.addEventListener('input', () => { syncGhost(); sync(); });
+}
+
+const followSheen = document.getElementById('f-sheen');
+
+function lightFollows() { return followSheen.checked; }
+
+followSheen.addEventListener('change', sync);
+
+function lightAngleRad() {
+  if (lightFollows()) return sheenClock + Math.PI;
+  return (parseInt(lightInput.value, 10) * Math.PI) / 180;
+}
+
+const lightVec = new Float32Array(3);
+function lightDir() {
+  const a = lightAngleRad();
+  const x = Math.sin(a), y = -Math.cos(a), z = 0.6;
+  const len = Math.hypot(x, y, z);
+  lightVec[0] = x / len; lightVec[1] = y / len; lightVec[2] = z / len;
+  return lightVec;
+}
+
+function refrLabel(v) {
+  let out = REFR_LABELS[0][1];
+  for (const [t, l] of REFR_LABELS) if (v >= t) out = l;
+  return out;
+}
+
+function ambLabel(v) {
+  let out = LABELS[0][1];
+  for (const [t, l] of LABELS) if (v * 100 >= t) out = l;
+  return out;
+}
+
+let raf = null, prev = performance.now(), clock = 0, blobClock = Math.PI, sheenClock = 0;
+
+function blobsLive() { return inputs.blobs.checked && !reduced.matches && amb() > 0; }
+
+function busy() {
+  if (inputs.motion.checked && !reduced.matches) return true;
+  return cells.some((c) => c.moving > 0.05);
+}
+
+function needsFrame() {
+  if (!cells.some((c) => c.visible)) return false;
+  if (busy()) return true;
+  return blobsLive() || (sheenSpeed() > 0 && !reduced.matches);
+}
+
+function frame(now) {
+  const level = amb();
+  const spin = reduced.matches ? 0 : sheenSpeed();
+  const cap = busy() ? 60 : 8 + 42 * Math.max(level, Math.min(spin / 3, 1));
+  if (now - prev < 1000 / cap - 1.5) { raf = requestAnimationFrame(frame); return; }
+
+  const dt = Math.min((now - prev) / 1000, 0.25);
+  prev = now;
+  if (inputs.motion.checked && !reduced.matches) clock += dt;
+
+  const tg = toggles();
+  const dark = isDarkBg() ? 1 : 0;
+  const bg = pageBg();
+  const dropOn = inputs.drop.checked;
+  const wholeOn = inputs.whole.checked;
+  const blobOn = inputs.blobs.checked;
+  if (blobsLive()) blobClock += dt * level;
+  sheenClock += dt * spin;
+  const lv = lightDir();
+  const iv = iorValue();
+  const lc = lightColor();
+
+  for (const c of cells) {
+    if (!c.visible) { c.moving = 0; continue; }
+    const rest = c.home();
+    const t = (c.target && !reduced.matches) ? c.target : rest;
+    const k = 1 - Math.exp(-dt * (c.target ? 17 : 9));
+    const px = c.hx, py = c.hy;
+    c.hx += (t[0] - c.hx) * k;
+    c.hy += (t[1] - c.hy) * k;
+    for (let i = TRAIL_MAX - 1; i > 0; i--) { c.tx[i] = c.tx[i - 1]; c.ty[i] = c.ty[i - 1]; }
+    c.tx[0] = c.hx; c.ty[0] = c.hy;
+
+    let spread = Math.hypot(c.hx - px, c.hy - py) / Math.max(dt, 1e-4) * 0.02;
+    for (let i = 1; i < TRAIL_MAX; i++) {
+      spread = Math.max(spread, Math.abs(c.tx[i] - c.tx[i - 1]) + Math.abs(c.ty[i] - c.ty[i - 1]));
+    }
+    c.moving = spread;
+    c.draw(clock, tg, dark, bg, dropOn, refrValue(), wholeOn, blobOn, blobClock, level, sheenClock, lv, iv, lc);
+  }
+
+  raf = needsFrame() ? requestAnimationFrame(frame) : null;
+}
+
+function kick() { if (raf === null) { prev = performance.now(); raf = requestAnimationFrame(frame); } }
+
+function sync() {
+  syncGhost();
+  updateOutputs();
+  paintBypass();
+  Object.values(inputs).forEach((i) => { i.closest('.tog').dataset.on = i.checked ? '1' : '0'; });
+  for (const c of cells) c.moving = 1;
+  kick();
+}
+
+const iorInput = document.getElementById('ior');
+const iorOut = document.getElementById('ior-out');
+const lcol = document.getElementById('lcol');
+const lcolOut = document.getElementById('lcol-out');
+const IOR_NAMES = [[100, 'air'], [110, 'soap film'], [128, 'water'], [140, 'glass'], [160, 'sapphire'], [200, 'diamond']];
+
+function iorValue() { return enabled('ior') ? parseInt(iorInput.value, 10) / 100 : 1.0; }
+
+function iorName(v) {
+  let out = IOR_NAMES[0][1];
+  for (const [t, n] of IOR_NAMES) if (v * 100 >= t) out = n;
+  return out;
+}
+
+const bgcol = document.getElementById('bgcol');
+const bgcolOut = document.getElementById('bgcol-out');
+
+function lumOf(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const f = (c) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+  return 0.2126 * f(((n >> 16) & 255) / 255) + 0.7152 * f(((n >> 8) & 255) / 255) + 0.0722 * f((n & 255) / 255);
+}
+
+function isDarkBg() { return lumOf(bgcol.value) < 0.4; }
+
+function applyBg() {
+  const dark = isDarkBg();
+  const r = document.documentElement.style;
+  r.setProperty('--bg', bgcol.value);
+  r.setProperty('--fg', dark ? '#e6edf3' : '#1f2328');
+  r.setProperty('--fg-dim', dark ? '#9198a1' : '#59636e');
+  r.setProperty('--rule', dark ? 'rgba(230,237,243,.16)' : 'rgba(31,35,40,.12)');
+  r.setProperty('--panel', dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.04)');
+}
+
+function systemBg() { return darkMq.matches ? '#0d1117' : '#ffffff'; }
+
+bgcol.value = systemBg();
+
+const dsizeI = document.getElementById('dsize');
+const dcountI = document.getElementById('dcount');
+const bcountI = document.getElementById('bcount');
+const bminI = document.getElementById('bmin');
+const bmaxI = document.getElementById('bmax');
+const dsizeO = document.getElementById('dsize-out');
+const dcountO = document.getElementById('dcount-out');
+const bcountO = document.getElementById('bcount-out');
+const bminO = document.getElementById('bmin-out');
+const bmaxO = document.getElementById('bmax-out');
+
+function dropSize() { return parseInt(dsizeI.value, 10); }
+function trailCount() { return parseInt(dcountI.value, 10); }
+function blobCount() { return parseInt(bcountI.value, 10); }
+function blobMin() { return parseInt(bminI.value, 10) / 100; }
+function blobMax() { return parseInt(bmaxI.value, 10) / 100; }
+
+const filmI = document.getElementById('film');
+const filmNmI = document.getElementById('filmnm');
+const filmVarI = document.getElementById('filmvar');
+const glitI = document.getElementById('glit');
+const glitDI = document.getElementById('glitd');
+const glitFI = document.getElementById('glitfacet');
+const glitFillI = document.getElementById('glitfill');
+const fopacI = document.getElementById('fopac');
+const fchromaI = document.getElementById('fchroma');
+const fcolI = document.getElementById('fcol');
+const fopacO = document.getElementById('fopac-out');
+const fchromaO = document.getElementById('fchroma-out');
+const fcolO = document.getElementById('fcol-out');
+
+function flakeOpacity() { return parseInt(fopacI.value, 10) / 100; }
+function flakeChroma() { return parseInt(fchromaI.value, 10) / 100; }
+
+const flakeRgb = new Float32Array(3);
+function flakeColor() {
+  const n = parseInt(fcolI.value.slice(1), 16);
+  flakeRgb[0] = ((n >> 16) & 255) / 255;
+  flakeRgb[1] = ((n >> 8) & 255) / 255;
+  flakeRgb[2] = (n & 255) / 255;
+  return flakeRgb;
+}
+
+const vpullI = document.getElementById('veinpull');
+const vscaleI = document.getElementById('veinscale');
+const vsharpI = document.getElementById('veinsharp');
+const vglowI = document.getElementById('veinglow');
+const vcolI = document.getElementById('veincol');
+const vpullO = document.getElementById('veinpull-out');
+const vscaleO = document.getElementById('veinscale-out');
+const vsharpO = document.getElementById('veinsharp-out');
+const vglowO = document.getElementById('veinglow-out');
+const vcolO = document.getElementById('veincol-out');
+
+function veinPull() { return parseInt(vpullI.value, 10) / 100; }
+function veinScale() { return parseInt(vscaleI.value, 10); }
+function veinSharp() { return parseInt(vsharpI.value, 10); }
+function veinGlow() { return parseInt(vglowI.value, 10) / 100; }
+
+const veinRgb = new Float32Array(3);
+function veinColor() {
+  const n = parseInt(vcolI.value.slice(1), 16);
+  veinRgb[0] = ((n >> 16) & 255) / 255;
+  veinRgb[1] = ((n >> 8) & 255) / 255;
+  veinRgb[2] = (n & 255) / 255;
+  return veinRgb;
+}
+
+const scoupleI = document.getElementById('scouple');
+const scoupleO = document.getElementById('scouple-out');
+const glitFillO = document.getElementById('glitfill-out');
+const glitFO = document.getElementById('glitfacet-out');
+const filmO = document.getElementById('film-out');
+const filmNmO = document.getElementById('filmnm-out');
+const filmVarO = document.getElementById('filmvar-out');
+const glitO = document.getElementById('glit-out');
+const glitDO = document.getElementById('glitd-out');
+
+function filmAmt() { return enabled('film') ? parseInt(filmI.value, 10) / 100 : 0; }
+function filmNm() { return parseInt(filmNmI.value, 10); }
+function filmVar() { return parseInt(filmVarI.value, 10) / 100; }
+function glitAmt() { return enabled('glit') ? parseInt(glitI.value, 10) / 100 : 0; }
+function glitDensity() { return parseInt(glitDI.value, 10); }
+function glitFacet() { return parseInt(glitFI.value, 10); }
+function glitFill() { return parseInt(glitFillI.value, 10) / 100; }
+function sheenCouple() { return parseInt(scoupleI.value, 10) / 100; }
+function glitSteps() { return Math.max(4, Math.min(14, Math.round(glitDensity() / 9) + 4)); }
+
+const tintI = document.getElementById('tint');
+const tintO = document.getElementById('tint-out');
+function tintAmt() { return parseInt(tintI.value, 10) / 100; }
+
+const sheenAmtI = document.getElementById('sheenamt');
+const sheenAmtO = document.getElementById('sheenamt-out');
+const cradI = document.getElementById('cradius');
+const cradO = document.getElementById('cradius-out');
+const bheightI = document.getElementById('bheight');
+const bheightO = document.getElementById('bheight-out');
+
+function sheenAmt() { return parseInt(sheenAmtI.value, 10) / 100; }
+function cornerRadius() { return parseInt(cradI.value, 10); }
+function blobHeight() { return parseInt(bheightI.value, 10) / 100; }
+
+const cornerInput = document.getElementById('corner');
+const cornerOut = document.getElementById('corner-out');
+const rollInput = document.getElementById('roll');
+const rollOut = document.getElementById('roll-out');
+
+function cornerN() { return parseInt(cornerInput.value, 10) / 100; }
+function edgeRoll() { return parseInt(rollInput.value, 10) / 100; }
+
+const lightRgb = new Float32Array(3);
+function lightColor() {
+  const n = parseInt(lcol.value.slice(1), 16);
+  lightRgb[0] = ((n >> 16) & 255) / 255;
+  lightRgb[1] = ((n >> 8) & 255) / 255;
+  lightRgb[2] = (n & 255) / 255;
+  return lightRgb;
+}
+
+function updateOutputs() {
+  ambOut.textContent = ambLabel(amb());
+  refrOut.textContent = refrLabel(refrValue());
+  sheenOut.textContent = sheenLabel(sheenSpeed());
+  lightOut.textContent = lightFollows() ? 'follows sheen' : lightInput.value + '\u00b0';
+  lightInput.closest('.slider').classList.toggle('off', lightFollows());
+  iorOut.textContent = iorValue().toFixed(2) + ' ' + iorName(iorValue());
+  applyBg();
+  bgcolOut.textContent = bgcol.value;
+  dsizeO.textContent = dropSize() + 'px';
+  dcountO.textContent = trailCount();
+  bcountO.textContent = blobCount();
+  bminO.textContent = blobMin().toFixed(2) + '\u00d7';
+  bmaxO.textContent = Math.max(blobMin(), blobMax()).toFixed(2) + '\u00d7';
+  filmO.textContent = filmAmt().toFixed(2);
+  filmNmO.textContent = filmNm() + 'nm';
+  filmVarO.textContent = Math.round(filmVar() * 100) + '%';
+  glitO.textContent = glitAmt().toFixed(2);
+  glitDO.textContent = glitDensity();
+  glitFO.textContent = glitFacet();
+  scoupleO.textContent = sheenCouple().toFixed(2);
+  fopacO.textContent = flakeOpacity().toFixed(2);
+  fchromaO.textContent = flakeChroma().toFixed(2);
+  fcolO.textContent = fcolI.value;
+  vpullO.textContent = veinPull().toFixed(2);
+  vscaleO.textContent = veinScale();
+  vsharpO.textContent = veinSharp() + (veinSharp() < 5 ? ' \u00b7 marble' : veinSharp() < 20 ? ' \u00b7 seams' : ' \u00b7 cracks');
+  vglowO.textContent = veinGlow().toFixed(2);
+  vcolO.textContent = vcolI.value;
+  glitFillO.textContent = Math.round(glitFill() * 100) + '% \u00b7 ' + glitSteps() + ' steps';
+  tintO.textContent = Math.round(tintAmt() * 100) + '%';
+  sheenAmtO.textContent = sheenAmt().toFixed(2);
+  cradO.textContent = cornerRadius() + 'px';
+  bheightO.textContent = Math.round(blobHeight() * 100) + '%';
+  for (const c of cells) c.el.style.borderRadius = cornerRadius() + 'px';
+  const cn = cornerN();
+  cornerOut.textContent = cn.toFixed(2) + (cn < 2.15 ? ' circular' : cn < 3.4 ? ' continuous' : ' squircle');
+  const er = edgeRoll();
+  rollOut.textContent = Math.round(er * 100) + '%' + (er > 0.96 ? ' bullnose' : er < 0.3 ? ' sharp' : '');
+  lcolOut.textContent = lcol.value;
+}
+
+bgcol.addEventListener('input', () => { for (const c of cells) c.refreshGhost(); sync(); });
+document.getElementById('bgauto').addEventListener('click', () => { bgcol.value = systemBg(); for (const c of cells) c.refreshGhost(); sync(); });
+
+for (const i of [ambInput, refrInput, sheenInput, lightInput, iorInput, lcol, cornerInput, rollInput, tintI, sheenAmtI, cradI, bheightI, filmI, filmNmI, filmVarI, glitI, glitDI, glitFI, glitFillI, scoupleI, fopacI, fchromaI, fcolI, vpullI, vscaleI, vsharpI, vglowI, vcolI, dsizeI, dcountI, bcountI, bminI, bmaxI]) {
+  i.addEventListener('input', sync);
+}
+Object.values(inputs).forEach((i) => i.addEventListener('change', sync));
+reduced.addEventListener('change', sync);
+darkMq.addEventListener('change', sync);
+
+const io = new IntersectionObserver((entries) => {
+  for (const e of entries) {
+    const c = cells.find((x) => x.el === e.target);
+    if (c) { c.visible = e.isIntersecting; if (c.visible) c.moving = 1; }
+  }
+  kick();
+}, { rootMargin: '120px' });
+for (const c of cells) io.observe(c.el);
+
+darkMq.addEventListener('change', () => { for (const c of cells) c.refreshGhost(); });
+
+
+const BYPASS = ['amb', 'refr', 'ior', 'sheen', 'light', 'film', 'glit'];
+
+for (const id of BYPASS) {
+  const row = document.getElementById(id).closest('.slider');
+  const box = document.createElement('input');
+  box.type = 'checkbox';
+  box.className = 'bp';
+  box.id = 'bp-' + id;
+  box.checked = true;
+  box.title = 'enable this property';
+  row.insertBefore(box, row.firstChild);
+  box.addEventListener('change', sync);
+}
+
+function enabled(id) {
+  const b = document.getElementById('bp-' + id);
+  return !b || b.checked;
+}
+
+function paintBypass() {
+  for (const id of BYPASS) {
+    document.getElementById(id).closest('.slider').classList.toggle('off', !enabled(id));
+  }
+}
+
+const panel = document.createElement('div');
+panel.id = 'panel';
+const main = document.createElement('div');
+main.id = 'main';
+const wrapEl = document.querySelector('.wrap');
+const original = Array.from(wrapEl.children);
+wrapEl.appendChild(panel);
+wrapEl.appendChild(main);
+for (const n of original) {
+  (n.matches('.controls, .slider, .hint') ? panel : main).appendChild(n);
+}
+
+const panelBtn = document.createElement('button');
+panelBtn.id = 'panel-toggle';
+panelBtn.type = 'button';
+document.body.appendChild(panelBtn);
+
+function setPanel(hidden) {
+  panel.classList.toggle('hidden', hidden);
+  panelBtn.textContent = hidden ? 'Show controls (H)' : 'Hide controls (H)';
+  try { localStorage.setItem('callout-panel-hidden', hidden ? '1' : '0'); } catch {}
+  for (const c of cells) { c.resize(); c.moving = 1; }
+  kick();
+}
+
+panelBtn.addEventListener('click', () => setPanel(!panel.classList.contains('hidden')));
+window.addEventListener('keydown', (e) => {
+  if (e.key !== 'h' && e.key !== 'H') return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const t = e.target;
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+  setPanel(!panel.classList.contains('hidden'));
+});
+
+try { setPanel(localStorage.getItem('callout-panel-hidden') === '1'); }
+catch { setPanel(false); }
+
+const CHECKS = ['t-container', 't-icon', 't-stroke', 't-ghost', 't-blobs', 't-whole', 't-drop', 't-motion', 'f-sheen', 't-decouple', 't-glittop'].concat(BYPASS.map((id) => 'bp-' + id));
+const VALUES = ['amb', 'refr', 'ior', 'sheen', 'light', 'gop', 'gsc', 'gbl', 'lcol', 'corner', 'roll', 'cradius', 'tint', 'sheenamt', 'bheight', 'bgcol', 'film', 'filmnm', 'filmvar', 'glit', 'glitd', 'glitfacet', 'glitfill', 'scouple', 'fopac', 'fchroma', 'fcol', 'veinpull', 'veinscale', 'veinsharp', 'veinglow', 'veincol', 'dsize', 'dcount', 'bcount', 'bmin', 'bmax'];
+const STORE_KEY = 'callout-shader-iridescence';
+const FACTORY = snapshot();
+const saveOut = document.getElementById('save-out');
+
+function snapshot() {
+  const out = {};
+  for (const id of CHECKS) out[id] = document.getElementById(id).checked;
+  for (const id of VALUES) out[id] = document.getElementById(id).value;
+  return out;
+}
+
+function restore(obj) {
+  if (!obj) return;
+  for (const id of CHECKS) {
+    if (id in obj) document.getElementById(id).checked = !!obj[id];
+  }
+  for (const id of VALUES) {
+    if (id in obj) document.getElementById(id).value = obj[id];
+  }
+  sync();
+}
+
+function note(text) {
+  saveOut.textContent = text;
+  clearTimeout(note.timer);
+  note.timer = setTimeout(() => { saveOut.textContent = ''; }, 2600);
+}
+
+try {
+  const stored = localStorage.getItem(STORE_KEY);
+  if (stored) restore(JSON.parse(stored));
+} catch {}
+
+const PRESETS = {
+  'deep-film': {"t-container": false, "t-icon": false, "t-stroke": false, "t-drop": true, "t-whole": true, "t-blobs": true, "t-ghost": true, "t-motion": false, "amb": "28", "refr": "70", "ior": "209", "sheen": "7", "light": "325", "lcol": "#ffffff", "bgcol": "#0d1117", "corner": "290", "roll": "10", "film": "100", "filmnm": "510", "filmvar": "28", "glit": "74", "glitd": "42", "gop": "20", "gsc": "100", "gbl": "2", "glitfacet": "30", "glitfill": "32", "scouple": "50", "dsize": "21", "dcount": "12", "bcount": "5", "bmin": "48", "bmax": "120", "f-sheen": true, "sheenamt": "55", "cradius": "14", "bheight": "45", "t-decouple": true, "veinpull": "65", "veinscale": "7", "veinsharp": "9", "veinglow": "26", "veincol": "#c9a227", "tint": "100", "t-glittop": true, "fopac": "45", "fchroma": "35", "fcol": "#a8a49b"},
+  'pearl-dust': {"t-container": false, "t-icon": false, "t-stroke": false, "t-drop": true, "t-whole": true, "t-blobs": true, "t-ghost": true, "t-motion": false, "amb": "28", "refr": "70", "ior": "209", "sheen": "5", "light": "325", "lcol": "#ffffff", "bgcol": "#0d1117", "corner": "450", "roll": "10", "film": "55", "filmnm": "875", "filmvar": "1", "glit": "74", "glitd": "42", "glitfacet": "30", "glitfill": "32", "scouple": "50", "dsize": "8", "dcount": "2", "bcount": "8", "bmin": "150", "bmax": "240", "gop": "13", "gsc": "100", "gbl": "2", "f-sheen": true, "sheenamt": "55", "cradius": "14", "bheight": "45", "t-decouple": true, "veinpull": "70", "veinscale": "5", "veinsharp": "4", "veinglow": "18", "veincol": "#e8e2d6", "tint": "100", "t-glittop": true, "fopac": "45", "fchroma": "35", "fcol": "#a8a49b"},
+};
+
+document.getElementById('preset').addEventListener('change', (e) => {
+  const key = e.target.value;
+  if (!key) return;
+  for (const id of BYPASS) document.getElementById('bp-' + id).checked = true;
+  restore(key === 'factory' ? FACTORY : PRESETS[key]);
+  for (const c of cells) c.refreshGhost();
+  note(key === 'factory' ? 'factory values loaded' : 'preset loaded');
+  e.target.value = '';
+});
+
+function setAll(state) {
+  for (const id of CHECKS) {
+    if (id === 't-motion') continue;
+    document.getElementById(id).checked = state;
+  }
+  sync();
+  note(state ? 'every layer on' : 'every layer off');
+}
+
+document.getElementById('all-off').addEventListener('click', () => setAll(false));
+document.getElementById('all-on').addEventListener('click', () => setAll(true));
+
+document.getElementById('save').addEventListener('click', () => {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(snapshot()));
+    note('saved — reloads with these values');
+  } catch {
+    note('storage blocked here; use Copy config');
+  }
+});
+
+document.getElementById('reset').addEventListener('click', () => {
+  try { localStorage.removeItem(STORE_KEY); } catch {}
+  restore(FACTORY);
+  note('back to factory');
+});
+
+document.getElementById('copy').addEventListener('click', () => {
+  const s = snapshot();
+  const text = [
+    '<Callout',
+    `  container={${s['t-container']}}`,
+    `  icon={${s['t-icon']}}`,
+    `  stroke={${s['t-stroke']}}`,
+    `  droplet={${s['t-drop']}}`,
+    `  wholeCard={${s['t-whole']}}`,
+    `  blobs={${s['t-blobs']}}`,
+    `  ambient={${(s.amb / 100).toFixed(2)}}`,
+    `  refraction={${s.refr}}`,
+    `  ior={${(s.ior / 100).toFixed(2)}}`,
+    `  sheenSpeed={${(s.sheen / 100).toFixed(2)}}`,
+    `  lightAngle={${s.light}}`,
+    `  lightFollowsSheen={${s['f-sheen']}}`,
+    `  lightColor="${s.lcol}"`,
+    `  background="${s.bgcol}"`,
+    `  cornerN={${(s.corner / 100).toFixed(2)}}`,
+    `  edgeRoll={${(s.roll / 100).toFixed(2)}}`,
+    `  cornerRadius={${s.cradius}}`,
+    `  sheenIntensity={${(s.sheenamt / 100).toFixed(2)}}`,
+    `  cardTint={${(s.tint / 100).toFixed(2)}}`,
+    `  glitterOnTop={${s['t-glittop']}}`,
+    `  blobHeight={${(s.bheight / 100).toFixed(2)}}`,
+    `  decoupleDroplet={${s['t-decouple']}}`,
+    `  film={${(s.film / 100).toFixed(2)}}`,
+    `  filmThickness={${s.filmnm}}`,
+    `  filmVariation={${(s.filmvar / 100).toFixed(2)}}`,
+    `  glitter={${(s.glit / 100).toFixed(2)}}`,
+    `  glitterDensity={${s.glitd}}`,
+    `  flakeFacet={${s.glitfacet}}`,
+    `  glitterFill={${(s.glitfill / 100).toFixed(2)}}`,
+    `  sheenCoupling={${(s.scouple / 100).toFixed(2)}}`,
+    `  flakeOpacity={${(s.fopac / 100).toFixed(2)}}`,
+    `  flakeChroma={${(s.fchroma / 100).toFixed(2)}}`,
+    `  flakeColor="${s.fcol}"`,
+    `  veinPull={${(s.veinpull / 100).toFixed(2)}}`,
+    `  veinScale={${s.veinscale}}`,
+    `  veinSharpness={${s.veinsharp}}`,
+    `  veinGlow={${(s.veinglow / 100).toFixed(2)}}`,
+    `  veinColor="${s.veincol}"`,
+    `  dropletSize={${s.dsize}}`,
+    `  trailCount={${s.dcount}}`,
+    `  blobCount={${s.bcount}}`,
+    `  blobSizeRange={[${(s.bmin / 100).toFixed(2)}, ${(s.bmax / 100).toFixed(2)}]}`,
+    `  textGhost={${s['t-ghost']}}`,
+    `  ghostOpacity={${(s.gop / 100).toFixed(2)}}`,
+    `  ghostScale={${(s.gsc / 100).toFixed(2)}}`,
+    `  ghostBlur={${s.gbl}}`,
+    '/>',
+  ].join('\n');
+  const done = () => note('config copied to clipboard');
+  if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, () => { console.log(text); note('clipboard blocked — logged to console'); });
+  else { console.log(text); note('logged to console'); }
+});
+
+const ro = new ResizeObserver(() => {
+  for (const c of cells) { c.resize(); c.refreshGhost(); c.moving = 1; }
+  kick();
+});
+document.querySelectorAll('.cal').forEach((el) => ro.observe(el));
+
+sync();
+</script>

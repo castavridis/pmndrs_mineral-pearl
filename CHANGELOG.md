@@ -61,6 +61,13 @@ so the study can still be diffed against.
 | Reduced motion gets `quiet`, not a cheaper imitation of more | Less motion is the correct answer there. It is also why reduced motion does not force the fallback when the pond can run: the pond already stills itself. |
 | `onSunkSettled` instead of a constant | The three tiers cover in 1400, 1250 and 620 ms; a dismissal timed by a hardcoded 1400 ms left the quiet tier sitting on an empty box. |
 
+| The ink blot moved from callouts to announcements | Asked for. A blot flooding a card said "read this carefully"; a blot at a banner's left end says "here is news", which is what the ink was always doing. `InkSplat` gained `flood={false}` so a blot can stay a blot rather than spilling to fill its box. |
+| `InkCallout` was retired rather than left unused | Its blot lives in `Announcement` now, and its kinds moved to `callout/kinds.ts`. Keeping a second, unused implementation is the same trap as the three copies of the mark. |
+| Kind colours are the official palette | `theme/palette.ts`, the nine colours the pond's `brand()` spectrum already ran through and the sibling repo tints its glass with. The palette is pitched for light on dark, so the light page carries each colour toward its ink rather than using it raw, which would put cyan on cream. |
+| The nav bar drifts by `left`/`top`, not `transform` | A transform opens a stacking context, and the sliding pill is drawn by the nacre stage into a canvas at the body: a context anywhere between the labels and the page seals that canvas out. Same reason the bar sets `isolation: auto` over `Surface`'s default. |
+| One pill that moves, not a pill per item | The pill follows the pointer and falls back to the current page, so there is a single slab for the shader to draw and it stretches between labels as it goes. |
+| The pill's label is light in both schemes | The gooey callout shader is the black mineral body in either scheme, so the ink above it cannot follow the page. It follows the pill. |
+
 ## 4. Theme, ground and page look
 
 | Decision | Why |

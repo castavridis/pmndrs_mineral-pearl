@@ -31,14 +31,13 @@ src/
       config.ts          timing and scale constants
       reference/         Kris's original vanilla-WebGL component, verbatim
     ink-theme/           InkThemeToggle + InkThemeTransition: the theme change as ink
-    ink-callout/         InkCallout: a GitHub-style callout whose surface is a blot
     ink-engulf/          InkEngulf: the inverse, ink closing in from the edges over content
     ink-sink/            InkSink + LiquidPond + LiquidGround: the study's pond, as slab, ground or pill
     nacre-callout/       NacreCallout + NacreStage: one-context raymarched callouts on black nacre
     surface/             Surface: the one primitive (shape × material × expressiveness) under every element
     nav/                 Nav: the responsive pill nav (full / compact / collapsed) and its ⌘K palette
     announcement/        Announcement: the banner afloat on the page, sinking into it on dismiss
-    callout/             Callout: the lens callout (surface / plain / svg) on a Surface
+    callout/             Callout: the lens callout (surface / plain / svg), and the kinds
   ui/                    the flat set: Button, CopyButton, Picker, Popover, Icons, tokens.css
   app/                   the site: AppShell, Home, /dev pages (mirroring the 3d-2d-nav pages)
   main.tsx, index.css
@@ -77,19 +76,11 @@ With `prefers-reduced-motion` the splat lands already settled. A `splat()` asked
 
 `nacre` (0..1) gives the ink a surface: from a height built on the density field (steep at the meniscus, flat inside) and slow bumps of surface tension across the mass the shader takes a normal, darkens a lip just inside the rim, catches a thin highlight on the rim, adds a specular and mixes in a spectral iridescence where the surface curves away, weighted so the ink's own colour stays the body of it. `InkCallout` uses 0.8 by default (its panel has the slider); the theme flood and engulf stay matte.
 
+`flood={false}` keeps the ink a blot: the front never starts and the droplets are never shoved outward, so the mass settles where it landed with its spatter around it. That is the decorative form, used for the announcement's blot and the mark's.
+
 ### `<InkThemeToggle>` and `<InkThemeTransition>`
 
 The toggle cycles dark → light → system and requests the change with its own position. The transition mounts a full-viewport overlay that splats from that point. With the liquid shaders on, the splat _is_ the liquid: its coverage masks every scheme-following ground (the page ground and the nav pill) so they show the new body, mineral or pearl, where the ink has landed, and the splat itself is drawn on top with the ground's own pixels for ink, so the new liquid rolls over the content too. When the flood has covered the page the grounds switch outright, the theme commits underneath, and the overlay fades to reveal the switched content. With the shaders off (a persisted switch in the theme store) or without WebGL, the splat is a flat flood of the new page colour. Reduced motion or a change with no visible effect commit at once. Render the transition once per page, after the content (see `src/app/AppShell.tsx`).
-
-### `<InkCallout>`
-
-```tsx
-<InkCallout kind="tip" title="Start with the fiber docs" trigger="view">
-  <p>Everything here is built from the same primitives you already know.</p>
-</InkCallout>
-```
-
-Kinds: `note`, `tip`, `important`, `warning`, `caution`, each with an ink per scheme; `radius`, `bleed` and `scale` tune the blot. The content is DOM over a canvas that covers the card plus a bleed; the ink lands when the card scrolls into view (or on `ref.splat()` with `trigger="manual"`) and floods out to the rounded edge, spatter left around it. Until then the card is an outline. Without WebGL it is a solid card (`static` forces that look).
 
 ### `<InkEngulf>`
 
@@ -148,7 +139,11 @@ These are the utilitarian tier made properly: flat surfaces with a hairline bord
 <Nav links={[{ id: 'docs', label: 'Docs', href: '/docs' }]} active="docs" />
 ```
 
-The site nav of the 3d-2d-nav explorations, its pill a `Surface`. The bar stands against the page rather than with it: the dark page carries the pearl liquid and the light page the black mineral, and the active item is a pill of the other one, so it reads as the page showing through the bar. Its ink follows the liquid it sits on (`--nav-ink`, `--nav-active-ink`), not the page's. It is DOM in every tier (the a11y and SEO source of truth); `enhancement` is `auto` (the gates), `full`, `calm` or `flat`, and in dev `?nav=` overrides. The layout mode follows the container: the pill is measured in every mode (`full`, `compact`, `collapsed`) by swapping `data-mode`, and `resolveMode` picks one with hysteresis so a resize around a threshold never flaps. Collapsed, the links become a disclosure under the pill. Every length is a token (`navTokens`), the glass nav's numbers, shared with the CSS as `--nav-*`. The Cmd item and ⌘K / Ctrl+K open `CmdPalette`, a `<dialog>` listing the links. One zustand store per nav (`createNavStore`, `useNavStore`) so several can share a page.
+The site nav of the 3d-2d-nav explorations, its bar a `Surface`. The bar stands against the page rather than with it: the dark page carries the pearl liquid and the light page the black mineral. Its ink follows the liquid it sits on (`--nav-ink`), not the page's.
+
+The mark sits on a blot of the page's own liquid, splashed onto the bar when the nav mounts. A click anywhere on the bar is a blow: it gives in that direction and drifts back over about a second and a half. The drift is `left`/`top` rather than a transform on purpose — a transform there opens a stacking context, and that would seal the nacre stage's canvas out of the bar (see the pill below).
+
+One pill moves under the items: it follows whatever the pointer is over and falls back to the current page when the pointer leaves, so it stretches between labels rather than appearing per item. It is drawn by the page's nacre stage — the gooey callout shader — as one more card with a pill's own corner radius, which is why the bar sets `isolation: auto` and the labels ride at `z-index: 1`. The stage's nacre is the black mineral body in either scheme, so the label above the pill takes `--nav-pill-ink` and is light in both. Without a shader (the flat tier) the pill is the bar's opposite liquid, flat. It is DOM in every tier (the a11y and SEO source of truth); `enhancement` is `auto` (the gates), `full`, `calm` or `flat`, and in dev `?nav=` overrides. The layout mode follows the container: the pill is measured in every mode (`full`, `compact`, `collapsed`) by swapping `data-mode`, and `resolveMode` picks one with hysteresis so a resize around a threshold never flaps. Collapsed, the links become a disclosure under the pill. Every length is a token (`navTokens`), the glass nav's numbers, shared with the CSS as `--nav-*`. The Cmd item and ⌘K / Ctrl+K open `CmdPalette`, a `<dialog>` listing the links. One zustand store per nav (`createNavStore`, `useNavStore`) so several can share a page.
 
 ### `<Announcement>`
 
@@ -159,7 +154,9 @@ The site nav of the 3d-2d-nav explorations, its pill a `Surface`. The bar stands
 </Announcement>
 ```
 
-The wide banner, afloat: the whole page is the well. It is an `InkSink` in `well` mode, so the liquid around the slab is the fixed page ground's own surface, drawn in the same frame, and the slab tips under the pointer and sinks into the page. `onDismiss` adds a close button; the click is an impact at that point, the banner plunges and the liquid closes over it, then the layer fades (the liquid it shows is the ground's, so only the slab goes) and `onDismiss` fires. Flat (`variant="flat"`, or the gates) it is a flat `Surface` card and the dismissal is the `exit`.
+The wide banner, afloat: the whole page is the well. It is an `InkSink` in `well` mode, so the liquid around the slab is the fixed page ground's own surface, drawn in the same frame, and the slab tips under the pointer and sinks into the page. `kind` announces one of the callout kinds: a blot of that kind's palette colour lands at the banner's left end when it scrolls into view, with the kind's glyph on it. This is where the ink blot lives — it announces, it does not call out. Every banner also drifts on its own clock, a few pixels over twenty-odd seconds, so two on a page never move together; reduced motion stills them.
+
+`onDismiss` adds a close button; the click is an impact at that point, the banner plunges and the liquid closes over it, then the layer fades (the liquid it shows is the ground's, so only the slab goes) and `onDismiss` fires. Flat (`variant="flat"`, or the gates) it is a flat `Surface` card and the dismissal is the `exit`.
 
 ### `<Callout>`
 
@@ -169,7 +166,7 @@ The wide banner, afloat: the whole page is the well. It is an `InkSink` in `well
 </Callout>
 ```
 
-The glass callout's layout on a `Surface`: the kind's symbol in a lens ring at the top-left corner (the glass metrics: 96 px at 64, 64), the kind label, a title and body. `surface` is the liquid in full motion, `plain` the liquid calm, `svg` a flat outline; each steps down to what the page can run. Kinds and tints are `InkCallout`'s.
+The glass callout's layout on a `Surface`: the kind's symbol in a lens ring at the top-left corner (the glass metrics: 96 px at 64, 64), the kind label, a title and body. `surface` is the liquid in full motion, `plain` the liquid calm, `svg` a flat outline; each steps down to what the page can run. Kinds are `note`, `tip`, `important`, `warning` and `caution`, mapped onto the official pmndrs palette (blue, green, purple, orange, red) in `callout/kinds.ts`. The palette itself is `theme/palette.ts`, the same nine colours the pond's `brand()` spectrum runs through. The palette is pitched for light on dark, so a kind's colour is used as it is on the dark page and carried toward the page's ink on the light one.
 
 ### `<NacreCallout>`
 

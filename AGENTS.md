@@ -44,6 +44,9 @@ Avoid whole-repo `pnpm format` / `pnpm lint` unless asked.
 - The sink has three tiers (`liquid`, `swallow`, `quiet`); a component above it passes `tier` through rather than gating on the shaders itself, and times a dismissal from `onSunkSettled`, never a hardcoded duration.
 - `src/ui` is the flat set, shared verbatim with the sibling repo: it reads only `--ui-*` from its own `tokens.css` and imports nothing from the app, so keep it portable — theme it by overriding tokens at the app level, never by importing app modules into it.
 - The nav's bar is the liquid the page is not, and the active item is a pill of the page's own; both inks come from `onInk(POND_BG[...])`.
+- Kind colours come from `theme/palette.ts` (the official pmndrs palette), never ad-hoc hexes.
+- The ink blot announces: it belongs to `Announcement` via `kind`, not to callouts.
+- Nothing between the nav's labels and the page may open a stacking context — the sliding pill is drawn by the body-level nacre stage, so a `transform`, an `isolation` or a `z-index` on the bar or its wrappers will hide it.
 - The mark's source is `reference/logo.svg`; it is drawn as paths in `nav/Logo.tsx` and as an SDF in the ink shader's `logoSDF`. Those two are the only copies — change both together.
 - `localStorage` is per origin, and the dev server's port changes: anything a user saves in the browser (presets) should also be shippable in the repo (`src/app/pond-presets.json`).
 - Components own their `<Canvas>` unless they are explicitly designed to live inside an existing scene.

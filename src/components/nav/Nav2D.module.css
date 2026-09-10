@@ -35,16 +35,43 @@
 .nav {
   position: relative;
   display: inline-block;
+  /* Offsets, not a transform: the moving pill is drawn by the page's nacre
+     stage into a canvas at the body, and a transform here would open a
+     stacking context that seals that canvas out of the bar entirely.
+     The long way back is the drift; the short way in is the blow. */
+  left: var(--nudge-x, 0);
+  top: var(--nudge-y, 0);
+  transition:
+    left 1400ms cubic-bezier(0.16, 1, 0.3, 1),
+    top 1400ms cubic-bezier(0.16, 1, 0.3, 1);
   /* room around the pill, as the glass nav kept for its clusters */
   padding: var(--nav-bleed-y) var(--nav-bleed-x);
   max-width: 100%;
   box-sizing: border-box;
 }
 
+.nav[data-impact] {
+  transition:
+    left 110ms ease-out,
+    top 110ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav {
+    transition: none;
+    left: 0;
+    top: 0;
+  }
+}
+
 /* the pill is a Surface: its liquid is its whole face. Surface paints its own
    `color`, so the bar's ink has to be qualified past it. */
 .root .pill {
   color: var(--nav-ink, var(--page-ink));
+  /* the sliding pill is drawn by the page's nacre stage, into a fixed canvas
+     at the body. Surface isolates by default, which would seal that canvas
+     out of the pill; the labels rise above it on their own z-index instead. */
+  isolation: auto;
 }
 
 .root .active {
@@ -108,9 +135,37 @@
   outline: 2px solid currentColor;
 }
 
+.logoWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+
+/* the blot the mark sits on: the page's own liquid, splashed onto the bar */
+.logoBlot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 96px;
+  height: 96px;
+  transform: translate(-50%, -50%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.logoBlot canvas,
+.logoBlot > * {
+  pointer-events: none !important;
+}
+
 .logo {
+  position: relative;
+  z-index: 1;
   font-size: var(--nav-logo-size);
   flex: none;
+  /* the mark reads against its blot, not against the bar */
+  color: var(--nav-active-ink, var(--page-ink));
 }
 
 .logo svg {
@@ -138,41 +193,61 @@
   }
 }
 
-/* --- the active item: a pill of the liquid the bar is not ----------------- */
-.active {
-  display: block;
-  border: 0;
+/* --- the pill: one slab, moving to whatever the pointer is over ---------- */
+.links {
+  position: relative;
+}
+
+.pillIndicator {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-radius: 999px;
+  pointer-events: none;
+  opacity: 0;
+  /* the slab itself is the shader's; this element only says where it is */
+  background: transparent;
+  transition:
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    width 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    height 260ms ease,
+    opacity 220ms ease;
+}
+
+/* no shader to draw it: the pill is the liquid the bar is not, flat */
+.pillIndicator[data-flat] {
+  background: color-mix(in srgb, var(--nav-active-ink, var(--page-ink)) 88%, transparent);
+}
+
+/* the labels ride above the stage's canvas */
+.links .link {
+  position: relative;
+  z-index: 1;
+  transition:
+    transform 160ms ease,
+    color 220ms ease;
+}
+
+/* the one the pill is under reads against the pill, not against the bar */
+.links .link[data-lit] {
+  color: var(--nav-pill-ink, var(--nav-active-ink, var(--page-ink)));
+}
+
+/* with no shader the pill is flat, and it is the bar's opposite again */
+.links .link[data-lit]:has(~ .pillIndicator[data-flat]),
+.root:has(.pillIndicator[data-flat]) .links .link[data-lit] {
   color: var(--nav-active-ink, var(--page-ink));
-  box-shadow: 0 2px 10px -4px rgb(0 0 0 / 0.5);
 }
 
-.active .link {
-  padding: 0 clamp(12px, 1.4em, 22px);
-  height: calc(var(--nav-pill-height) - 18px);
-  font-weight: 500;
-}
-
-/* the pill says which page this is; the underline would say it twice */
-.active .link[aria-current='page']::after {
+/* the pill says where you are; the underline would say it twice */
+.link[aria-current='page']::after {
   display: none;
 }
 
-@media (hover: hover) {
-  .active .link:hover {
-    transform: none;
+@media (prefers-reduced-motion: reduce) {
+  .pillIndicator {
+    transition: opacity 220ms ease;
   }
-}
-
-.link[aria-current='page']::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -4px;
-  height: 2px;
-  border-radius: 2px;
-  background: currentColor;
-  opacity: 0.6;
 }
 
 .cmd,

@@ -390,6 +390,8 @@ export interface NacreCard {
   el: HTMLElement;
   icon: HTMLElement | null;
   accent: string;
+  /** Corner radius in CSS px; default 12. A pill passes half its height. */
+  radius?: number;
 }
 
 interface CardState {
@@ -750,7 +752,6 @@ export class NacreStage {
     gl.uniform1f(u.uDark, dark ? 1 : 0);
     gl.uniform3fv(u.uBg, bg);
     gl.uniform1f(u.uIconR, 15);
-    gl.uniform1f(u.uRadius, 12);
     gl.uniform1f(u.uGhostOn, cfg.textGhost ? 1 : 0);
     gl.uniform1f(u.uGhostOpacity, cfg.ghostOpacity);
     gl.uniform1f(u.uGhostScale, cfg.ghostScale);
@@ -800,6 +801,7 @@ export class NacreStage {
       }
       const w = r.width;
       const h = r.height;
+      gl.uniform1f(u.uRadius, Math.min(c.card.radius ?? 12, w / 2, h / 2));
       const icon = c.card.icon;
       const ix = icon ? icon.offsetLeft + icon.offsetWidth / 2 : 24;
       const iy = icon ? icon.offsetTop + icon.offsetHeight / 2 : 24;
