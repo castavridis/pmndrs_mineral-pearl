@@ -1,0 +1,7 @@
+# everything here is regenerated: pnpm capture all && pnpm audio && pnpm hero
+.cache/
+out/
+public/clips/
+public/music/
+public/sfx/
+public/design-system/

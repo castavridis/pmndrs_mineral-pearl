@@ -1,0 +1,31 @@
+{
+  "name": "@pmndrs/ink-splat-video",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Programmatic promo videos of the ink-splat UI: deterministic capture + a Remotion edit",
+  "type": "module",
+  "scripts": {
+    "capture": "tsx capture/cli.ts",
+    "audio": "python3 audio/beat.py --bpm 120 --beats 64 --drop 38:43",
+    "ds:assets": "mkdir -p public/design-system && for t in light dark; do ffmpeg -y -loglevel error -i \"../reference/design-system/r3f docs - $t.png\" -vf scale=1080:-1:flags=lanczos public/design-system/$t.png; done",
+    "studio": "remotion studio remotion/index.ts",
+    "hero": "remotion render remotion/index.ts Hero out/hero.raw.mp4 --codec=h264 --crf=16 && ffmpeg -y -loglevel error -i out/hero.raw.mp4 -map 0:v -map '0:a?' -c:v copy -af alimiter=limit=0.89:level=0 -c:a aac -b:a 256k out/hero.mp4",
+    "render": "remotion render remotion/index.ts",
+    "still": "remotion still remotion/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.2",
+    "@types/react": "^19.3.0",
+    "playwright": "1.63.0",
+    "tsx": "^4.23.13",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.523",
+    "@remotion/google-fonts": "4.0.523",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "remotion": "4.0.523"
+  }
+}

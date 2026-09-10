@@ -34,6 +34,11 @@ pnpm lint -- <files>
 
 Avoid whole-repo `pnpm format` / `pnpm lint` unless asked.
 
+## Videos
+
+`video/` is a separate package that films the app frame-exactly (Playwright on a virtual clock) and cuts
+promo reels in Remotion. See `video/README.md`, and the `make-video` skill for the workflow and house style.
+
 ## Planned work
 
 [`IMPROVEMENTS.md`](IMPROVEMENTS.md) holds the ranked improvement plan and the design worked out for each item; section 6 of `CHANGELOG.md` mirrors its status. Read it before touching `ink-sink/` or the nacre stage, and keep both status columns current.
