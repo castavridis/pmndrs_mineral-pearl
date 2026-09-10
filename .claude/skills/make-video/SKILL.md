@@ -1,6 +1,6 @@
 ---
 name: make-video
-description: Make a punchy promo / demo video of this repo's UI — film the real app frame-exactly (Playwright on a virtual clock) and cut it in Remotion with camera moves, kinetic words, sound and music. Use when asked for a video, reel, clip, trailer, teaser, GIF or social post of the components, or to add a shot or re-cut an existing video.
+description: Make a promo / demo video of this repo's UI — film the real app frame-exactly (Playwright on a virtual clock) and cut it in Remotion with camera moves, kinetic words, sound and music. Use when asked for a video, reel, clip, trailer, teaser, GIF or social post of the components, or to add a shot or re-cut an existing video.
 ---
 
 # Making a video of the UI
@@ -60,21 +60,21 @@ Run everything from `video/`. If `node_modules` is missing, `pnpm install` first
 - **Silent** — no music, no sound effects (`sfx: false`, no `music`) unless the user asks for sound.
 - The engulf is left out; the full-screen ink splat (`/dev/splat`) is saved for a later video.
 
-## What makes it punchy
+## Movement: elegant, not punchy
 
-- **Cut on the beat, never mid-gesture.** Start a cut on the establishing frame, ~1.5 s before the action.
-  End it as the effect peaks or settles, not after.
-- **Get close — after the establishing beat.** Zoom 1.6–2.6 on the element for the interaction, then pull
-  out to 1.0 for the big moments (a flood, a splat) so their scale reads.
-- **Move the camera in every cut:** a slow push (zoom +0.2–0.4 over the cut) or a pan along the gesture.
-  A static frame reads as a screen recording.
-- **Hit the impacts:** `shake` on the frame the ink lands (`hit` for a second impact in the same cut).
-  Presses get a zoom punch and click sound automatically.
-- If words come back: one per cut, imperative, with a full stop (`Splat.` `Sink.` `Flood.`), landing with the
-  impact (`wordAt`), each in its own pmndrs palette colour; don't repeat neighbours.
-- **Build to a climax.** Save the biggest effect (the theme flood) for about two thirds in, slow it down, and
-  drop the drums under it (`audio/beat.py --drop a:b` in beats). Finish on the mark.
-- Keep copy minimal. No explanations on screen — the effects are the point.
+The user found the first cuts' movement too punchy. Keep it unhurried:
+
+- **Camera:** every move a `sine` glide of at least ~1.2 s (a long pull-out, 2–4 s); zoom already glides in
+  log space. Hold between moves; a slow drift after a push should also be `sine`, never `linear` (a linear
+  segment after an eased one starts with a jolt).
+- **No shake, no zoom kick on presses** (`punch: false`), and `cursorStyle: 'soft'` (a slight dip and a faint
+  ring instead of a bold green one).
+- **Pointer:** `ease: 'smooth'` (minimum jerk, like an unhurried hand) on every move, 1–1.6 s per move, and a
+  0.2 s beat after arriving before a press.
+- **Slow motion eases in and out:** `d.speed(0.35, { over: 0.5 })` … `d.speed(1, { over: 0.8 })`.
+- **Key camera times to marks** (`t: 'flood-1.2'`), not seconds, so re-timing the take keeps the camera in
+  step with it.
+- Build to one climax (the theme flood), and let the ending breathe (the ink holds, the fade is long).
 
 ## Gotchas
 

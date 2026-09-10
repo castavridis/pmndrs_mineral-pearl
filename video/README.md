@@ -49,11 +49,11 @@ export default defineShot({
 | Director call                              | What it does                                                                   |
 | ------------------------------------------ | ------------------------------------------------------------------------------ |
 | `wait(s)`                                  | record `s` seconds                                                             |
-| `moveTo(target, {duration, ease})`         | arcing, eased pointer move (`ease`: linear, in, out, inOut, snap)              |
+| `moveTo(target, {duration, ease})`         | arcing, eased pointer move (`ease`: smooth, sine, inOut, snap, …)              |
 | `trace([targets], {duration})`             | one smooth spline gesture through several points                               |
 | `click(target?, {hold, move})`             | press and release; `mouseDown()` / `mouseUp()` for more control                |
 | `drag(from, to)` · `scroll(dy)`            | gestures                                                                       |
-| `speed(f)`                                 | virtual-time rate for following frames (0.25 = 4× slow-mo, 2 = time-lapse)     |
+| `speed(f, {over})`                         | virtual-time rate for following frames (0.25 = 4× slow-mo); `over` ramps to it |
 | `skip(s)`                                  | let time pass unrecorded                                                       |
 | `mark(name, selector?)`                    | record a moment (and an element's box) for the edit: `focus: 'mark:name'`      |
 | `invoke(text)`                             | click a button by its text without the pointer (e.g. the hidden Leva `engulf`) |
@@ -94,7 +94,11 @@ A reel is a list of cuts (`remotion/cuts/*.ts`, types in `remotion/edit.ts`), re
 }
 ```
 
-Also: `span` instead of `zoom` (how many page px the frame shows across); `focus: 'track:<name>'`,
+Camera `t` (and a key's time generally) can be a mark in the take instead of seconds — `'flood'`,
+`'flood-1.2'` — so re-timing the take keeps the edit in step. Eases: `sine` and `smooth` for gentle moves,
+`inOut`, `snap`, …; zoom interpolates in log space.
+
+Also: `cursorStyle: 'soft'`; `span` instead of `zoom` (how many page px the frame shows across); `focus: 'track:<name>'`,
 `'cursor'` (smoothed pointer) or `[x, y]` page px; reel-level `fadeIn` / `fadeOut` (seconds, picture and music); `card: { title, subtitle }`; `flash`; `hit`
 (impact without shake); `whoosh`; `frameAt` (where the focus lands on screen); `punch: false` (no zoom kick on
 presses); `cursor: false`. Every press in the footage automatically gets a zoom punch, a click sound and a ring.

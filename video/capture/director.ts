@@ -125,8 +125,13 @@ export class Director {
   private ffmpeg: ChildProcess;
   private fps: number;
   private timeScale = 1;
-  private ramp: { from: number; to: number; n: number; i: number; ease: (t: number) => number } | null =
-    null;
+  private ramp: {
+    from: number;
+    to: number;
+    n: number;
+    i: number;
+    ease: (t: number) => number;
+  } | null = null;
   private pos: Point;
   private down = false;
   private rolling = false;
