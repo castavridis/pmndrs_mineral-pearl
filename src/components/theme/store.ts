@@ -32,8 +32,8 @@ interface ThemeState {
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set, get) => ({
-      // Dark, and the system's preference is not consulted for now: the page is
-      // designed on the black mineral first, and a first visit should see it.
+      // Dark, and the system's preference is not consulted: the page is
+      // designed on the black mineral first, and every visit opens on it.
       theme: 'dark',
       pending: null,
       requestTheme: (theme, origin) => {
@@ -51,18 +51,22 @@ export const useThemeStore = create<ThemeState>()(
     }),
     {
       name: 'pmndrs-theme',
-      partialize: (s) => ({ theme: s.theme, shaders: s.shaders }),
-      // v0 defaulted to following the system. A visitor still on that choice
-      // is moved to dark rather than kept on the OS's preference; one who
-      // picked light or dark keeps it.
-      version: 1,
+      // Dark is the project's default, on every load: the theme a visitor
+      // switched to is not carried into the next visit, so the page always
+      // opens on the black mineral it is designed on. Only the shaders switch
+      // is remembered. (Persisting `theme` again is all it takes to restore a
+      // visitor's choice.)
+      partialize: (s) => ({ shaders: s.shaders }),
+      version: 2,
       migrate: (persisted) => {
-        const p = (persisted ?? {}) as Partial<Pick<ThemeState, 'theme' | 'shaders'>>;
-        return {
-          theme: p.theme === 'system' || !p.theme ? 'dark' : p.theme,
-          shaders: p.shaders ?? true,
-        } as ThemeState;
+        const p = (persisted ?? {}) as Partial<Pick<ThemeState, 'shaders'>>;
+        return { shaders: p.shaders ?? true } as ThemeState;
       },
+      // a theme stored by an earlier version is ignored rather than restored
+      merge: (persisted, current) => ({
+        ...current,
+        shaders: (persisted as Partial<ThemeState> | undefined)?.shaders ?? current.shaders,
+      }),
     }
   )
 );

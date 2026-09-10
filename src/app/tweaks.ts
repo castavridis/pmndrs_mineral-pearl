@@ -11,7 +11,8 @@ export function useThemeTweak() {
   const requestTheme = useThemeStore((s) => s.requestTheme);
   const setShaders = useThemeStore((s) => s.setShaders);
   const { theme: choice, shaders: shadersOn } = useControls({
-    theme: { value: theme, options: ['system', 'light', 'dark'] as ThemeChoice[] },
+    // dark and light only: the system's preference is not followed
+    theme: { value: theme, options: ['dark', 'light'] as ThemeChoice[] },
     shaders: { value: shaders, label: 'liquid shaders' },
   });
   useEffect(() => {
