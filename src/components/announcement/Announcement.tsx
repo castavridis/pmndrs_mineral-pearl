@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { InkSink, type InkSinkHandle } from '../ink-sink/InkSink';
+import { InkSink, centreOf, type InkSinkHandle } from '../ink-sink/InkSink';
 import { Surface } from '../surface/Surface';
 import type { SinkTier } from '../ink-sink/InkSink';
 import { announcement } from './metrics';
@@ -164,8 +164,18 @@ export function Announcement({
             sink.current?.impact(e.nativeEvent);
             setDismissed(true);
           }}
-          onClick={() => {
-            if (!liquid) setExit('dismiss');
+          onClick={(e) => {
+            if (!liquid) {
+              setExit('dismiss');
+              return;
+            }
+            // Enter and Space arrive as a click with no pointer behind it
+            // (`detail` 0), and the pointer path has already run for a real
+            // one. The blow lands at the middle of the button that was
+            // pressed, which is the nearest thing to where a hand would be.
+            if (e.detail !== 0 || dismissed) return;
+            sink.current?.impact(centreOf(e.currentTarget));
+            setDismissed(true);
           }}
         >
           ×

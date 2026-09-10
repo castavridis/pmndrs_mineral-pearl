@@ -55,6 +55,16 @@ export interface InkSinkHandle {
 export type SinkTier = 'liquid' | 'swallow' | 'quiet';
 
 /** How long the liquid takes to close over the slab, per tier, in ms. */
+/**
+ * The centre of an element as a pointer-like point, for a blow that came from
+ * the keyboard: Enter and Space have no coordinates of their own, so the thing
+ * activated stands in for the hand.
+ */
+export const centreOf = (el: Element) => {
+  const r = el.getBoundingClientRect();
+  return { clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 };
+};
+
 export const sinkCoverMs = (tier: SinkTier, reduced = false) =>
   tier === 'liquid' ? 1400 : tier === 'swallow' ? COVER_S * 1000 : reduced ? 260 : 620;
 
@@ -280,7 +290,11 @@ export function InkSink({
     // the state React already holds — the `sunk` effect below only fires on a
     // change — so it would float while the component believes it is under.
     // Telling it now is also its opening state, so it snaps rather than sinks.
-    if (sunkAtBirth.current) pond.sunk = true;
+    //
+    // It is told either way, not only when it opens sunk. A pond that is never
+    // told has no state to have changed from, so the first sink it is given
+    // reads as an opening state too and pops instead of going under.
+    pond.sunk = sunkAtBirth.current;
     ready.current?.();
     if (!ground) {
       return () => {
@@ -424,7 +438,17 @@ export function InkSink({
       onPointerMove={own ? (e) => pondRef.current?.point(e.nativeEvent) : undefined}
       onPointerDown={own ? (e) => pondRef.current?.point(e.nativeEvent) : undefined}
       onPointerLeave={own ? () => pondRef.current?.leave() : undefined}
-      onFocus={() => pondRef.current?.setFocus(true)}
+      onFocus={(e) => {
+        // the shader's ring is a focus ring, so it follows the same rule the
+        // CSS one does: keyboard focus shows it, a click does not
+        let keyboard = true;
+        try {
+          keyboard = (e.target as Element).matches(':focus-visible');
+        } catch {
+          /* older engines: keep the ring rather than lose it */
+        }
+        if (keyboard) pondRef.current?.setFocus(true);
+      }}
       onBlur={() => pondRef.current?.setFocus(false)}
     >
       {tier === 'liquid' && <canvas ref={canvasRef} className={styles.canvas} aria-hidden="true" />}

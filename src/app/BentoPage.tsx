@@ -9,6 +9,7 @@ import {
   NacreCallout,
   InkSink,
   Surface,
+  centreOf,
   getNacreStage,
   palette,
   useWake,
@@ -189,8 +190,18 @@ export function BentoPage() {
                 className="launcher-sink"
                 style={{ width: 'calc(100% + 88px)', margin: -44 }}
               >
-                {/* pointerdown bubbles from whichever action was pressed */}
-                <div onPointerDown={(e) => copySink.current?.press(e.nativeEvent)}>
+                {/* pointerdown bubbles from whichever action was pressed; a
+                    keyboard activation arrives as a click with no pointer
+                    behind it, and the action that was activated stands in for
+                    the hand */}
+                <div
+                  onPointerDown={(e) => copySink.current?.press(e.nativeEvent)}
+                  onClick={(e) => {
+                    if (e.detail !== 0) return;
+                    const el = e.target instanceof Element ? e.target : e.currentTarget;
+                    copySink.current?.press(centreOf(el));
+                  }}
+                >
                   <CopyButton
                     value="pnpm add @react-three/fiber"
                     actions={[
@@ -238,6 +249,12 @@ export function BentoPage() {
                     aria-disabled={launcherDisabled || undefined}
                     onPointerDown={(e) => {
                       if (!launcherDisabled) launcherSink.current?.press(e.nativeEvent);
+                    }}
+                    onClick={(e) => {
+                      // Enter or Space: the blow comes from the middle of the
+                      // button, since the keyboard gives no point of its own
+                      if (launcherDisabled || e.detail !== 0) return;
+                      launcherSink.current?.press(centreOf(e.currentTarget));
                     }}
                   >
                     Article Launcher
