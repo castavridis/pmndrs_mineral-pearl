@@ -206,14 +206,15 @@ The pages mirror the 3d-2d-nav repo's, page for page, with the liquid where it h
 
 | Route               | What                                                                                   |
 | ------------------- | -------------------------------------------------------------------------------------- |
-| `/`                 | The site home: Nav, Announcement, hero, two Callouts, the flooding theme toggle        |
+| `/`                 | The bento, as the front page for now (the same page as `/dev/bento`)                   |
+| `/dev/home`         | The former home: Nav, Announcement, hero, two Callouts, the flooding theme toggle      |
 | `/dev/`             | Index of experiments                                                                   |
 | `/dev/demo`         | The nav in a page, with link count, container width and current page controls         |
 | `/dev/nav`          | 1, 3, 6 and 10 links × full, compact, collapsed; flat rows and a liquid row            |
 | `/dev/callout`      | Callout surface / plain / every kind, then the ink blots with their panel              |
 | `/dev/announcement` | The banner afloat at 652 and 900 px; variant and dismissal in the panel                |
 | `/dev/palette`      | Every liquid as a live sample; a panel that edits the page look and saves or loads presets |
-| `/dev/bento`        | The shader bento: one centred column, and the call to action is the theme switch       |
+| `/dev/bento`        | The shader bento: one column centred both ways, and the call to action is the theme switch |
 | `/dev/splat`        | Full-viewport splat with the leva panel (colour, mark, origin…)                        |
 | `/dev/engulf`       | Engulf and the pond, every knob; presets are saved here                                |
 

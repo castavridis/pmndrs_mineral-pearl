@@ -17,9 +17,10 @@ import { BentoPage } from './app/BentoPage';
 // Path routing without a router: every route is served the same index.html
 // by the Vercel rewrite and picks its page here.
 const path = window.location.pathname;
-// the bento shows a theme switch among its own elements, so the shell leaves
-// its fixed one out there
-const ownToggle = path.startsWith('/dev/bento');
+// The bento is the site's front page for now; the old home stays reachable at
+// /dev/home. The bento shows a theme switch among its own elements, so the
+// shell leaves its fixed one out wherever the bento is.
+const ownToggle = path.startsWith('/dev/bento') || !path.startsWith('/dev');
 const page = path.startsWith('/dev/demo') ? (
   <Demo />
 ) : path.startsWith('/dev/nav') ? (
@@ -36,10 +37,12 @@ const page = path.startsWith('/dev/demo') ? (
   <EngulfPage />
 ) : path.startsWith('/dev/bento') ? (
   <BentoPage />
+) : path.startsWith('/dev/home') ? (
+  <Home />
 ) : /^\/dev\/?$/.test(path) ? (
   <DevIndex />
 ) : (
-  <Home />
+  <BentoPage />
 );
 
 createRoot(document.getElementById('root')!).render(

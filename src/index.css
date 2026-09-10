@@ -172,19 +172,29 @@ a {
 .bento {
   max-width: 1200px;
   margin: 0 auto;
-  /* 3rem above, so the banner starts near the top rather than adrift in it */
-  padding: 3rem clamp(16px, 4vw, 40px) 96px;
+  /* The column sits in the middle of the viewport, top to bottom: it is the
+     whole page now, and a page that short reads better held in the centre
+     than hung from the top. 3rem stays the least it keeps from either edge. */
+  min-height: 100dvh;
+  display: grid;
+  align-content: center;
+  padding: 3rem clamp(16px, 4vw, 40px);
+  box-sizing: border-box;
 }
 
+/* No rules between the groups: the column's own spacing says where one ends,
+   and a line across a liquid page reads as a seam in it. */
 .bento-tier {
-  padding: 40px 0 56px;
-  border-bottom: 1px solid color-mix(in srgb, var(--page-ink) 12%, transparent);
+  padding: 28px 0;
 }
 
-/* the first row starts where the page's own top padding leaves off: its tier
-   padding on top of that put the banner adrift in empty space */
+/* the first and last groups meet the page's own padding directly */
 .bento-tier:first-child {
   padding-top: 0;
+}
+
+.bento-tier:last-child {
+  padding-bottom: 0;
 }
 
 .bento-tier h2 {
