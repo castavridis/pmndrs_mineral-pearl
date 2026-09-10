@@ -342,7 +342,11 @@ export function InkSink({
     const pond = pondRef.current;
     if (!pond) return;
     pond.opts.viscosity = visc;
-    pond.opts.mercuryOnSink = mercuryOnSink;
+    // the same rule the pond was built with: a well is a window onto the
+    // page's own surface, and the page does not turn to quicksilver because
+    // one slab in it went under. Without this the update below handed the
+    // default straight back and every well sank into mercury.
+    pond.opts.mercuryOnSink = well ? false : mercuryOnSink;
     pond.opts.globSize = globSize;
     pond.opts.globDensity = globDensity;
     pond.opts.globHeight = globHeight;
@@ -363,6 +367,7 @@ export function InkSink({
     liq,
     visc,
     mercuryOnSink,
+    well,
     globSize,
     globDensity,
     globHeight,
