@@ -282,6 +282,22 @@ changing the behaviour they stand in for.
   "Deforming Meshes that Split and Merge", SIGGRAPH 2009. Detecting merges and
   splits and stitching the surface back together — what the metaball threshold
   gets for free and cannot control.
+- *Gloop: viscous free surfaces.* C. Batty and R. Bridson, "Accurate Viscous
+  Free Surfaces for Buckling, Coiling and Rotating Liquids", *SCA* 2008 (the
+  Symposium on Computer Animation, not SIGGRAPH). The shear-stress boundary
+  condition at a free surface, enforced variationally, is what makes a thick
+  rope of liquid buckle and coil on itself instead of just flowing slowly. A
+  reference implementation is at `christopherbatty/VariationalViscosity3D`.
+- *Gloop: solving viscosity with pressure.* E. Larionov, C. Batty and
+  R. Bridson, "Variational Stokes: A Unified Pressure-Viscosity Solver for
+  Accurate Viscous Liquids", *ACM TOG* 36(4), SIGGRAPH 2017. Simulators
+  usually solve pressure and viscosity in separate stages, which gets the free
+  surface wrong; solving them together as one implicit Stokes problem is what
+  makes a very viscous liquid drag its own surface correctly. The pond's
+  `cling` term, where a sinking slab pulls the surface down with it and a
+  rising one lifts it, is a hand-made stand-in for exactly that coupling, and
+  its viscosity is a damping coefficient on a one-dimensional depth spring
+  rather than a solve.
 - *Beading and contact angle.* H. Wang, P. J. Mucha and G. Turk, "Water Drops on
   Surfaces", SIGGRAPH 2005. The interfacial tensions behind a bead holding a
   shape and then relaxing, which is what `globSettle` fakes.
