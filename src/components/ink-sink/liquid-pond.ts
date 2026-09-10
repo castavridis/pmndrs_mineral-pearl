@@ -748,6 +748,9 @@ interface Ripple {
   s: number;
 }
 
+/** The depth above which an afloat slab counts as up (its rest is 0.014). */
+const RISEN_Y = -0.004;
+
 export class LiquidPond {
   readonly host: HTMLElement;
   readonly canvas: HTMLCanvasElement;
@@ -870,6 +873,15 @@ export class LiquidPond {
 
   get sunk() {
     return this._sunk;
+  }
+  /**
+   * Afloat and back up through the surface. The rise is a spring, damped by
+   * the liquid's viscosity and hardest right at the meniscus, so how long it
+   * takes depends on the look; whoever needs to know watches this rather than
+   * a clock.
+   */
+  get risen() {
+    return !this._sunk && this._state.y > RISEN_Y;
   }
   /** Sunk, the slab stays under (the study's `disabled`); afloat it bobs back up. */
   set sunk(d: boolean) {

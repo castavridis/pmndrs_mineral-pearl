@@ -64,6 +64,9 @@ export const centreOf = (el: Element) => {
 /** What a well takes from its ground: its unit and its resolution. */
 const groundFrame = (g: LiquidPond) => ({ unit: g.opts.unit, maxDpr: g.opts.maxDpr });
 
+/** The longest a pond's rise is watched before it is reported up anyway, ms. */
+const RISE_WATCH_MS = 4000;
+
 export const sinkCoverMs = (tier: SinkTier, reduced = false) =>
   tier === 'liquid' ? 1400 : tier === 'swallow' ? COVER_S * 1000 : reduced ? 260 : 620;
 
@@ -126,6 +129,14 @@ export interface InkSinkProps {
   radius?: number;
   /** Liquid around the content, px. Default 96. */
   bleed?: number;
+  /**
+   * Drawn above the liquid, in the slab's box: a mark lying on the surface
+   * rather than on the slab, free to spill past the slab's edge onto the
+   * liquid around it. It does not go under with the slab (the liquid cannot
+   * close over what is above it), so it should leave by itself. Never takes
+   * the pointer.
+   */
+  overlay?: ReactNode;
   /** CSS px per unit of the liquid's features. Default: the pond's height. */
   unit?: number;
   /** Start (or become) sunk. Uncontrolled when omitted; use the ref. */
@@ -205,6 +216,7 @@ export function InkSink({
   mercury,
   radius = 8,
   bleed = 96,
+  overlay,
   unit,
   sunk,
   onSunkChange,
@@ -368,13 +380,28 @@ export function InkSink({
   }, [isSunk]);
 
   // the swallow tier reports for itself (it knows when its front has closed);
-  // the pond and the quiet recession are timed
+  // the quiet recession and the pond going under are timed, and the pond
+  // coming up is watched: its rise runs as long as its liquid is thick
   const settled = useRef(onSunkSettled);
   useEffect(() => {
     settled.current = onSunkSettled;
   }, [onSunkSettled]);
   useEffect(() => {
     if (tier === 'swallow') return;
+    if (!isSunk && tier === 'liquid') {
+      const started = performance.now();
+      let raf = 0;
+      const watch = () => {
+        const pond = pondRef.current;
+        if (pond?.risen || performance.now() - started > RISE_WATCH_MS) {
+          settled.current?.(false);
+          return;
+        }
+        raf = requestAnimationFrame(watch);
+      };
+      raf = requestAnimationFrame(watch);
+      return () => cancelAnimationFrame(raf);
+    }
     const ms = isSunk ? sinkCoverMs(tier, reduced) : RISE_S * 1000;
     const id = window.setTimeout(() => settled.current?.(isSunk), ms);
     return () => window.clearTimeout(id);
@@ -474,6 +501,11 @@ export function InkSink({
           {children}
         </div>
       </div>
+      {overlay && (
+        <div className={styles.overlay} style={{ inset: bleed }} aria-hidden="true">
+          {overlay}
+        </div>
+      )}
     </div>
   );
 }

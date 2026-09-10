@@ -158,6 +158,7 @@ so the study can still be diffed against.
 | Mirror `~/Git/@pmndrs/3d-2d-nav` one for one (`44bd2b2`, `fc363cc`, `b5c25a9`) | Nav, Announcement, Callout and the `/dev` pages keep that repo's names, props, tokens and metrics, with liquid where it had glass. Written into `AGENTS.md` so both repos stay aligned. |
 | Its 3D-model pages are out of scope | `/dev/stage`, `/dev/cube`, `/dev/trace` and the frankenstein page have no ink counterpart. Said so rather than inventing one. |
 | The nav pill is a `Surface`; the DOM nav is the source of truth in every tier | Progressive enhancement: the liquid is only the pill's face. Accessibility, SEO and the tab order never depend on WebGL. |
+| The banner's top-left corner takes a blot of ink | Asked for: an ink-splat touch, with the banner still surfacing on load and swallowed on dismissal (a splash that flooded the whole banner, `6fbf060`, was reverted). The blot lands once the rise has settled, half on the slab and half spilling onto the liquid. It is drawn in a new `InkSink` `overlay`, above the liquid, because the liquid round the slab would hide anything past its edge; so it cannot go under with the slab, and fades as the blow lands. The pond now exposes `risen` and the sink watches it: the rise used to be reported on a 0.7 s timer, but at the banner's viscosity the spring takes several seconds, and the blot landed on a slab still under. |
 
 ---
 
