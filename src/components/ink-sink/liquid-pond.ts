@@ -152,8 +152,15 @@ float surf(vec2 p){
   float h = (fbm3(p * 1.9 + (w - 0.5) * 1.6) - 0.5) * 0.075;
 
   float pd = length(p - uPtr);
-  // high tension: the pointer dents a narrow, deep dimple instead of a wide bowl
-  h -= uPtrOn * kDimple * mix(0.020 * exp(-pd * pd * 26.0), 0.030 * exp(-pd * pd * 110.0), uGoop);
+  // (port) The dent the pointer makes: a wide bowl, a tight deep core, and the
+  // meniscus the displaced liquid pushes up around it. The core used to be
+  // reached only through uGoop, which rises as a slab goes under — so a ground
+  // with no slab, which is every page-sized one, never got past the shallow
+  // bowl and the cursor barely marked it. High tension wants the core always.
+  float bowl = 0.018 * exp(-pd * pd * 26.0);
+  float core = 0.034 * exp(-pd * pd * 110.0) * mix(0.9, 1.0, uGoop);
+  float rim  = 0.011 * exp(-(pd - 0.155) * (pd - 0.155) * 90.0);
+  h -= uPtrOn * kDimple * (bowl + core - rim);
 
   float thin = clamp(1.0 - kVisc * 0.5, 0.0, 1.0);
   float spd  = mix(0.42, 0.78, thin);
