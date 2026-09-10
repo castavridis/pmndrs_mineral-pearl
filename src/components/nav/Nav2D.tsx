@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Surface, type SurfaceTier } from '../surface/Surface';
 import { POND_BG, type Liquid } from '../ink-sink/liquid-pond';
-import { onInk, useResolvedTheme } from '../theme';
+import { onInk, page, useResolvedTheme } from '../theme';
 import { palette } from '../theme/palette';
 import { getNacreStage } from '../nacre-callout/stage';
 import { InkSplat } from '../ink-splat';
@@ -178,9 +178,9 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
                     interactive={false}
                     logo={false}
                     flood={false}
-                    ink={POND_BG[active]}
+                    ink={page[scheme].ink}
                     nacre={0.85}
-                    scale={0.5}
+                    scale={0.95}
                   />
                 </span>
               )}

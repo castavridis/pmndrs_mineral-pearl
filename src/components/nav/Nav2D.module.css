@@ -72,6 +72,15 @@
      at the body. Surface isolates by default, which would seal that canvas
      out of the pill; the labels rise above it on their own z-index instead. */
   isolation: auto;
+  /* the mark's blot is thrown from inside the bar and has to carry past its
+     edge, so the pill does not clip; the liquid keeps the pill's shape on its
+     own layer instead */
+  overflow: visible;
+}
+
+.root .pill > [data-liquid] {
+  border-radius: inherit;
+  overflow: hidden;
 }
 
 .root .active {
@@ -147,8 +156,9 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 96px;
-  height: 96px;
+  /* wider than the bar is tall, so the mark's blot carries past its edge */
+  width: 168px;
+  height: 168px;
   transform: translate(-50%, -50%);
   z-index: 0;
   pointer-events: none;
@@ -164,8 +174,9 @@
   z-index: 1;
   font-size: var(--nav-logo-size);
   flex: none;
-  /* the mark reads against its blot, not against the bar */
-  color: var(--nav-active-ink, var(--page-ink));
+  /* the blot is the page's own ink and the bar is the liquid the page is not,
+     so one colour reads against both: the bar's */
+  color: var(--nav-ink, var(--page-ink));
 }
 
 .logo svg {

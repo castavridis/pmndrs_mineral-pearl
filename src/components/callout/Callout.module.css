@@ -25,8 +25,8 @@
   position: absolute;
   left: var(--icon-x);
   top: var(--icon-y);
-  width: calc(var(--icon) * 2.4);
-  height: calc(var(--icon) * 2.4);
+  width: calc(var(--icon) * 2);
+  height: calc(var(--icon) * 2);
   transform: translate(-50%, -50%);
   z-index: 1;
   pointer-events: none;
@@ -50,16 +50,9 @@
   border-radius: 50%;
   display: grid;
   place-items: center;
-  color: var(--tint);
-  box-shadow:
-    inset 0 0 0 2px currentColor,
-    inset 0 0 0 10px color-mix(in srgb, currentColor 10%, transparent);
-  background: radial-gradient(
-    circle at 35% 30%,
-    color-mix(in srgb, currentColor 22%, transparent),
-    color-mix(in srgb, currentColor 6%, transparent) 60%,
-    transparent 72%
-  );
+  /* the blot fills this circle, so the ring and the glyph read against it
+     rather than against the card */
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, currentColor 70%, transparent);
   pointer-events: none;
 }
 
@@ -67,7 +60,7 @@
   width: calc(var(--icon) * 0.38);
   height: calc(var(--icon) * 0.38);
   fill: currentColor;
-  filter: drop-shadow(0 1px 0 color-mix(in srgb, var(--page-bg) 60%, transparent));
+  opacity: 0.92;
 }
 
 .content {

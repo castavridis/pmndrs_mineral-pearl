@@ -3,7 +3,7 @@
 import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { InkSplat, type InkSplatHandle } from '../ink-splat';
 import { Surface } from '../surface/Surface';
-import { useResolvedTheme } from '../theme';
+import { onInk, useResolvedTheme } from '../theme';
 import { useWebGL } from '../gate';
 import { calloutKinds, type CalloutKind } from './kinds';
 import { nacreKinds } from '../nacre-callout/NacreCallout';
@@ -49,8 +49,12 @@ export function Callout({
   const theme = useResolvedTheme();
   const webgl = useWebGL();
   const nacre = variant === 'surface' && webgl !== false;
-  // the DOM always takes the readable ink for the scheme; the raw palette
-  // colour goes to the shader, whose glow is behind the text rather than in it
+  // The blot is the kind's palette colour, unmuted: it is a mark on the card,
+  // not text, so it is not carried toward the page's ink. The icon sitting on
+  // it takes whatever reads against it.
+  const blotInk = k.hex;
+  const onBlot = onInk(blotInk);
+  // the label beside it is text, so that one does take the readable ink
   const tint = k.ink[theme];
   const vars = {
     '--tint': tint,
@@ -107,17 +111,17 @@ export function Callout({
         <span className={styles.blot} aria-hidden="true">
           <InkSplat
             ref={splatRef}
-            ink={tint}
+            ink={blotInk}
             logo={false}
             interactive={false}
             flood={false}
             nacre={0.85}
-            scale={0.5}
+            scale={0.8}
           />
         </span>
       )}
       {/* The kind's symbol, centred in the lens (DOM, so it stays crisp at any size). */}
-      <div ref={lensRef} className={styles.lens} aria-hidden="true">
+      <div ref={lensRef} className={styles.lens} style={{ color: onBlot }} aria-hidden="true">
         <svg className={styles.symbol} viewBox="0 0 16 16">
           <path d={n.d} />
         </svg>
