@@ -325,7 +325,7 @@ export function BentoPage() {
               </p>
             </NacreCallout>
           </div>
-          <div ref={launcherWake} className="afloat bento-cell" style={{ maxWidth: 320 }}>
+          <div ref={launcherWake} className="afloat bento-cell fit" style={{ maxWidth: 320 }}>
             <InkSink
               ref={launcherSink}
               well

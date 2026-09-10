@@ -207,8 +207,9 @@ export function Announcement({
   const content = (
     <div
       className={styles.content}
+      // no height of its own: the banner is as tall as what is in it and the
+      // padding around it, and as wide
       style={{
-        minHeight: announcement.height,
         padding: `${announcement.paddingY}px ${announcement.paddingRight}px ${announcement.paddingY}px ${announcement.paddingX}px`,
       }}
       // a click anywhere on the banner is a load at that point: the slab tips
@@ -298,8 +299,11 @@ export function Announcement({
         onReady={() => setSinkReady(true)}
         className={`${styles.root} ${className ?? ''}`}
         style={{
-          width: `calc(100% + ${look.bleed * 2}px)`,
-          maxWidth: width + look.bleed * 2,
+          // hug the content, up to the width it is given and the room it has:
+          // the sink's own padding is the bleed, so both sides of that are in
+          // these numbers and the negative margin takes them back out
+          width: 'max-content',
+          maxWidth: `min(100% + ${look.bleed * 2}px, ${width + look.bleed * 2}px)`,
           margin: `${-look.bleed}px`,
           opacity: fading ? 0 : 1,
           transition: `opacity ${FADE_MS}ms ease`,

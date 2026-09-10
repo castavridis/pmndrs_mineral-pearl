@@ -334,9 +334,10 @@ a {
 .launcher {
   position: relative;
   z-index: 1;
-  /* fluid: a surface button's min-width would stop it shrinking */
-  display: block;
-  width: 100%;
+  /* as wide as what is on it, and no wider: the sink draws its slab to the
+     cell, so the cell hugs the button (`.bento-cell.fit`) and the button hugs
+     its label */
+  width: auto;
   min-width: 0;
   text-align: center;
   background: transparent;
@@ -363,6 +364,7 @@ a {
   align-items: center;
   justify-content: center;
   gap: 9px;
+  padding-inline: 1.5rem;
   font-weight: 500;
 }
 

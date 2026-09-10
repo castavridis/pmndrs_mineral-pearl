@@ -1,7 +1,6 @@
-/** Banner metrics in CSS px, the glass banner's (652 × 94). */
+/** Banner metrics in CSS px, the glass banner's (652 wide). */
 export const announcement = {
   width: 652,
-  height: 94,
   radius: 8,
   /** Left of the content: the text starts a rem in from the slab's edge. */
   paddingX: 16,
