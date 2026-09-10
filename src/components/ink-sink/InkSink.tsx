@@ -15,15 +15,11 @@ import { useReducedMotion, useWebGL } from '../gate';
 import { COVER_S, RISE_S, SinkFallback } from './SinkFallback';
 import { usePageLook, usePageLooks } from '../theme/look';
 import { getFixedGround, registerGround, useGroundCount } from './grounds';
+import { resolvePondOptions, updatableOptions, type SinkSettings } from './pondOptions';
 import {
   LiquidPond,
-  MERCURY_DEFAULT,
-  MINERAL_DEFAULT,
-  PEARL_DEFAULT,
-  POINTER_DEFAULT,
   POND_BG,
   SLAB_LOOK,
-  SPECTRUM_DEFAULT,
   type Liquid,
   type MercuryLook,
   type MineralLook,
@@ -64,6 +60,9 @@ export const centreOf = (el: Element) => {
   const r = el.getBoundingClientRect();
   return { clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 };
 };
+
+/** What a well takes from its ground: its unit and its resolution. */
+const groundFrame = (g: LiquidPond) => ({ unit: g.opts.unit, maxDpr: g.opts.maxDpr });
 
 export const sinkCoverMs = (tier: SinkTier, reduced = false) =>
   tier === 'liquid' ? 1400 : tier === 'swallow' ? COVER_S * 1000 : reduced ? 260 : 620;
@@ -239,16 +238,40 @@ export function InkSink({
   const look = usePageLook();
   // the mineral body is dressed by the dark look, the pearl body by the light
   const looks = usePageLooks();
-  const visc = viscosity ?? looks.dark.viscosity;
-  const merged = () => ({
-    mineral: { ...MINERAL_DEFAULT, ...looks.dark.mineral, ...mineral },
-    pearl: { ...PEARL_DEFAULT, ...looks.light.pearl, ...pearl },
-    mercury: { ...MERCURY_DEFAULT, ...look.mercury, ...mercury },
-    spectrum: { ...SPECTRUM_DEFAULT, ...looks.dark.spectrum, ...spectrum },
-    pointer: { ...POINTER_DEFAULT, ...looks.dark.pointer, ...pointer },
-    spectrumPearl: { ...SPECTRUM_DEFAULT, ...looks.light.spectrum, ...spectrum },
-    pointerPearl: { ...POINTER_DEFAULT, ...looks.light.pointer, ...pointer },
-    viscosityPearl: viscosity ?? looks.light.viscosity,
+  // Everything the pond runs with comes from one function, for building it and
+  // for updating it, so the two cannot drift apart (see pondOptions.ts). The
+  // settings are the props; the ground is read where the pond is touched,
+  // since its registry is not reactive.
+  const settings: SinkSettings = {
+    liquid: liq,
+    viscosity,
+    mercuryOnSink,
+    globSize,
+    globDensity,
+    globHeight,
+    globSettle,
+    sinkDepth,
+    pressDepth,
+    pressHeave,
+    sinkSpeed,
+    sinkSplash,
+    globShading,
+    slabLiquid,
+    radius,
+    unit,
+    well,
+    mineral,
+    pearl,
+    spectrum,
+    pointer,
+    mercury,
+  };
+  // what an update keys on: the content of the settings and the looks, not the
+  // identity of objects that are rebuilt every render
+  const optionsKey = JSON.stringify([settings, look, looks]);
+  const latest = useRef({ settings, look, looks });
+  useEffect(() => {
+    latest.current = { settings, look, looks };
   });
   const hostRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -280,28 +303,13 @@ export function InkSink({
     // read here, not in render: the registry is not reactive to the compiler
     const ground = well ? getFixedGround() : null;
     if (well && !ground) return;
-    const pond = new LiquidPond(host, canvas, slab, {
-      liquid: liq,
-      viscosity: visc,
-      mercuryOnSink: well ? false : mercuryOnSink,
-      globSize,
-      globDensity,
-      globHeight,
-      globSettle,
-      sinkDepth,
-      pressDepth,
-      pressHeave,
-      sinkSpeed,
-      sinkSplash,
-      globShading,
-      slabLiquid,
-      radius,
-      // in a well the liquid must sample like the ground: its unit and resolution
-      maxDpr: ground ? ground.opts.maxDpr : 2,
-      unit: ground ? ground.opts.unit : unit,
-      well,
-      ...merged(),
-    });
+    const { settings: at, look: lk, looks: lks } = latest.current;
+    const pond = new LiquidPond(
+      host,
+      canvas,
+      slab,
+      resolvePondOptions(at, lks, lk, ground ? groundFrame(ground) : null)
+    );
     pond.face = faceRef.current;
     pondRef.current = pond;
     // A well waits for the page's ground, so this effect commonly runs once,
@@ -338,62 +346,21 @@ export function InkSink({
       pond.destroy();
       pondRef.current = null;
     };
-    // the pond is built once (per ground); options are pushed into it below
+    // Built once per ground and tier; every option after that is pushed in by
+    // the effect below. It reads the settings through `latest`, so building it
+    // later than the render that asked for it never builds it stale.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [well, grounds, tier]);
 
   useEffect(() => {
     const pond = pondRef.current;
     if (!pond) return;
-    pond.opts.viscosity = visc;
-    // the same rule the pond was built with: a well is a window onto the
-    // page's own surface, and the page does not turn to quicksilver because
-    // one slab in it went under. Without this the update below handed the
-    // default straight back and every well sank into mercury.
-    pond.opts.mercuryOnSink = well ? false : mercuryOnSink;
-    pond.opts.globSize = globSize;
-    pond.opts.globDensity = globDensity;
-    pond.opts.globHeight = globHeight;
-    pond.opts.globSettle = globSettle;
-    pond.opts.sinkDepth = sinkDepth;
-    pond.opts.pressDepth = pressDepth;
-    pond.opts.pressHeave = pressHeave;
-    pond.opts.sinkSpeed = sinkSpeed;
-    pond.opts.sinkSplash = sinkSplash;
-    pond.opts.globShading = globShading;
-    pond.opts.slabLiquid = slabLiquid;
-    pond.opts.radius = radius;
-    if (!pond.opts.well) pond.opts.unit = unit;
-    Object.assign(pond.opts, merged());
-    pond.setLiquid(liq);
-    // merged() reads the look and the props listed here
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    liq,
-    visc,
-    mercuryOnSink,
-    well,
-    globSize,
-    globDensity,
-    globHeight,
-    globSettle,
-    sinkDepth,
-    pressDepth,
-    pressHeave,
-    sinkSpeed,
-    sinkSplash,
-    globShading,
-    slabLiquid,
-    radius,
-    unit,
-    look,
-    looks,
-    mineral,
-    pearl,
-    spectrum,
-    pointer,
-    mercury,
-  ]);
+    const { settings: at, look: lk, looks: lks } = latest.current;
+    const ground = at.well ? getFixedGround() : null;
+    const next = resolvePondOptions(at, lks, lk, ground ? groundFrame(ground) : null);
+    Object.assign(pond.opts, updatableOptions(next));
+    pond.setLiquid(next.liquid);
+  }, [optionsKey]);
 
   useEffect(() => {
     const pond = pondRef.current;

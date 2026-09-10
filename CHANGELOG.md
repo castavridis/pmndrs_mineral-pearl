@@ -169,10 +169,10 @@ is kept current as items are taken on.
 
 | # | Improvement | Why | Status |
 | --- | --- | --- | --- |
-| 1 | Draw every well with one WebGL context | Every afloat element ran its own context, on top of the ground, the nacre stage and each blot's renderer: about eight on the bento, against a browser limit near sixteen past which the oldest is dropped. | In progress |
+| 1 | Draw every well with one WebGL context | Every afloat element ran its own context, on top of the ground, the nacre stage and each blot's renderer: about eight on the bento, against a browser limit near sixteen past which the oldest is dropped. | Next |
 | 2 | Split the front page's bundle | One 1.47 MB chunk (434 kB gzipped) carries three, fiber, drei and leva to the front page; leva is a dev tool. | Open |
-| 3 | Tests where the bugs actually were | Nearly every bug this session was a state or timing fault: a pond born late and never told it was sunk, the mercury rule undone on update, a setter's identity driving an overwrite loop, the dark look written into the light slot. | In progress |
-| 4 | Resolve sink options in one place | The sink built its pond with one set of rules and updated it with a hand-copied second set behind a disabled lint rule; that duplication is how the mercury bug happened. | In progress |
+| 3 | Tests where the bugs actually were | Nearly every bug this session was a state or timing fault: a pond born late and never told it was sunk, the mercury rule undone on update, a setter's identity driving an overwrite loop, the dark look written into the light slot. | Next |
+| 4 | Resolve sink options in one place | The sink built its pond with one set of rules and updated it with a hand-copied second set behind a disabled lint rule; that duplication is how the mercury bug happened. | Done: `resolvePondOptions` in `ink-sink/pondOptions.ts` is the only place the rules live, used to build a pond and to update one; the update keys on the settings' content, which removed the 25-entry dependency list and its lint suppression. |
 | 5 | Make the stacking-context rule a check | It bit three times and lives only as a comment. | Open |
 | 6 | Group per-card and per-pond knobs into named looks | `invert`, `dark`, `sheen`, `film`, `blobs` on a card; `pressHeave`, `sinkSpeed`, `slabLiquid` on a pond. | Open |
 | 7 | A debug overlay and a deterministic clock | Several motions could not be verified because a hidden pane produces no frames. | Open |
