@@ -75,6 +75,21 @@ export interface InkSinkProps {
    * belongs to the arrival, not to the settled mass. 0 keeps them proud.
    */
   globSettle?: number;
+  /**
+   * How deep a sunk slab rests, in uv (negative is below the surface). The
+   * default takes it right under and the liquid closes over it; a shallower
+   * rest leaves it under the surface but still seen through it.
+   */
+  sinkDepth?: number;
+  /** How deep a press dips it before it bobs back. */
+  pressDepth?: number;
+  /** Whether going under throws a swallow of droplets. Off for a shallow rest. */
+  sinkSplash?: boolean;
+  /**
+   * Drop the slab's own colours, so whatever is drawn behind it shows through
+   * (the nacre stage, say) while the liquid still closes over it as it sinks.
+   */
+  bare?: boolean;
   /** Shade the ink mass (sheen and lip). Default false: pure coverage. */
   globShading?: boolean;
   /** The mineral body's colours and strengths; defaults are the study's. */
@@ -143,6 +158,10 @@ export function InkSink({
   globDensity = 0.5,
   globHeight = 0,
   globSettle = 0.9,
+  sinkDepth,
+  pressDepth,
+  sinkSplash,
+  bare = false,
   globShading = false,
   mineral,
   pearl,
@@ -217,6 +236,9 @@ export function InkSink({
       globDensity,
       globHeight,
       globSettle,
+      sinkDepth,
+      pressDepth,
+      sinkSplash,
       globShading,
       radius,
       // in a well the liquid must sample like the ground: its unit and resolution
@@ -263,6 +285,9 @@ export function InkSink({
     pond.opts.globDensity = globDensity;
     pond.opts.globHeight = globHeight;
     pond.opts.globSettle = globSettle;
+    pond.opts.sinkDepth = sinkDepth;
+    pond.opts.pressDepth = pressDepth;
+    pond.opts.sinkSplash = sinkSplash;
     pond.opts.globShading = globShading;
     pond.opts.radius = radius;
     if (!pond.opts.well) pond.opts.unit = unit;
@@ -278,6 +303,9 @@ export function InkSink({
     globDensity,
     globHeight,
     globSettle,
+    sinkDepth,
+    pressDepth,
+    sinkSplash,
     globShading,
     radius,
     unit,
@@ -378,6 +406,7 @@ export function InkSink({
         ref={slabRef}
         className={styles.slab}
         data-sunk={isSunk || undefined}
+        data-bare={bare || undefined}
         data-fallback={tier !== 'liquid' || undefined}
         data-clickable={sinkOnClick || undefined}
         onPointerDown={onSlabPointerDown}

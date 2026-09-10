@@ -604,6 +604,17 @@ export interface PondOptions {
    * belongs to the arrival, not to the mass. 0 keeps them proud indefinitely.
    */
   globSettle?: number;
+  /**
+   * (port) How deep a sunk slab rests, in uv. The study takes it right under
+   * (-0.34) and the liquid closes over it. A shallower rest leaves it under
+   * the surface but still seen through it, which is what a disabled control
+   * wants: unavailable, still findable.
+   */
+  sinkDepth?: number;
+  /** (port) How deep a press dips it before it bobs back. */
+  pressDepth?: number;
+  /** (port) Whether going under throws a swallow of droplets. Off for a shallow rest. */
+  sinkSplash?: boolean;
   /** Shade the ink mass (wet-edge sheen, darker lip); off, it is pure coverage. */
   globShading: boolean;
   /** Corner radius of the slab, CSS px. */
@@ -801,8 +812,9 @@ export class LiquidPond {
   set sunk(d: boolean) {
     this._sunk = d;
     if (this._wasSunk !== undefined && this._wasSunk !== d) {
-      this._spawn(0, 0, d ? 1.4 : 1.2);
-      if (d) this._splat(1.3);
+      const splash = this.opts.sinkSplash ?? true;
+      this._spawn(0, 0, (d ? 1.4 : 1.2) * (splash ? 1 : 0.45));
+      if (d && splash) this._splat(1.3);
     }
     this._wasSunk = d;
     if (!this.supported) this._fallbackApply();
@@ -1475,7 +1487,9 @@ export class LiquidPond {
       const pressed = now / 1000 - s.pressAt < 1.5;
       const visc = this._visc(s.modeT);
       const hoverY = 0.014 - s.prox * 0.022 * this._pr('tilt');
-      const target = this._sunk ? -0.34 : pressed ? -0.3 : hoverY;
+      const sinkDepth = this.opts.sinkDepth ?? -0.34;
+      const pressDepth = this.opts.pressDepth ?? -0.3;
+      const target = this._sunk ? sinkDepth : pressed ? pressDepth : hoverY;
       const k = this._sunk ? 7.5 : pressed ? 18 : 22;
       if (s.prox > 0.6 && !this._wasUnder) this._spawn(this._bx, this._by, 0.25 * this._pr('wake'));
       this._wasUnder = s.prox > 0.6;

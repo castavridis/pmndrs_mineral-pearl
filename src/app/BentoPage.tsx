@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Leva, folder, useControls } from 'leva';
 import { useEffect } from 'react';
 import {
@@ -7,11 +7,13 @@ import {
   NACRE_DEFAULT,
   Nav,
   NacreCallout,
+  InkSink,
   Surface,
   getNacreStage,
+  palette,
+  type InkSinkHandle,
   type NacreConfig,
   type NavLink,
-  type SurfaceExit,
 } from '../components';
 import { Button, ButtonLink, CopyButton, Kbd, Popover } from '../ui';
 import {
@@ -119,14 +121,20 @@ export function BentoPage() {
   useNacreTweaks();
   const [gone, setGone] = useState(false);
   const [launcherDisabled, setLauncherDisabled] = useState(false);
-  const [launcherExit, setLauncherExit] = useState<SurfaceExit>('none');
   const [tab, setTab] = useState(2);
-  // the launcher carries both held exits: `pending` while it works, `disable` when it is off
-  const launch = () => {
-    if (launcherDisabled || launcherExit !== 'none') return;
-    setLauncherExit('pending');
-    window.setTimeout(() => setLauncherExit('none'), 1500);
-  };
+  // The launcher floats on the page like the announcement, and the nacre stage
+  // draws its face, so it is iridescent rather than flat. Disabled it settles
+  // just under the surface — still seen through the liquid, which is what
+  // unavailable should look like. A press dips it and it bobs back.
+  const launcherSink = useRef<InkSinkHandle>(null);
+  const launcherFace = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const el = launcherFace.current;
+    if (!el) return;
+    const stage = getNacreStage();
+    if (!stage) return;
+    return stage.register({ el, icon: null, accent: palette.teal, radius: 8 });
+  }, []);
   return (
     <main className="bento">
       <section className="bento-tier">
@@ -168,17 +176,31 @@ export function BentoPage() {
               ]}
             />
             <div className="bento-inline">
-              <Surface
-                as="button"
-                type="button"
-                shape="pill"
-                expressiveness="calm"
-                className="surface-button wide"
-                exit={launcherDisabled ? 'disable' : launcherExit}
-                onClick={launch}
+              <InkSink
+                ref={launcherSink}
+                well
+                bare
+                radius={8}
+                bleed={44}
+                sinkOnClick={false}
+                sunk={launcherDisabled}
+                sinkDepth={-0.1}
+                pressDepth={-0.05}
+                sinkSplash={false}
+                className="launcher-sink"
               >
-                Article Launcher
-              </Surface>
+                <button
+                  ref={launcherFace}
+                  type="button"
+                  className="surface-button wide launcher"
+                  aria-disabled={launcherDisabled || undefined}
+                  onPointerDown={() => {
+                    if (!launcherDisabled) launcherSink.current?.press();
+                  }}
+                >
+                  Article Launcher
+                </button>
+              </InkSink>
               <button
                 type="button"
                 className="text-button"

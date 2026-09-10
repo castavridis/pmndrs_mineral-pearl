@@ -43,6 +43,13 @@
   will-change: transform, filter;
 }
 
+/* bare: the slab keeps its shape and its motion but none of its colour, so
+   whatever is drawn behind it (the nacre stage) shows through */
+.slab[data-bare] {
+  background: transparent;
+  color: inherit;
+}
+
 /* the face tilts under the pointer like the study's label; the body above
    stays flat so it always fills the hole the liquid leaves for it */
 .face {

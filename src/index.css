@@ -295,3 +295,25 @@ a {
   opacity: 0.5;
   pointer-events: none;
 }
+
+/* the article launcher: a slab afloat on the page, its face drawn by the
+   nacre stage. The sink gives it its motion, the stage its iridescence. */
+.launcher-sink {
+  width: max-content;
+  margin: -44px;
+}
+
+.launcher {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--page-ink) 16%, transparent);
+  border-radius: 8px;
+  color: var(--page-ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.launcher[aria-disabled='true'] {
+  cursor: not-allowed;
+}
