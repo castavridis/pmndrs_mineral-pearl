@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Leva, folder, useControls } from 'leva';
+import { Leva, button, folder, useControls } from 'leva';
 import { useEffect } from 'react';
 import {
   Announcement,
@@ -16,6 +16,7 @@ import {
   type InkSinkHandle,
   type NacreConfig,
   type NavLink,
+  type SwallowLook,
 } from '../components';
 import { Button, ButtonLink, CopyButton, Kbd, Popover } from '../ui';
 import {
@@ -51,7 +52,87 @@ const LINKS: NavLink[] = [
     section: 'pmndrs / blog',
   },
 ];
+import { CONTROL_SWALLOW } from './controls';
 import { useThemeTweak } from './tweaks';
+
+/* The panel's current values, where leva's buttons can reach them: a button's
+   callback is made during render, so it cannot read a ref of its own. */
+const current: { look: SwallowLook } = { look: CONTROL_SWALLOW };
+
+/** The look as `controls.ts` would write it, on the clipboard and in the console. */
+function copyDefaults(v: SwallowLook) {
+  const lines = Object.entries(v)
+    .filter(([, x]) => x !== undefined)
+    .map(([k, x]) => `  ${k}: ${x},`)
+    .join('\n');
+  const text = `export const CONTROL_SWALLOW: SwallowLook = {\n${lines}\n};`;
+  navigator.clipboard?.writeText(text).catch(() => {});
+  // the clipboard can be refused (an unfocused pane, a permission), so the
+  // text is printed as well and nothing is lost either way
+  console.log(text);
+}
+
+/** The look as `InkSink` props. */
+const sinkProps = (v: SwallowLook) => ({
+  bleed: v.bleed,
+  viscosity: v.viscosity,
+  globSize: v.globSize,
+  globDensity: v.globDensity,
+  globHeight: v.globHeight,
+  globSettle: v.globSettle,
+  globShading: v.globShading,
+  sinkSplash: v.droplets,
+  sinkDepth: v.sinkDepth,
+  pressDepth: v.pressDepth,
+});
+
+/* The sink pads itself by its bleed so the liquid has room to spill, and pulls
+   that back with an equal negative margin, so the slab lands exactly on the
+   wrapper's box. */
+const bleedBox = (bleed: number) => ({ width: `calc(100% + ${bleed * 2}px)`, margin: -bleed });
+
+/** Every number of the swallow the bento's two controls float on. */
+function useControlSwallow(): SwallowLook {
+  const d = CONTROL_SWALLOW;
+  const c = useControls('controls', {
+    swallow: folder({
+      globSize: { value: d.globSize, min: 0.4, max: 3, step: 0.05, label: 'droplet size' },
+      globDensity: { value: d.globDensity, min: 0, max: 1, step: 0.05, label: 'density' },
+      globHeight: { value: d.globHeight, min: 0, max: 2.5, step: 0.05, label: 'heap height' },
+      globSettle: { value: d.globSettle, min: 0, max: 4, step: 0.05, label: 'settle (s)' },
+      globShading: { value: d.globShading, label: 'lit mass' },
+      droplets: { value: d.droplets, label: 'throw droplets' },
+      viscous: { value: d.viscosity !== undefined, label: 'own viscosity' },
+      viscosity: {
+        value: d.viscosity ?? 0.4,
+        min: 0.15,
+        max: 2,
+        step: 0.01,
+        render: (get) => get('controls.swallow.viscous'),
+      },
+      sinkDepth: { value: d.sinkDepth, min: -1, max: 0, step: 0.01, label: 'rest depth' },
+      pressDepth: { value: d.pressDepth, min: -0.6, max: 0, step: 0.01, label: 'press depth' },
+      bleed: { value: d.bleed, min: 8, max: 200, step: 4 },
+    }),
+    'copy as defaults': button(() => copyDefaults(current.look)),
+  });
+  const look: SwallowLook = {
+    globSize: c.globSize,
+    globDensity: c.globDensity,
+    globHeight: c.globHeight,
+    globSettle: c.globSettle,
+    globShading: c.globShading,
+    droplets: c.droplets,
+    viscosity: c.viscous ? c.viscosity : undefined,
+    pressDepth: c.pressDepth,
+    sinkDepth: c.sinkDepth,
+    bleed: c.bleed,
+  };
+  useEffect(() => {
+    current.look = look;
+  });
+  return look;
+}
 
 /** Every parameter of the nacre stage, applied live to the page's stage. */
 function useNacreTweaks() {
@@ -121,6 +202,8 @@ function useNacreTweaks() {
 export function BentoPage() {
   useThemeTweak();
   useNacreTweaks();
+  // one look for both controls: they float on the same page and read as a pair
+  const swallow = useControlSwallow();
   const [gone, setGone] = useState(false);
   const [launcherDisabled, setLauncherDisabled] = useState(false);
   const [tab, setTab] = useState(2);
@@ -182,13 +265,10 @@ export function BentoPage() {
                 well
                 bare
                 radius={8}
-                bleed={44}
                 sinkOnClick={false}
-                viscosity={0.22}
-                pressDepth={-0.09}
-                sinkSplash={false}
+                {...sinkProps(swallow)}
                 className="launcher-sink"
-                style={{ width: 'calc(100% + 88px)', margin: -44 }}
+                style={bleedBox(swallow.bleed)}
               >
                 {/* pointerdown bubbles from whichever action was pressed; a
                     keyboard activation arrives as a click with no pointer
@@ -232,15 +312,11 @@ export function BentoPage() {
                   well
                   bare
                   radius={8}
-                  bleed={44}
                   sinkOnClick={false}
-                  viscosity={0.22}
                   sunk={launcherDisabled}
-                  sinkDepth={-0.1}
-                  pressDepth={-0.09}
-                  sinkSplash={false}
+                  {...sinkProps(swallow)}
                   className="launcher-sink"
-                  style={{ width: 'calc(100% + 88px)', margin: -44 }}
+                  style={bleedBox(swallow.bleed)}
                 >
                   <button
                     ref={launcherFace}

@@ -24,4 +24,5 @@ export type {
   PondOptions,
   SpectrumLook,
 } from './liquid-pond';
+export type { SwallowLook } from './swallow';
 export { useWake } from './useWake';
