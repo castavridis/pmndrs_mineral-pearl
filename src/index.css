@@ -356,35 +356,23 @@ a {
   cursor: not-allowed;
 }
 
-/* the call to action is the theme switch: the ground it is on, and the one it
-   would take you to, on the two halves of one slab */
+/* the call to action is the theme switch: what a press will do, with the icon
+   of the ground it would bring */
 .launcher {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: 9px;
+  font-weight: 500;
 }
 
-.cta-side {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  /* the side you are not on is quieter, but still legible: it is where a
-     press takes you */
-  opacity: 0.55;
-  transition: opacity 220ms ease;
-}
-
-.cta-side[data-on] {
-  opacity: 1;
-  font-weight: 600;
-}
-
-.cta-bar {
-  width: 1px;
-  align-self: stretch;
-  margin: 2px 0;
-  background: color-mix(in srgb, currentColor 30%, transparent);
+/* Anything that sits under a well and must stay readable. A sink pads itself
+   by its bleed so the liquid has room to spill, and that padding reaches over
+   whatever follows it in the column; the levels above `.afloat` (1) and
+   `.afloat-front` (2) put this over the top of it. */
+.above-liquid {
+  position: relative;
+  z-index: 3;
 }
 
 /* a thing the wake moves: it needs a level of its own, since useWake writes a

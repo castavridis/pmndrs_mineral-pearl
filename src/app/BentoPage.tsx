@@ -342,7 +342,6 @@ export function BentoPage() {
                 type="button"
                 className="surface-button launcher"
                 aria-disabled={launcherDisabled || undefined}
-                aria-label={`Theme: ${scheme}. Switch to ${other}`}
                 onPointerDown={(e) => {
                   if (!launcherDisabled) launcherSink.current?.press(e.nativeEvent);
                 }}
@@ -359,19 +358,14 @@ export function BentoPage() {
                   ]);
                 }}
               >
-                <span className="cta-side" data-on={scheme === 'dark' || undefined}>
-                  <MoonIcon /> Dark
-                </span>
-                <span className="cta-bar" aria-hidden="true" />
-                <span className="cta-side" data-on={scheme === 'light' || undefined}>
-                  <SunIcon /> Light
-                </span>
+                {other === 'dark' ? <MoonIcon /> : <SunIcon />}
+                {other === 'dark' ? 'Apply Dark Theme' : 'Apply Light Theme'}
               </button>
             </InkSink>
           </div>
           <button
             type="button"
-            className="text-button"
+            className="text-button above-liquid"
             onClick={() => setLauncherDisabled((d) => !d)}
           >
             {launcherDisabled ? 'Enable Theme Switcher' : 'Disable Theme Switcher'}

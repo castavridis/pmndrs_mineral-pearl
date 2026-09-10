@@ -6,7 +6,7 @@ export const announcement = {
   /** Left of the content: the text starts a rem in from the slab's edge. */
   paddingX: 16,
   /** Above and below, and to the right, where the dismiss sits. */
-  paddingY: 24,
+  paddingY: 8,
   paddingRight: 24,
   /** Liquid kept around the banner, px: where its ripples and droplets run.
       As much room as the card afloat keeps on the study's pond, so the swallow
