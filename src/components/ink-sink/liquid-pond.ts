@@ -511,6 +511,9 @@ const TAU = Math.PI * 2;
    on the tilt, in uv of height per uv of offset, so a press at the very edge
    of a small slab cannot stand it on end. */
 const PRESS_HEAVE = 0.35;
+/* Raised toward 1 the press stops being a lean on one end and becomes the whole
+   slab giving under the hand: more heave, less tilt, and less of a knock as it
+   arrives, since a press with no lever has nothing to knock about. */
 const PRESS_LEVER = 0.42;
 const PRESS_TILT_MAX = 0.5;
 
@@ -650,6 +653,12 @@ export interface PondOptions {
   sinkDepth?: number;
   /** (port) How deep a press dips it before it bobs back. */
   pressDepth?: number;
+  /**
+   * How much of that depth the slab gives as a whole, 0..1. Low is a lean on
+   * the point under the finger, with the far side riding up; high is the whole
+   * slab giving softly, with little tilt and little knock. Default 0.35.
+   */
+  pressHeave?: number;
   /** (port) Whether going under throws a swallow of droplets. Off for a shallow rest. */
   sinkSplash?: boolean;
   /**
@@ -933,9 +942,11 @@ export class LiquidPond {
     // until that point sits at the press depth
     s.pressPt[0] = px;
     s.pressPt[1] = py;
-    // an impulse on top of it, so it arrives with a knock rather than a glide
-    s.tiltV[0] += -dx * 7;
-    s.tiltV[1] += -dy * 7;
+    // an impulse on top of it, so it arrives with a knock rather than a glide.
+    // A slab that gives as a whole gets less of one: the knock is the lever's.
+    const knock = 7 * (1 - (this.opts.pressHeave ?? PRESS_HEAVE));
+    s.tiltV[0] += -dx * knock;
+    s.tiltV[1] += -dy * knock;
     // A ring from where the finger went in, and nothing else. A press is a
     // load, not an impact: the liquid it displaces runs outward as a wave.
     // Throwing the rim's droplets here (as this used to) is the swallow that
@@ -1611,7 +1622,8 @@ export class LiquidPond {
       // gives a little as a whole and tips about its centre until the point
       // under the finger is at the press depth — the far side rides up by as
       // much, which is what a plank on water does when you lean on one end.
-      const target = this._sunk ? sinkDepth : pressed ? pressDepth * PRESS_HEAVE : hoverY;
+      const heave = this.opts.pressHeave ?? PRESS_HEAVE;
+      const target = this._sunk ? sinkDepth : pressed ? pressDepth * heave : hoverY;
       const k = this._sunk ? 7.5 : pressed ? 18 : 22;
       if (s.prox > 0.6 && !this._wasUnder) this._spawn(this._bx, this._by, 0.25 * this._pr('wake'));
       this._wasUnder = s.prox > 0.6;
@@ -1655,7 +1667,7 @@ export class LiquidPond {
           // whole thing simply gives instead.
           const ox = s.pressPt[0] - this._bx;
           const oy = s.pressPt[1] - this._by;
-          const need = pressDepth * (1 - PRESS_HEAVE);
+          const need = pressDepth * (1 - heave);
           const len2 = Math.max(ox * ox + oy * oy, (PRESS_LEVER * ref) ** 2);
           const g = need / len2;
           const cap = PRESS_TILT_MAX / Math.max(ref, 1e-4);

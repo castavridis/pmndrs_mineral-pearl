@@ -30,6 +30,13 @@ export interface SwallowLook {
   viscosity?: number;
   /** How deep a press drives the point under the finger, in uv. */
   pressDepth: number;
+  /**
+   * How much of that depth the slab gives as a whole, 0..1. Low is a lean on
+   * the point under the finger, with the far side riding up; high is the whole
+   * slab giving softly, with little tilt and little knock. Optional: the
+   * pond's own default (0.35, a lean) stands when it is left out.
+   */
+  pressHeave?: number;
   /** How deep the slab rests once the liquid has closed over it, in uv. */
   sinkDepth: number;
   /** Liquid kept around the slab, px: where its ripples and droplets run. */

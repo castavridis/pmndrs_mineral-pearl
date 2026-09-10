@@ -50,7 +50,7 @@ const LINKS: NavLink[] = [
     section: 'pmndrs / blog',
   },
 ];
-import { CALLOUT_WAKE, CONTROL_SWALLOW, CONTROL_WAKE } from './controls';
+import { CALLOUT_WAKE, CONTROL_SWALLOW, CONTROL_WAKE, LAUNCHER_SWALLOW } from './controls';
 import { useThemeTweak } from './tweaks';
 
 /* The panel's current values, where leva's buttons can reach them: a button's
@@ -73,6 +73,7 @@ function copyDefaults(v: SwallowLook) {
 /** The look as `InkSink` props. */
 const sinkProps = (v: SwallowLook) => ({
   bleed: v.bleed,
+  pressHeave: v.pressHeave,
   viscosity: v.viscosity,
   globSize: v.globSize,
   globDensity: v.globDensity,
@@ -319,7 +320,7 @@ export function BentoPage() {
               radius={8}
               sinkOnClick={false}
               sunk={launcherDisabled}
-              {...sinkProps(swallow)}
+              {...sinkProps({ ...swallow, ...LAUNCHER_SWALLOW })}
               className="launcher-sink"
               style={bleedBox(swallow.bleed)}
             >

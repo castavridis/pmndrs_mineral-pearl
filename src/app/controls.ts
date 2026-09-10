@@ -23,6 +23,19 @@ export const CONTROL_SWALLOW: SwallowLook = {
 };
 
 /**
+ * The article launcher presses differently from the copy bar. A copy bar is a
+ * row of separate actions and the hand lands on one of them, so the lean under
+ * the finger is the point of it. The launcher is one face and a primary call
+ * to action: it should give under the hand as a whole, softly, rather than
+ * being knocked down at one corner. Nearly all heave, a shallower depth, and
+ * the knock that comes with a lever falls away with it.
+ */
+export const LAUNCHER_SWALLOW: Partial<SwallowLook> = {
+  pressHeave: 0.9,
+  pressDepth: -0.05,
+};
+
+/**
  * How hard the pointer's wake moves the middle tier. These are controls, not
  * ornaments: at 0.8 a ripple passing under one shoved it several pixels and a
  * degree of tilt, which read as an animation rather than as water. Halved, it

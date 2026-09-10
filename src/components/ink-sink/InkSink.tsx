@@ -95,6 +95,11 @@ export interface InkSinkProps {
    * rest leaves it under the surface but still seen through it.
    */
   sinkDepth?: number;
+  /**
+   * How much of the press depth the slab gives as a whole, 0..1. Low is a lean
+   * on the point under the finger; high is the whole slab giving softly.
+   */
+  pressHeave?: number;
   /** How deep a press dips it before it bobs back. */
   pressDepth?: number;
   /** Whether going under throws a swallow of droplets. Off for a shallow rest. */
@@ -187,6 +192,7 @@ export function InkSink({
   globSettle = 0.9,
   sinkDepth,
   pressDepth,
+  pressHeave,
   sinkSplash,
   bare = false,
   globShading = false,
@@ -281,6 +287,7 @@ export function InkSink({
       globSettle,
       sinkDepth,
       pressDepth,
+      pressHeave,
       sinkSplash,
       globShading,
       slabLiquid,
@@ -342,6 +349,7 @@ export function InkSink({
     pond.opts.globSettle = globSettle;
     pond.opts.sinkDepth = sinkDepth;
     pond.opts.pressDepth = pressDepth;
+    pond.opts.pressHeave = pressHeave;
     pond.opts.sinkSplash = sinkSplash;
     pond.opts.globShading = globShading;
     pond.opts.slabLiquid = slabLiquid;
@@ -361,6 +369,7 @@ export function InkSink({
     globSettle,
     sinkDepth,
     pressDepth,
+    pressHeave,
     sinkSplash,
     globShading,
     slabLiquid,
