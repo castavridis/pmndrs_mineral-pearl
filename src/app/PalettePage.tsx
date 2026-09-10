@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Leva, button, folder, useControls } from 'leva';
 import {
   LOOK_DEFAULT,
+  LOOK_DEFAULTS,
   LiquidGround,
   POND_BG,
   useLook,
@@ -10,7 +11,7 @@ import {
   type Liquid,
   type PageLook,
 } from '../components';
-import { lookFromPanel, usePresets, type PresetValues } from './presets';
+import { lookFromPanel, panelFromLook, usePresets, type PresetValues } from './presets';
 import { useThemeTweak } from './tweaks';
 
 /** The look as `look.ts` would write it, on the clipboard and in the console. */
@@ -23,143 +24,186 @@ function copyLook(v: PageLook, scheme: string) {
   console.log(text);
 }
 
-/* The panel's current values, where leva's buttons can reach them: a button's
-   callback is made during render, so it cannot read a ref of its own. */
-const current: { look: PageLook } = { look: LOOK_DEFAULT };
-
-/**
- * Every number of the page look, live. The panel is built from the look in
- * force, so it follows a scheme change or a preset being applied — both bump
- * the key it is built under rather than writing into the fields, which would
- * fight whoever is typing.
- */
-function useLookPanel(look: PageLook, scheme: string, sync: number) {
-  const setLook = useLook((s) => s.setLook);
-  const reset = useLook((s) => s.reset);
-  const v = useControls(
-    'look',
-    () => ({
-      viscosity: { value: look.viscosity, min: 0.15, max: 2, step: 0.05 },
-      mineral: folder({
-        minBase: { value: look.mineral.base, label: 'base' },
-        minHigh: { value: look.mineral.highlight, label: 'crest' },
-        minStone: { value: look.mineral.stoneGray, min: 0, max: 2, step: 0.05, label: 'stone gray' },
-        minIrid: {
-          value: look.mineral.iridescence,
-          min: 0,
-          max: 2,
-          step: 0.05,
-          label: 'iridescence',
-        },
-        minSpec: { value: look.mineral.specular, min: 0, max: 1.5, step: 0.05, label: 'specular' },
-        minGamma: { value: look.mineral.gamma, min: 0.4, max: 1.6, step: 0.02, label: 'gamma' },
-      }),
-      nacre: folder({
-        pearlCream: { value: look.pearl.cream, label: 'cream' },
-        pearlShade: { value: look.pearl.shade, label: 'shade' },
-        pearlCloud: { value: look.pearl.clouding, min: 0, max: 1, step: 0.05, label: 'clouding' },
-        pearlNacre: { value: look.pearl.nacre, min: 0, max: 0.3, step: 0.005, label: 'nacre' },
-        pearlIrid: {
-          value: look.pearl.iridescence,
-          min: 0,
-          max: 2,
-          step: 0.05,
-          label: 'iridescence',
-        },
-        pearlSpec: { value: look.pearl.specular, min: 0, max: 1.5, step: 0.05, label: 'specular' },
-      }),
-      quicksilver: folder(
-        {
-          mcFloor: { value: look.mercury.floor, label: 'floor' },
-          mcSky: { value: look.mercury.sky, label: 'sky' },
-          mcHorizon: { value: look.mercury.horizon, min: 0, max: 2, step: 0.05, label: 'horizon' },
-          mcTop: { value: look.mercury.topLight, min: 0, max: 3, step: 0.05, label: 'top light' },
-          mcSpec: { value: look.mercury.specular, min: 0, max: 2, step: 0.05, label: 'specular' },
-          mcIrid: {
-            value: look.mercury.iridescence,
-            min: 0,
-            max: 1,
-            step: 0.02,
-            label: 'iridescence',
-          },
-        },
-        { collapsed: true }
-      ),
-      spectrum: folder(
-        {
-          spWhite: { value: look.spectrum.white, min: 0, max: 1, step: 0.02, label: 'white' },
-          spSpread: { value: look.spectrum.spread, min: 0, max: 3, step: 0.05, label: 'spread' },
-          spSwirl: { value: look.spectrum.swirl, min: 0.2, max: 8, step: 0.1, label: 'swirl' },
-          spGlow: {
-            value: look.spectrum.cursorGlow,
-            min: 0,
-            max: 2,
-            step: 0.05,
-            label: 'cursor glow',
-          },
-          spGrainSize: {
-            value: look.spectrum.grainSize,
-            min: 20,
-            max: 400,
-            step: 5,
-            label: 'grain size',
-          },
-          spGrainDens: {
-            value: look.spectrum.grainDensity,
-            min: 0,
-            max: 1,
-            step: 0.05,
-            label: 'grain density',
-          },
-          spGlitterDens: {
-            value: look.spectrum.glitterDensity,
-            min: 0,
-            max: 1,
-            step: 0.02,
-            label: 'glitter density',
-          },
-          spFacet: {
-            value: look.spectrum.facetSharpness,
-            min: 10,
-            max: 600,
-            step: 10,
-            label: 'facet sharpness',
-          },
-          spGlint: { value: look.spectrum.glint, min: 0, max: 4, step: 0.1, label: 'glint' },
-          spLamina: { value: look.spectrum.lamina, min: 8, max: 400, step: 2, label: 'striations' },
-        },
-        { collapsed: true }
-      ),
-      pointer: folder(
-        {
-          ptReaction: { value: look.pointer.reaction, min: 0, max: 3, step: 0.05, label: 'reaction' },
-          ptDimple: { value: look.pointer.dimple, min: 0, max: 3, step: 0.05, label: 'dimple' },
-          ptWake: { value: look.pointer.wake, min: 0, max: 3, step: 0.05, label: 'wake' },
-          ptTilt: { value: look.pointer.tilt, min: 0, max: 3, step: 0.05, label: 'tilt' },
-          ptDrift: { value: look.pointer.drift, min: 0, max: 3, step: 0.05, label: 'drift' },
-        },
-        { collapsed: true }
-      ),
-      'copy as defaults': button(() => copyLook(current.look, scheme)),
-      'reset both schemes': button(() => reset()),
-    }),
-    [scheme, sync]
-  );
-  // The panel's flat values are the same shape a saved preset has, so the same
-  // reader turns them into a look. Keyed on their content rather than their
-  // identity: leva hands back a fresh object each render, and writing the look
-  // on every one of those is a render loop, since the look is what the page is
-  // drawn from.
-  const signature = JSON.stringify(v);
-  useEffect(() => {
-    setLook(lookFromPanel(JSON.parse(signature) as PresetValues));
-  }, [signature, setLook]);
-}
-
 const LIQUIDS: Liquid[] = ['mineral', 'pearl', 'mercury'];
 
 /** Sample size in CSS px. */
 const SAMPLE = { width: 300, height: 190 };
+
+/* What leva's buttons need to reach: a button's callback is made during
+   render, so it cannot read a ref or a hook of its own. */
+const cur: { look: PageLook; name: string; pick: string } = {
+  look: LOOK_DEFAULT,
+  name: 'my look',
+  pick: '',
+};
+
+/**
+ * Every number of the page look, live, and the presets it can be saved as or
+ * loaded from. The look panel is built once; when the look is changed from
+ * outside it — the scheme turns over, a preset is loaded, the look is reset —
+ * `sync` is bumped and the look in force is pushed into the fields, rather than
+ * the panel being rebuilt under whoever is typing.
+ */
+function useLookPanel(scheme: 'dark' | 'light', sync: number, bump: () => void) {
+  const setLook = useLook((s) => s.setLook);
+  const reset = useLook((s) => s.reset);
+  // The look for the scheme the page is actually showing. The store's own
+  // `look` can lag a scheme change by a render, and reading it here once put
+  // the dark look into the light scheme's slot as soon as the fields wrote
+  // back.
+  const lookFor = (sc: 'dark' | 'light') => useLook.getState().looks[sc] ?? LOOK_DEFAULTS[sc];
+  const l = lookFor(scheme);
+  // leva hands back [values, set] when the schema is a function
+  const [v, set] = useControls('look', () => ({
+    viscosity: { value: l.viscosity, min: 0.15, max: 2, step: 0.05 },
+    mineral: folder({
+      minBase: { value: l.mineral.base, label: 'base' },
+      minHigh: { value: l.mineral.highlight, label: 'crest' },
+      minStone: { value: l.mineral.stoneGray, min: 0, max: 2, step: 0.05, label: 'stone gray' },
+      minIrid: { value: l.mineral.iridescence, min: 0, max: 2, step: 0.05, label: 'iridescence' },
+      minSpec: { value: l.mineral.specular, min: 0, max: 1.5, step: 0.05, label: 'specular' },
+      minGamma: { value: l.mineral.gamma, min: 0.4, max: 1.6, step: 0.02, label: 'gamma' },
+    }),
+    nacre: folder({
+      pearlCream: { value: l.pearl.cream, label: 'cream' },
+      pearlShade: { value: l.pearl.shade, label: 'shade' },
+      pearlCloud: { value: l.pearl.clouding, min: 0, max: 1, step: 0.05, label: 'clouding' },
+      pearlNacre: { value: l.pearl.nacre, min: 0, max: 0.3, step: 0.005, label: 'nacre' },
+      pearlIrid: { value: l.pearl.iridescence, min: 0, max: 2, step: 0.05, label: 'iridescence' },
+      pearlSpec: { value: l.pearl.specular, min: 0, max: 1.5, step: 0.05, label: 'specular' },
+    }),
+    quicksilver: folder(
+      {
+        mcFloor: { value: l.mercury.floor, label: 'floor' },
+        mcSky: { value: l.mercury.sky, label: 'sky' },
+        mcHorizon: { value: l.mercury.horizon, min: 0, max: 2, step: 0.05, label: 'horizon' },
+        mcTop: { value: l.mercury.topLight, min: 0, max: 3, step: 0.05, label: 'top light' },
+        mcSpec: { value: l.mercury.specular, min: 0, max: 2, step: 0.05, label: 'specular' },
+        mcIrid: { value: l.mercury.iridescence, min: 0, max: 1, step: 0.02, label: 'iridescence' },
+      },
+      { collapsed: true }
+    ),
+    spectrum: folder(
+      {
+        spWhite: { value: l.spectrum.white, min: 0, max: 1, step: 0.02, label: 'white' },
+        spSpread: { value: l.spectrum.spread, min: 0, max: 3, step: 0.05, label: 'spread' },
+        spSwirl: { value: l.spectrum.swirl, min: 0.2, max: 8, step: 0.1, label: 'swirl' },
+        spGlow: { value: l.spectrum.cursorGlow, min: 0, max: 2, step: 0.05, label: 'cursor glow' },
+        spGrainSize: { value: l.spectrum.grainSize, min: 20, max: 400, step: 5, label: 'grain size' },
+        spGrainDens: {
+          value: l.spectrum.grainDensity,
+          min: 0,
+          max: 1,
+          step: 0.05,
+          label: 'grain density',
+        },
+        spGlitterDens: {
+          value: l.spectrum.glitterDensity,
+          min: 0,
+          max: 1,
+          step: 0.02,
+          label: 'glitter density',
+        },
+        spFacet: {
+          value: l.spectrum.facetSharpness,
+          min: 10,
+          max: 600,
+          step: 10,
+          label: 'facet sharpness',
+        },
+        spGlint: { value: l.spectrum.glint, min: 0, max: 4, step: 0.1, label: 'glint' },
+        spGlintPtr: {
+          value: l.spectrum.glintFollowsPointer,
+          min: 0,
+          max: 1,
+          step: 0.05,
+          label: 'glint follows pointer',
+        },
+        spLamina: { value: l.spectrum.lamina, min: 8, max: 400, step: 2, label: 'striations' },
+      },
+      { collapsed: true }
+    ),
+    pointer: folder(
+      {
+        ptReaction: { value: l.pointer.reaction, min: 0, max: 3, step: 0.05, label: 'reaction' },
+        ptDimple: { value: l.pointer.dimple, min: 0, max: 3, step: 0.05, label: 'dimple' },
+        ptWake: { value: l.pointer.wake, min: 0, max: 3, step: 0.05, label: 'wake' },
+        ptTilt: { value: l.pointer.tilt, min: 0, max: 3, step: 0.05, label: 'tilt' },
+        ptDrift: { value: l.pointer.drift, min: 0, max: 3, step: 0.05, label: 'drift' },
+      },
+      { collapsed: true }
+    ),
+    'copy as defaults': button(() => copyLook(cur.look, scheme)),
+    'reset both schemes': button(() => {
+      reset();
+      bump();
+    }),
+  }));
+
+  // The look in force into the fields, whenever it changed from outside them —
+  // and only then. Leva's setter is a new function every render, so keying on
+  // it pushed the stored look back over every edit the moment it was made.
+  const setRef = useRef(set);
+  useEffect(() => {
+    setRef.current = set;
+  });
+  useEffect(() => {
+    setRef.current(panelFromLook(lookFor(scheme)) as Parameters<typeof set>[0]);
+    // lookFor reads the store directly; it is not state of this component
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sync, scheme]);
+
+  // The fields into the look. Keyed on their content rather than their
+  // identity: leva hands back a fresh object each render, and writing the look
+  // on every one of those is a render loop, since the look is what the page is
+  // drawn from.
+  //
+  // Only into the scheme the page is showing: `setLook` writes into the
+  // store's current scheme, and until the store has caught up with a change
+  // of theme that is the other one.
+  const signature = JSON.stringify(v);
+  useEffect(() => {
+    if (useLook.getState().scheme !== scheme) return;
+    setLook(lookFromPanel(JSON.parse(signature) as PresetValues));
+  }, [signature, setLook, scheme]);
+
+  // Saving and loading. A preset is kept in the sink panel's flat shape, so
+  // one saved here loads there and the other way about; the ones that ship in
+  // pond-presets.json are always in the list.
+  const names = Object.keys(usePresets((s) => s.presets));
+  useControls(
+    'presets',
+    {
+      name: {
+        value: cur.name,
+        onChange: (n: string) => {
+          cur.name = n;
+        },
+      },
+      save: button(() => {
+        const n = cur.name.trim();
+        if (n) usePresets.getState().save(n, panelFromLook(cur.look));
+      }),
+      preset: {
+        value: '',
+        options: ['', ...names],
+        onChange: (n: string) => {
+          cur.pick = n;
+        },
+      },
+      load: button(() => {
+        const p = usePresets.getState().presets[cur.pick];
+        if (!p) return;
+        setLook(lookFromPanel(p));
+        bump();
+      }),
+      delete: button(() => {
+        if (cur.pick) usePresets.getState().remove(cur.pick);
+      }),
+    },
+    [names.join('|')]
+  );
+}
 
 /**
  * `/dev/palette`: one card per liquid with a live sample in the page look,
@@ -173,12 +217,13 @@ export function PalettePage() {
   const setLook = useLook((s) => s.setLook);
   const reset = useLook((s) => s.reset);
   // bumped whenever the look is changed from outside the panel, so the panel
-  // is rebuilt from what is in force
+  // takes up what is in force
   const [sync, setSync] = useState(0);
+  const bump = () => setSync((n) => n + 1);
   useEffect(() => {
-    current.look = look;
+    cur.look = look;
   }, [look]);
-  useLookPanel(look, scheme, sync);
+  useLookPanel(scheme, sync, bump);
   const presets = usePresets((s) => s.presets);
   const names = Object.keys(presets);
   return (

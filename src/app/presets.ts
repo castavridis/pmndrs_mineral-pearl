@@ -123,3 +123,48 @@ export function lookFromPanel(
     }),
   };
 }
+
+/**
+ * A look as the panel's flat values — the inverse of `lookFromPanel`, and the
+ * shape a preset is saved in, so a look saved from the palette loads in the
+ * sink panel and the other way about.
+ */
+export function panelFromLook(l: PageLook): PresetValues {
+  return {
+    viscosity: l.viscosity,
+    minBase: l.mineral.base,
+    minHigh: l.mineral.highlight,
+    minStone: l.mineral.stoneGray,
+    minIrid: l.mineral.iridescence,
+    minSpec: l.mineral.specular,
+    minGamma: l.mineral.gamma,
+    pearlCream: l.pearl.cream,
+    pearlShade: l.pearl.shade,
+    pearlCloud: l.pearl.clouding,
+    pearlNacre: l.pearl.nacre,
+    pearlIrid: l.pearl.iridescence,
+    pearlSpec: l.pearl.specular,
+    mcFloor: l.mercury.floor,
+    mcSky: l.mercury.sky,
+    mcHorizon: l.mercury.horizon,
+    mcTop: l.mercury.topLight,
+    mcSpec: l.mercury.specular,
+    mcIrid: l.mercury.iridescence,
+    spWhite: l.spectrum.white,
+    spSpread: l.spectrum.spread,
+    spSwirl: l.spectrum.swirl,
+    spGlow: l.spectrum.cursorGlow,
+    spGrainSize: l.spectrum.grainSize,
+    spGrainDens: l.spectrum.grainDensity,
+    spGlitterDens: l.spectrum.glitterDensity,
+    spFacet: l.spectrum.facetSharpness,
+    spGlint: l.spectrum.glint,
+    spGlintPtr: l.spectrum.glintFollowsPointer,
+    spLamina: l.spectrum.lamina,
+    ptReaction: l.pointer.reaction,
+    ptDimple: l.pointer.dimple,
+    ptWake: l.pointer.wake,
+    ptTilt: l.pointer.tilt,
+    ptDrift: l.pointer.drift,
+  };
+}
