@@ -659,6 +659,12 @@ export interface PondOptions {
    * slab giving softly, with little tilt and little knock. Default 0.35.
    */
   pressHeave?: number;
+  /**
+   * How quickly it goes under, as a multiple of the study's rate. A time
+   * scaling: the spring and its damping are scaled together, so the motion is
+   * the same one played faster rather than a different one. Default 1.
+   */
+  sinkSpeed?: number;
   /** (port) Whether going under throws a swallow of droplets. Off for a shallow rest. */
   sinkSplash?: boolean;
   /**
@@ -1624,7 +1630,10 @@ export class LiquidPond {
       // much, which is what a plank on water does when you lean on one end.
       const heave = this.opts.pressHeave ?? PRESS_HEAVE;
       const target = this._sunk ? sinkDepth : pressed ? pressDepth * heave : hoverY;
-      const k = this._sunk ? 7.5 : pressed ? 18 : 22;
+      // going under has a rate of its own: scaling the spring and its damping
+      // together is a change of clock, not of character
+      const rate = this._sunk ? (this.opts.sinkSpeed ?? 1) : 1;
+      const k = (this._sunk ? 7.5 : pressed ? 18 : 22) * rate;
       if (s.prox > 0.6 && !this._wasUnder) this._spawn(this._bx, this._by, 0.25 * this._pr('wake'));
       this._wasUnder = s.prox > 0.6;
       let left = dt;
@@ -1633,7 +1642,7 @@ export class LiquidPond {
         left -= h;
         // drag rises steeply near the surface: breaking the meniscus takes work
         const cling = 1 + 2.6 * Math.exp(-s.y * s.y * 900);
-        const c = (this._sunk ? 6.4 : 8.2) * visc * cling;
+        const c = (this._sunk ? 6.4 : 8.2) * visc * cling * rate;
         s.v += (target - s.y) * k * h - s.v * c * h;
         s.y += s.v * h;
         // (port) the surface feels the slab through the liquid, so it is

@@ -39,6 +39,8 @@ export interface SwallowLook {
   pressHeave?: number;
   /** How deep the slab rests once the liquid has closed over it, in uv. */
   sinkDepth: number;
+  /** How quickly it goes under, as a multiple of the study's rate. */
+  sinkSpeed?: number;
   /** Liquid kept around the slab, px: where its ripples and droplets run. */
   bleed: number;
 }

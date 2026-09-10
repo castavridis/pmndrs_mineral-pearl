@@ -39,6 +39,10 @@ export const LAUNCHER_SWALLOW: Partial<SwallowLook> = {
   // "sunken spot (nacre)" on the light one (1.3). A control that sinks to
   // say it is unavailable should sink through the liquid the page is made of.
   viscosity: undefined,
+  // ...and goes under briskly when it is taken away. Thick liquid is right for
+  // the look and slow for the news: a control that has just been disabled
+  // should be seen to go, not watched sinking.
+  sinkSpeed: 2.4,
 };
 
 /**

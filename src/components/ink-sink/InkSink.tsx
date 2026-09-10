@@ -100,6 +100,8 @@ export interface InkSinkProps {
    * on the point under the finger; high is the whole slab giving softly.
    */
   pressHeave?: number;
+  /** How quickly it goes under, as a multiple of the study's rate. Default 1. */
+  sinkSpeed?: number;
   /** How deep a press dips it before it bobs back. */
   pressDepth?: number;
   /** Whether going under throws a swallow of droplets. Off for a shallow rest. */
@@ -193,6 +195,7 @@ export function InkSink({
   sinkDepth,
   pressDepth,
   pressHeave,
+  sinkSpeed,
   sinkSplash,
   bare = false,
   globShading = false,
@@ -288,6 +291,7 @@ export function InkSink({
       sinkDepth,
       pressDepth,
       pressHeave,
+      sinkSpeed,
       sinkSplash,
       globShading,
       slabLiquid,
@@ -354,6 +358,7 @@ export function InkSink({
     pond.opts.sinkDepth = sinkDepth;
     pond.opts.pressDepth = pressDepth;
     pond.opts.pressHeave = pressHeave;
+    pond.opts.sinkSpeed = sinkSpeed;
     pond.opts.sinkSplash = sinkSplash;
     pond.opts.globShading = globShading;
     pond.opts.slabLiquid = slabLiquid;
@@ -375,6 +380,7 @@ export function InkSink({
     sinkDepth,
     pressDepth,
     pressHeave,
+    sinkSpeed,
     sinkSplash,
     globShading,
     slabLiquid,

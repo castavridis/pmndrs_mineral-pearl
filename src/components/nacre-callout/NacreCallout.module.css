@@ -49,6 +49,21 @@
     0 0 10px color-mix(in srgb, var(--page-bg) 66%, transparent);
 }
 
+
+/* On the light ground the card is pale paper, and the kind's colour — a
+   pmndrs green or yellow, chosen to carry against black mineral — has almost
+   nothing to hold on to there. The headline takes the page's ink instead and
+   the icon keeps the colour, so the kind is still said, in the one place that
+   can afford to say it. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) .lbl {
+    color: var(--page-ink);
+  }
+}
+
+:root[data-theme='light'] .lbl {
+  color: var(--page-ink);
+}
 .body p {
   margin: 0;
   font-size: 14.5px;

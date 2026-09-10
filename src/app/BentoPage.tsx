@@ -78,6 +78,7 @@ function copyDefaults(v: SwallowLook) {
 const sinkProps = (v: SwallowLook) => ({
   bleed: v.bleed,
   pressHeave: v.pressHeave,
+  sinkSpeed: v.sinkSpeed,
   viscosity: v.viscosity,
   globSize: v.globSize,
   globDensity: v.globDensity,
