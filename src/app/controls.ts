@@ -33,6 +33,12 @@ export const CONTROL_SWALLOW: SwallowLook = {
 export const LAUNCHER_SWALLOW: Partial<SwallowLook> = {
   pressHeave: 0.9,
   pressDepth: -0.05,
+  // It also floats on the page's own liquid rather than on a thinner one of
+  // its own: `undefined` here leaves the viscosity to the page look, which is
+  // the pair of saved presets — "sunken spot" on the dark ground (0.4) and
+  // "sunken spot (nacre)" on the light one (1.3). A control that sinks to
+  // say it is unavailable should sink through the liquid the page is made of.
+  viscosity: undefined,
 };
 
 /**
