@@ -158,6 +158,7 @@ so the study can still be diffed against.
 | Mirror `~/Git/@pmndrs/3d-2d-nav` one for one (`44bd2b2`, `fc363cc`, `b5c25a9`) | Nav, Announcement, Callout and the `/dev` pages keep that repo's names, props, tokens and metrics, with liquid where it had glass. Written into `AGENTS.md` so both repos stay aligned. |
 | Its 3D-model pages are out of scope | `/dev/stage`, `/dev/cube`, `/dev/trace` and the frankenstein page have no ink counterpart. Said so rather than inventing one. |
 | The nav pill is a `Surface`; the DOM nav is the source of truth in every tier | Progressive enhancement: the liquid is only the pill's face. Accessibility, SEO and the tab order never depend on WebGL. |
+| The front page's banner is a splash of ink (`variant="ink"`) | Asked for: more ink splat, like the first ink callouts. A blot of the palette's blue lands in the middle and floods out to the banner's rounded edge, reusing the splat's clip, flood and drain as `InkCallout` did before it was removed in `2ff3d00`. The blot is scaled to the banner's height (0.24 of its width) so the mass leaves a small overhang rather than a drop hanging over the nav. The text waits for the flood, not the impact, and a dismissal drains the flood back into the blot before the room closes. The slab afloat stays as the default variant, and `/dev/announcement` offers both. |
 
 ---
 

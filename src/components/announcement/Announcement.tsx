@@ -2,9 +2,13 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { InkSink, centreOf, type InkSinkHandle } from '../ink-sink/InkSink';
+import { InkSplat, type InkSplatHandle } from '../ink-splat';
 import { Surface } from '../surface/Surface';
+import { calloutKinds } from '../callout/kinds';
+import { useWebGL } from '../gate';
+import { onInk, useResolvedTheme } from '../theme';
 import type { SinkTier } from '../ink-sink/InkSink';
-import { announcement } from './metrics';
+import { announcement, inkBanner } from './metrics';
 import { ANNOUNCEMENT_SWALLOW, type AnnouncementSwallow } from './swallow';
 import styles from './Announcement.module.css';
 
@@ -16,9 +20,13 @@ export interface AnnouncementProps {
    * How the banner floats. `auto` (default) lets the sink pick the best tier
    * the page can run; `liquid`, `swallow` and `quiet` force one of them (see
    * `InkSink`'s `tier`), and `flat` opts out of floating altogether for a
-   * plain card whose dismissal is the ink exit.
+   * plain card whose dismissal is the ink exit. `ink` is a splash of ink
+   * rather than a slab: a blot lands in the middle and floods out to the
+   * banner's edge, and a dismissal drains it again.
    */
-  variant?: 'auto' | SinkTier | 'flat';
+  variant?: 'auto' | SinkTier | 'flat' | 'ink';
+  /** The `ink` variant's colour. Defaults to the palette's blue, as a note's. */
+  ink?: string;
   /**
    * Dismissible: a close button. Afloat, the blow sinks the banner into the
    * page and the liquid closes over it; flat, the ink closes over it. Called
@@ -53,15 +61,26 @@ export function Announcement({
   children,
   width = announcement.width,
   variant = 'auto',
+  ink,
   onDismiss,
   swallow,
   className,
   style,
 }: AnnouncementProps) {
   const look: AnnouncementSwallow = { ...ANNOUNCEMENT_SWALLOW, ...swallow };
-  // the sink resolves its own tier; only `flat` opts out of floating
-  const liquid = variant !== 'flat';
+  // the sink resolves its own tier; `flat` and `ink` are the two that do not
+  // float. Afloat and in ink alike, the banner arrives after the page is ready
+  // and its room opens and closes round it: that is `staged`.
+  const inkBody = variant === 'ink';
+  const liquid = variant !== 'flat' && !inkBody;
+  const staged = liquid || inkBody;
   const sink = useRef<InkSinkHandle>(null);
+  const splat = useRef<InkSplatHandle>(null);
+  const theme = useResolvedTheme();
+  const webgl = useWebGL();
+  const inkColor = ink ?? calloutKinds.note.ink[theme];
+  // the blot has landed: the text comes up on the ink as the flood reaches it
+  const [inked, setInked] = useState(false);
   // dismissed: the slab is under for good; after a beat the whole thing fades,
   // leaving the ground (the liquid it shows is the ground's, so nothing else
   // changes)
@@ -76,7 +95,7 @@ export function Announcement({
   const [pageReady, setPageReady] = useState(false);
   const [sinkReady, setSinkReady] = useState(false);
   useEffect(() => {
-    if (!liquid) return;
+    if (!staged) return;
     let done = false;
     const mark = () => {
       if (done) return;
@@ -95,14 +114,20 @@ export function Announcement({
       done = true;
       window.clearTimeout(backstop);
     };
-  }, [liquid]);
+  }, [staged]);
   useEffect(() => {
-    if (!liquid || !pageReady || !sinkReady) return;
+    // the ink needs no word from a pond: a splat asked for before its canvas
+    // is measured is kept and fired once it is
+    if (!staged || !pageReady || !(inkBody || sinkReady)) return;
     // a beat under the surface, long enough to be seen as submerged, before it
     // comes up
     const t = window.setTimeout(() => setSurfaced(true), 450);
     return () => window.clearTimeout(t);
-  }, [liquid, pageReady, sinkReady]);
+  }, [staged, inkBody, pageReady, sinkReady]);
+  // the ink lands as the room opens, so the page moves down under the splash
+  useEffect(() => {
+    if (inkBody && surfaced) splat.current?.splat();
+  }, [inkBody, surfaced]);
   // The room opens as the banner comes up. It holds none while it is under —
   // there is nothing there to hold room for — and grows to the height it wants
   // as the liquid gives the banner back, so the page moves down under it
@@ -110,7 +135,7 @@ export function Announcement({
   // opening one, so it is set without a transition; only the growth animates.
   useEffect(() => {
     const el = slotRef.current;
-    if (!el || !liquid || fading) return;
+    if (!el || !staged || fading) return;
     if (!surfaced) {
       el.style.transition = 'none';
       el.style.height = '0px';
@@ -139,7 +164,7 @@ export function Announcement({
       el.style.marginTop = '';
     }, OPEN_MS + 40);
     return () => window.clearTimeout(t);
-  }, [liquid, surfaced, fading]);
+  }, [staged, surfaced, fading]);
 
   // the sink says when the liquid has closed over the slab; a backstop keeps
   // a dismissal from hanging if a tier never reports
@@ -204,6 +229,18 @@ export function Announcement({
   // the flat card's dismissal is the ink exit rather than a sinking
   const [exit, setExit] = useState<'none' | 'dismiss'>('none');
 
+  // A dismissal of a staged banner. Afloat, it is a blow where the hand is and
+  // the slab goes under. In ink, the flood drains back into the blot and the
+  // splash then fades; with no ink drawn (no WebGL, or it has not landed yet)
+  // there is nothing to drain, so it fades at once.
+  const leave = (at: { clientX: number; clientY: number }) => {
+    if (dismissed) return;
+    setDismissed(true);
+    if (!inkBody) sink.current?.impact(at);
+    else if (webgl === false || !inked) setFading(true);
+    else splat.current?.drain();
+  };
+
   const content = (
     <div
       className={styles.content}
@@ -228,12 +265,11 @@ export function Announcement({
           className={styles.dismiss}
           aria-label="Dismiss announcement"
           onPointerDown={(e) => {
-            if (e.button !== 0 || dismissed) return;
-            sink.current?.impact(e.nativeEvent);
-            setDismissed(true);
+            if (e.button !== 0 || !staged) return;
+            leave(e.nativeEvent);
           }}
           onClick={(e) => {
-            if (!liquid) {
+            if (!staged) {
               setExit('dismiss');
               return;
             }
@@ -241,9 +277,8 @@ export function Announcement({
             // (`detail` 0), and the pointer path has already run for a real
             // one. The blow lands at the middle of the button that was
             // pressed, which is the nearest thing to where a hand would be.
-            if (e.detail !== 0 || dismissed) return;
-            sink.current?.impact(centreOf(e.currentTarget));
-            setDismissed(true);
+            if (e.detail !== 0) return;
+            leave(centreOf(e.currentTarget));
           }}
         >
           ×
@@ -252,6 +287,55 @@ export function Announcement({
     </div>
   );
 
+  if (inkBody) {
+    // The splash: the ink's canvas lies under the text, over the banner's box
+    // and a bleed round it for the blot's overhang and the spatter. Without
+    // WebGL the banner is simply a card in the ink's colour.
+    const drawn = webgl !== false;
+    return (
+      <div ref={slotRef} className={styles.slot}>
+        <div
+          className={`${styles.root} ${styles.ink} ${className ?? ''}`}
+          data-inked={inked || undefined}
+          data-static={!drawn || undefined}
+          data-leaving={dismissed || undefined}
+          onPointerMove={(e) => splat.current?.point(e.nativeEvent)}
+          onPointerLeave={() => splat.current?.leave()}
+          style={
+            {
+              '--ink': inkColor,
+              '--on-ink': onInk(inkColor),
+              '--radius': `${announcement.radius}px`,
+              width: 'max-content',
+              maxWidth: `min(100%, ${width}px)`,
+              opacity: fading ? 0 : 1,
+              transition: `opacity ${FADE_MS}ms ease`,
+              ...driftVars,
+              ...style,
+            } as CSSProperties
+          }
+        >
+          {drawn && (
+            <div className={styles.inkCanvas} style={{ inset: -inkBanner.bleed }} aria-hidden="true">
+              <InkSplat
+                ref={splat}
+                ink={inkColor}
+                logo={false}
+                scale={inkBanner.scale}
+                spatter={inkBanner.spatter}
+                nacre={inkBanner.nacre}
+                clip={{ inset: inkBanner.bleed, radius: announcement.radius }}
+                interactive={false}
+                onSplat={() => setInked(true)}
+                onDrain={() => setFading(true)}
+              />
+            </div>
+          )}
+          {content}
+        </div>
+      </div>
+    );
+  }
   if (!liquid) {
     return (
       <Surface

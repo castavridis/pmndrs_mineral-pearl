@@ -252,7 +252,7 @@ export function BentoPage() {
         <div className="bento-col">
           <div className="bento-cell" style={{ maxWidth: 720 }}>
             {!gone && (
-              <Announcement width={720} onDismiss={() => setGone(true)}>
+              <Announcement width={720} variant="ink" onDismiss={() => setGone(true)}>
                 <span>
                   <strong>Mineral &amp; pearl.</strong> Liquid surfaces for pmndrs, grown from Kris's
                   ink splat.

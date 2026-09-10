@@ -137,3 +137,59 @@
     transition: none;
   }
 }
+
+/* --- ink: the banner is a splash rather than a slab -----------------------
+   A blot lands in the middle and floods out to the banner's rounded edge.
+   The text is on the ink, so it takes the colour that reads against it, and
+   it comes up as the flood reaches it rather than waiting on the page. */
+.ink {
+  position: relative;
+  border-radius: var(--radius);
+  color: var(--on-ink);
+}
+
+/* fiber sets pointer-events on its wrapper and canvas; the bleed must not eat
+   clicks meant for whatever lies round the banner */
+.inkCanvas,
+.inkCanvas * {
+  pointer-events: none !important;
+}
+
+.inkCanvas {
+  position: absolute;
+  z-index: 0;
+}
+
+.ink .content {
+  opacity: 0;
+  transition: opacity 240ms ease;
+}
+
+/* the blot lands at once and the flood follows it out; the text waits for
+   the flood rather than the impact */
+.ink[data-inked] .content {
+  opacity: 1;
+  transition: opacity 700ms ease 1.5s;
+}
+
+/* draining: the text goes first, while there is still ink under it */
+.ink[data-leaving] .content {
+  opacity: 0;
+  transition: opacity 240ms ease;
+}
+
+/* no WebGL: a card in the ink's colour, there from the start */
+.ink[data-static] {
+  background: var(--ink);
+}
+
+.ink[data-static] .content {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* the splat lands already settled, so there is nothing to wait for */
+  .ink[data-inked] .content {
+    transition-delay: 0s;
+  }
+}
