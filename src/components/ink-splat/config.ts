@@ -27,5 +27,14 @@ export const DRAIN_LEN = 1.1;
 
 export const TAU = Math.PI * 2;
 
+/**
+ * How the flood's reach grows with its progress. `in` (the study's): slow to
+ * leave the blot and accelerating, a spill gathering pace. `out`: away at
+ * once and easing to a stop at the edges, a quicker read of the same flood.
+ */
+export type FloodEase = 'in' | 'out';
+export const floodReach = (fs: number, ease: FloodEase) =>
+  ease === 'out' ? 1 - (1 - fs) ** 3 : fs * fs * fs;
+
 /** 0 → 1 progress of the flood at simulation time `t`. */
 export const floodPhase = (t: number) => Math.min(Math.max((t - FLOOD_START) / FLOOD_LEN, 0), 1);

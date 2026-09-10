@@ -1,4 +1,12 @@
-import { FLOOD_LEN, FLOOD_START, KERNEL_Q, MAX_PARTICLES, TAU } from './config';
+import {
+  FLOOD_LEN,
+  FLOOD_START,
+  KERNEL_Q,
+  MAX_PARTICLES,
+  TAU,
+  floodReach,
+  type FloodEase,
+} from './config';
 
 // The ink is a particle fluid: on impact a burst of droplets is launched from
 // the centre with velocity, drag and a weak surface-tension attraction, all
@@ -46,6 +54,8 @@ export class InkParticles {
   /** Flood timing, seconds after impact. */
   floodStart = FLOOD_START;
   floodLen = FLOOD_LEN;
+  /** How the flood's reach grows; the droplets swell in step with the front. */
+  floodEase: FloodEase = 'in';
   /** True after `spawnEdge`: the flood closes in and the droplets came from the edge. */
   engulf = false;
 
@@ -229,7 +239,17 @@ export class InkParticles {
       const a = R() * TAU;
       const speed = (0.5 + 1.4 * R()) * (0.5 + 0.5 * sp);
       const r = 0.0012 + 0.001 * R();
-      this.add(cx, cy, Math.cos(a) * speed, Math.sin(a) * speed, r, 5, SPATTER, 0.2, 0.02 + 0.04 * R());
+      this.add(
+        cx,
+        cy,
+        Math.cos(a) * speed,
+        Math.sin(a) * speed,
+        r,
+        5,
+        SPATTER,
+        0.2,
+        0.02 + 0.04 * R()
+      );
     }
 
     // spatter: pinpricks shed in the wake of the drops, trailing behind them
@@ -390,7 +410,7 @@ export class InkParticles {
     const clipped = this.clipHalfX > 0 && this.clipHalfY > 0;
     const { hx, hy, mx, my } = this.box();
     const fs = this.phase(t);
-    const flood = fs * fs * fs;
+    const flood = floodReach(fs, this.floodEase);
     const enc16 = (v: number, lo: number, hi: number, o: number) => {
       const n = Math.round(Math.min(Math.max((v - lo) / (hi - lo), 0), 1) * 65535);
       data[o] = n >> 8;

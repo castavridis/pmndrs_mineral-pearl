@@ -91,6 +91,8 @@ uniform float uMeniscus;
 // when the flood begins and how long it takes
 uniform float uFloodStart;
 uniform float uFloodLen;
+// 0: the flood's reach eases in (the study's); 1: it eases out
+uniform float uFloodEase;
 // 1: the ink closes in from the box's edge instead of spreading from the blot
 uniform float uEngulf;
 
@@ -151,7 +153,7 @@ void main() {
   float field = texture2D(uField, vUv).r;
 
   float fs = clamp((uTime - uFloodStart) / uFloodLen, 0.0, 1.0);
-  float flood = fs * fs * fs;
+  float flood = uFloodEase > 0.5 ? 1.0 - pow(1.0 - fs, 3.0) : fs * fs * fs;
   // the box the ink is bounded by: the clip box, else the canvas itself
   vec2 boxHalf = uClipOn > 0.5 ? uClipHalf : uDims * 0.5;
   float boxRadius = uClipOn > 0.5 ? uClipRadius : 0.0;

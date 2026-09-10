@@ -24,6 +24,7 @@ import {
   FLOOD_LEN,
   FLOOD_START,
   MAX_PARTICLES,
+  type FloodEase,
 } from './config';
 import { DATA_BYTES, InkParticles } from './particles';
 import { FIELD_FRAG, INK_FRAG, VERT } from './shaders';
@@ -123,6 +124,12 @@ export interface InkSplatProps {
   flood?: boolean;
   /** `splat` (default) or `engulf`, the inverse. */
   mode?: InkMode;
+  /** Seconds after impact when the flood leaves the blot. Default: the mode's. */
+  floodStart?: number;
+  /** Seconds the flood takes to cover. Default: the mode's. */
+  floodLen?: number;
+  /** How the flood's reach grows: `in` (default, the study's) or `out`. */
+  floodEase?: FloodEase;
   /**
    * The ink covers its clip box from the first frame, with no impact and no
    * droplets: a surface rather than an event. For a face that wears the
@@ -186,6 +193,9 @@ export function InkSplat({
   origin,
   clip,
   mode = 'splat',
+  floodStart,
+  floodLen,
+  floodEase = 'in',
   flooded = false,
   meniscus = 0,
   interactive = true,
@@ -256,6 +266,9 @@ export function InkSplat({
         clipInset={clip?.inset}
         clipRadius={clip?.radius ?? 0}
         mode={mode}
+        floodStart={floodStart}
+        floodLen={floodLen}
+        floodEase={floodEase}
         flooded={flooded}
         meniscus={meniscus}
         interactive={interactive}
@@ -284,6 +297,9 @@ interface LayerProps {
   clipInset: number | undefined;
   clipRadius: number;
   mode: InkMode;
+  floodStart?: number;
+  floodLen?: number;
+  floodEase: FloodEase;
   flooded: boolean;
   meniscus: number;
   interactive: boolean;
@@ -392,6 +408,7 @@ function createResources(): Resources {
       uFloodStart: { value: FLOOD_START },
       uFloodLen: { value: FLOOD_LEN },
       uEngulf: { value: 0 },
+      uFloodEase: { value: 0 },
     },
     transparent: true,
     premultipliedAlpha: true,
@@ -463,6 +480,9 @@ function InkSplatLayer({
   clipInset,
   clipRadius,
   mode,
+  floodStart,
+  floodLen,
+  floodEase,
   flooded,
   meniscus,
   interactive,
@@ -558,18 +578,25 @@ function InkSplatLayer({
     const engulf = mode === 'engulf';
     // NEVER is far enough away that the front never starts within a session
     const NEVER = 1e9;
-    res.floodStart = !flood ? NEVER : engulf ? ENGULF_FLOOD_START : FLOOD_START;
-    res.floodLen = engulf ? ENGULF_FLOOD_LEN : FLOOD_LEN;
+    const start = floodStart ?? (engulf ? ENGULF_FLOOD_START : FLOOD_START);
+    const len = floodLen ?? (engulf ? ENGULF_FLOOD_LEN : FLOOD_LEN);
+    const tail =
+      (engulf ? ENGULF_DURATION : DURATION) -
+      (engulf ? ENGULF_FLOOD_START + ENGULF_FLOOD_LEN : FLOOD_START + FLOOD_LEN);
+    res.floodStart = !flood ? NEVER : start;
+    res.floodLen = len;
     // with no flood the blot is settled as soon as the droplets have stopped
-    res.duration = !flood ? FLOOD_START : engulf ? ENGULF_DURATION : DURATION;
+    res.duration = !flood ? FLOOD_START : start + len + tail;
     res.particles.floodStart = res.floodStart;
     res.particles.floodLen = res.floodLen;
+    res.particles.floodEase = floodEase;
     const u = res.inkMaterial.uniforms;
     u.uFloodStart.value = res.floodStart;
     u.uFloodLen.value = res.floodLen;
+    u.uFloodEase.value = floodEase === 'out' ? 1 : 0;
     u.uEngulf.value = engulf ? 1 : 0;
     invalidate();
-  }, [mode, flood, invalidate]);
+  }, [mode, flood, floodStart, floodLen, floodEase, invalidate]);
 
   // viewport geometry in shader units
   useEffect(() => {

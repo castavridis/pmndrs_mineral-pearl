@@ -8,6 +8,13 @@ import { page, resolveTheme, useSystemTheme, useThemeStore } from '../theme';
 import styles from './InkThemeTransition.module.css';
 
 /**
+ * The theme change's flood: quicker than the study's splat, and easing out —
+ * away from the blot at once and settling into the corners — so the new
+ * scheme reads as arriving rather than gathering pace. Seconds.
+ */
+const THEME_FLOOD = { start: 0.8, len: 1.2, ease: 'out' } as const;
+
+/**
  * The theme change as ink. A request with an origin (see `InkThemeToggle`)
  * mounts a full-viewport splat from that point.
  *
@@ -96,6 +103,9 @@ export function InkThemeTransition() {
         logo={false}
         ink={page[target].bg}
         origin={pending.origin}
+        floodStart={THEME_FLOOD.start}
+        floodLen={THEME_FLOOD.len}
+        floodEase={THEME_FLOOD.ease}
         onSettle={onSettle}
         fillCanvas={fill}
         canvasRef={liquid ? onCanvas : undefined}
