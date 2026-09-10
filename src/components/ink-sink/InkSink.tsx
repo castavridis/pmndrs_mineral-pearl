@@ -135,6 +135,13 @@ export interface InkSinkProps {
   tier?: SinkTier | 'auto';
   /** The liquid has closed over the slab, or has withdrawn from it. */
   onSunkSettled?: (sunk: boolean) => void;
+  /**
+   * The liquid is up and drawing: the pond exists (or the tier that stands in
+   * for it is mounted). A slab that opens sunk waits for this before it rises,
+   * so the rise is seen rather than being spent before there is anything to
+   * see it in.
+   */
+  onReady?: () => void;
   className?: string;
   style?: CSSProperties;
   /** On the host: a fade set through `style` ending, for instance. */
@@ -181,6 +188,7 @@ export function InkSink({
   well = false,
   tier: wantedTier = 'auto',
   onSunkSettled,
+  onReady,
   className,
   style,
   onTransitionEnd,
@@ -222,8 +230,22 @@ export function InkSink({
   const faceRef = useRef<HTMLDivElement>(null);
   const pondRef = useRef<LiquidPond | null>(null);
   // uncontrolled state; a `sunk` prop wins when given
+  const ready = useRef(onReady);
+  useEffect(() => {
+    ready.current = onReady;
+  }, [onReady]);
+  // the tiers with no pond are up as soon as they are mounted
+  useEffect(() => {
+    if (tier !== 'liquid') ready.current?.();
+  }, [tier]);
+
   const [ownSunk, setIsSunk] = useState(false);
   const isSunk = sunk ?? ownSunk;
+  // read by the pond's first breath, which happens outside this render
+  const sunkAtBirth = useRef(isSunk);
+  useEffect(() => {
+    sunkAtBirth.current = isSunk;
+  }, [isSunk]);
   useEffect(() => {
     const host = hostRef.current;
     const canvas = canvasRef.current;
@@ -253,6 +275,13 @@ export function InkSink({
     });
     pond.face = faceRef.current;
     pondRef.current = pond;
+    // A well waits for the page's ground, so this effect commonly runs once,
+    // bails, and builds the pond on a later pass. A pond born then has missed
+    // the state React already holds — the `sunk` effect below only fires on a
+    // change — so it would float while the component believes it is under.
+    // Telling it now is also its opening state, so it snaps rather than sinks.
+    if (sunkAtBirth.current) pond.sunk = true;
+    ready.current?.();
     if (!ground) {
       return () => {
         pond.destroy();

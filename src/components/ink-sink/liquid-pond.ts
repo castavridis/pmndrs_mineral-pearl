@@ -828,7 +828,15 @@ export class LiquidPond {
   /** Sunk, the slab stays under (the study's `disabled`); afloat it bobs back up. */
   set sunk(d: boolean) {
     this._sunk = d;
-    if (this._wasSunk !== undefined && this._wasSunk !== d) {
+    if (this._wasSunk === undefined) {
+      // The opening state is a fact, not a movement: a slab that starts under
+      // has always been under. No splash, and no travel either — without this
+      // it would sink into place over half a second, which reads as a dip
+      // rather than as something that was already submerged.
+      this._state.y = d ? (this.opts.sinkDepth ?? -0.34) : 0.014;
+      this._state.v = 0;
+      this._state.velLag = 0;
+    } else if (this._wasSunk !== d) {
       const splash = this.opts.sinkSplash ?? true;
       this._spawn(0, 0, (d ? 1.4 : 1.2) * (splash ? 1 : 0.45));
       if (d && splash) this._splat(1.3);

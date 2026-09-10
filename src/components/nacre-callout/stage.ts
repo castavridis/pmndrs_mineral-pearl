@@ -450,6 +450,13 @@ export interface NacreCard {
   accent: string;
   /** Corner radius in CSS px; default 12. A pill passes half its height. */
   radius?: number;
+  /**
+   * Draw this card in the other scheme's treatment: the pearl body on the dark
+   * page, the black mineral on the light one. The page's own ground is what it
+   * stands against, so a control drawn this way reads as a thing on the page
+   * rather than a patch of it.
+   */
+  invert?: boolean;
 }
 
 interface CardState {
@@ -486,6 +493,8 @@ const BLOB_SCALE = [1.2, 0.62, 0.95, 0.48, 0.78];
    smin that merges the droplets, so the turn is rounded by liquid rather than
    by a larger radius, which would round the card's edge along with it. */
 const CORNER_SCALE = 1.0;
+/** The two page grounds, so a card can be drawn against the one it is not on. */
+const PAGE_BG = { dark: '#0c0a06', light: '#faf5ea' };
 /** How far a corner blob's centre sits inside its corner, as a fraction of its radius. */
 const CORNER_INSET = 0.55;
 const GHOST_CAP = 8;
@@ -849,6 +858,9 @@ export class NacreStage {
     gl.uniform1f(u.uTime, now / 1000);
     gl.uniform1f(u.uDark, dark ? 1 : 0);
     gl.uniform3fv(u.uBg, bg);
+    // the other scheme's pair, for the cards that invert
+    const invDark = !dark;
+    const invBg = hexToRgb(invDark ? PAGE_BG.dark : PAGE_BG.light);
     gl.uniform1f(u.uIconR, 15);
     gl.uniform1f(u.uGhostOn, cfg.textGhost ? 1 : 0);
     gl.uniform1f(u.uGhostOpacity, cfg.ghostOpacity);
@@ -896,6 +908,12 @@ export class NacreStage {
 
     for (const c of this._cards.values()) {
       const el = c.card.el;
+      // a card that inverts carries the other scheme's body, ground and film
+      const cd = c.card.invert ? invDark : dark;
+      gl.uniform1f(u.uDark, cd ? 1 : 0);
+      gl.uniform3fv(u.uBg, c.card.invert ? invBg : bg);
+      // the film is the light page's iridescence; the dark page keeps the nacre's
+      gl.uniform1f(u.uFilm, cfg.film * (cd ? 0.3 : 1));
       const r = el.getBoundingClientRect();
       if (r.bottom < -80 || r.top > this._viewH + 80 || r.width < 2) {
         c.primed = false;

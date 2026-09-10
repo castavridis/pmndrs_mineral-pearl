@@ -316,9 +316,13 @@ a {
   min-width: 0;
   text-align: center;
   background: transparent;
-  border: 1px solid color-mix(in srgb, var(--page-ink) 16%, transparent);
+  /* The stage draws this face in the other scheme's body: pearl on the dark
+     page, black mineral on the light one. So the label and the edge take the
+     page's background rather than its ink — on either page that is the colour
+     which reads against the body the button is actually wearing. */
+  border: 1px solid color-mix(in srgb, var(--page-bg) 22%, transparent);
   border-radius: 8px;
-  color: var(--page-ink);
+  color: var(--page-bg);
   font: inherit;
   cursor: pointer;
 }

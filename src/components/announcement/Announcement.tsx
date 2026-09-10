@@ -49,37 +49,42 @@ export function Announcement({
   // changes)
   const [dismissed, setDismissed] = useState(false);
   const [fading, setFading] = useState(false);
-  // The banner starts under the surface and comes up once the page is ready:
-  // it arrives out of the liquid rather than being there from the first frame,
-  // which also covers the beat before the shaders have drawn anything. The
-  // sink never splashes for its opening state, only for a change, so going
-  // under costs nothing and the rise is the movement.
+  // The banner starts under the surface and comes up once two things are
+  // true: the page is ready (`load` and the web fonts, with a backstop in case
+  // either never resolves), and the liquid is actually drawing. The second
+  // matters — a well waits for the page's ground before it builds its pond,
+  // and a rise spent before that is a rise nobody sees.
   const [surfaced, setSurfaced] = useState(false);
+  const [pageReady, setPageReady] = useState(false);
+  const [sinkReady, setSinkReady] = useState(false);
   useEffect(() => {
-    // the flat card has no liquid to be under, so nothing to come up from
     if (!liquid) return;
     let done = false;
-    const rise = () => {
+    const mark = () => {
       if (done) return;
       done = true;
-      setSurfaced(true);
+      setPageReady(true);
     };
-    // a backstop, in case a font never resolves or `load` never fires
-    const backstop = window.setTimeout(rise, 1500);
+    const backstop = window.setTimeout(mark, 1500);
     const loaded =
       document.readyState === 'complete'
         ? Promise.resolve()
         : new Promise<void>((res) => window.addEventListener('load', () => res(), { once: true }));
     Promise.all([loaded, document.fonts?.ready ?? Promise.resolve()])
-      // a beat after the page has settled, so the rise is not competing with
-      // the last of the layout
-      .then(() => window.setTimeout(rise, 160))
-      .catch(rise);
+      .then(mark)
+      .catch(mark);
     return () => {
       done = true;
       window.clearTimeout(backstop);
     };
   }, [liquid]);
+  useEffect(() => {
+    if (!liquid || !pageReady || !sinkReady) return;
+    // a beat under the surface, long enough to be seen as submerged, before it
+    // comes up
+    const t = window.setTimeout(() => setSurfaced(true), 450);
+    return () => window.clearTimeout(t);
+  }, [liquid, pageReady, sinkReady]);
   // the sink says when the liquid has closed over the slab; a backstop keeps
   // a dismissal from hanging if a tier never reports
   useEffect(() => {
@@ -169,6 +174,7 @@ export function Announcement({
       sunk={dismissed || !surfaced}
       tier={variant}
       onSunkSettled={onSunkSettled}
+      onReady={() => setSinkReady(true)}
       className={`${styles.root} ${className ?? ''}`}
       style={{
         width: `calc(100% + ${announcement.bleed * 2}px)`,
