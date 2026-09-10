@@ -207,7 +207,10 @@ export function Announcement({
   const content = (
     <div
       className={styles.content}
-      style={{ minHeight: announcement.height, padding: `16px ${announcement.paddingX}px` }}
+      style={{
+        minHeight: announcement.height,
+        padding: `${announcement.paddingY}px ${announcement.paddingRight}px ${announcement.paddingY}px ${announcement.paddingX}px`,
+      }}
       // a click anywhere on the banner is a load at that point: the slab tips
       // until the spot under the finger is under the liquid. The dismissal is
       // its own, heavier blow, so it is left alone.

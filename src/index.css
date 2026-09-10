@@ -356,6 +356,37 @@ a {
   cursor: not-allowed;
 }
 
+/* the call to action is the theme switch: the ground it is on, and the one it
+   would take you to, on the two halves of one slab */
+.launcher {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.cta-side {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  /* the side you are not on is quieter, but still legible: it is where a
+     press takes you */
+  opacity: 0.55;
+  transition: opacity 220ms ease;
+}
+
+.cta-side[data-on] {
+  opacity: 1;
+  font-weight: 600;
+}
+
+.cta-bar {
+  width: 1px;
+  align-self: stretch;
+  margin: 2px 0;
+  background: color-mix(in srgb, currentColor 30%, transparent);
+}
+
 /* a thing the wake moves: it needs a level of its own, since useWake writes a
    transform and that opens a stacking context the nacre stage's canvas would
    otherwise be sealed out of (or, for the launcher, sealed above) */

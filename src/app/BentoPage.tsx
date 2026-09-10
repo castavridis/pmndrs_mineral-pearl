@@ -3,7 +3,6 @@ import { Leva, button, folder, useControls } from 'leva';
 import { useEffect } from 'react';
 import {
   Announcement,
-  InkThemeToggle,
   NACRE_DEFAULT,
   Nav,
   NacreCallout,
@@ -11,6 +10,8 @@ import {
   centreOf,
   getNacreStage,
   palette,
+  useResolvedTheme,
+  useThemeStore,
   useWake,
   type InkSinkHandle,
   type NacreConfig,
@@ -24,6 +25,8 @@ import {
   ExternalIcon,
   GitHubIcon,
   InfoIcon,
+  MoonIcon,
+  SunIcon,
   TerminalIcon,
   TwitterIcon,
 } from '../ui/Icons';
@@ -202,6 +205,11 @@ function useNacreTweaks() {
  */
 export function BentoPage() {
   useThemeTweak();
+  // The primary call to action is the theme switch: the slab says which ground
+  // it is on and takes you to the other one, and the ink floods from it.
+  const scheme = useResolvedTheme();
+  const other: 'dark' | 'light' = scheme === 'dark' ? 'light' : 'dark';
+  const requestTheme = useThemeStore((st) => st.requestTheme);
   useNacreTweaks();
   // one look for both controls: they float on the same page and read as a pair
   const swallow = useControlSwallow();
@@ -259,7 +267,11 @@ export function BentoPage() {
 
       <section className="bento-tier">
         <div className="bento-col">
-          <div ref={copyWake} className="afloat afloat-front bento-cell fit" style={{ maxWidth: 520 }}>
+          <div
+            ref={copyWake}
+            className="afloat afloat-front bento-cell fit"
+            style={{ maxWidth: 520 }}
+          >
             <InkSink
               ref={copySink}
               well
@@ -330,17 +342,30 @@ export function BentoPage() {
                 type="button"
                 className="surface-button launcher"
                 aria-disabled={launcherDisabled || undefined}
+                aria-label={`Theme: ${scheme}. Switch to ${other}`}
                 onPointerDown={(e) => {
                   if (!launcherDisabled) launcherSink.current?.press(e.nativeEvent);
                 }}
                 onClick={(e) => {
+                  if (launcherDisabled) return;
                   // Enter or Space: the blow comes from the middle of the
                   // button, since the keyboard gives no point of its own
-                  if (launcherDisabled || e.detail !== 0) return;
-                  launcherSink.current?.press(centreOf(e.currentTarget));
+                  if (e.detail === 0) launcherSink.current?.press(centreOf(e.currentTarget));
+                  // the ink floods from the slab that was pressed
+                  const r = e.currentTarget.getBoundingClientRect();
+                  requestTheme(other, [
+                    (r.left + r.width / 2) / window.innerWidth,
+                    (r.top + r.height / 2) / window.innerHeight,
+                  ]);
                 }}
               >
-                Sample Call to Action
+                <span className="cta-side" data-on={scheme === 'dark' || undefined}>
+                  <MoonIcon /> Dark
+                </span>
+                <span className="cta-bar" aria-hidden="true" />
+                <span className="cta-side" data-on={scheme === 'light' || undefined}>
+                  <SunIcon /> Light
+                </span>
               </button>
             </InkSink>
           </div>
@@ -349,9 +374,8 @@ export function BentoPage() {
             className="text-button"
             onClick={() => setLauncherDisabled((d) => !d)}
           >
-            {launcherDisabled ? 'Enable CTA' : 'Disable CTA'}
+            {launcherDisabled ? 'Enable Theme Switcher' : 'Disable Theme Switcher'}
           </button>
-          <InkThemeToggle modes={['dark', 'light']} />
         </div>
       </section>
 

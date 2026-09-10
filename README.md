@@ -82,7 +82,7 @@ The droplet kernels are anisotropic, after Yu and Turk: each is oriented and str
 
 ### `<InkThemeToggle>` and `<InkThemeTransition>`
 
-The toggle cycles through the modes it is given — dark → light → system by default, and `modes={['dark', 'light']}` makes it a switch between the two grounds instead, which is what the bento carries in place of the shell's fixed one. Each change is requested with the button's own position. The transition mounts a full-viewport overlay that splats from that point. With the liquid shaders on, the splat _is_ the liquid: its coverage masks every scheme-following ground (the page ground and the nav pill) so they show the new body, mineral or pearl, where the ink has landed, and the splat itself is drawn on top with the ground's own pixels for ink, so the new liquid rolls over the content too. When the flood has covered the page the grounds switch outright, the theme commits underneath, and the overlay fades to reveal the switched content. With the shaders off (a persisted switch in the theme store) or without WebGL, the splat is a flat flood of the new page colour. Reduced motion or a change with no visible effect commit at once. Render the transition once per page, after the content (see `src/app/AppShell.tsx`).
+The toggle cycles through the modes it is given — dark → light → system by default, and `modes={['dark', 'light']}` makes it a switch between the two grounds instead. The bento carries no toggle of that kind at all: its call to action is the switch, a slab reading **Dark | Light** that says which ground it is on and floods the page from itself on the way to the other, and the control under it disables that slab (`AppShell toggle={false}` keeps the shell's fixed one off the page). Each change is requested with the button's own position. The transition mounts a full-viewport overlay that splats from that point. With the liquid shaders on, the splat _is_ the liquid: its coverage masks every scheme-following ground (the page ground and the nav pill) so they show the new body, mineral or pearl, where the ink has landed, and the splat itself is drawn on top with the ground's own pixels for ink, so the new liquid rolls over the content too. When the flood has covered the page the grounds switch outright, the theme commits underneath, and the overlay fades to reveal the switched content. With the shaders off (a persisted switch in the theme store) or without WebGL, the splat is a flat flood of the new page colour. Reduced motion or a change with no visible effect commit at once. Render the transition once per page, after the content (see `src/app/AppShell.tsx`).
 
 ### `<InkEngulf>`
 
@@ -213,7 +213,7 @@ The pages mirror the 3d-2d-nav repo's, page for page, with the liquid where it h
 | `/dev/callout`      | Callout surface / plain / every kind, then the ink blots with their panel              |
 | `/dev/announcement` | The banner afloat at 652 and 900 px; variant and dismissal in the panel                |
 | `/dev/palette`      | Every liquid as a live sample, and the saved presets, each applicable to the page      |
-| `/dev/bento`        | The shader bento: one centred column, banner to bar to controls, with its own theme switch |
+| `/dev/bento`        | The shader bento: one centred column, and the call to action is the theme switch       |
 | `/dev/splat`        | Full-viewport splat with the leva panel (colour, mark, origin…)                        |
 | `/dev/engulf`       | Engulf and the pond, every knob; presets are saved here                                |
 
