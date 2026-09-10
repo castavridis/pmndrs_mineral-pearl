@@ -38,8 +38,12 @@ export interface InkSinkHandle {
   sink: () => void;
   /** Bring it back up; the ink slides off and thins away as it bobs up. */
   rise: () => void;
-  /** A press: a beat under with a splash, then it bobs back. */
-  press: () => void;
+  /**
+   * A press: a beat under with a splash, then it bobs back. Given a point, the
+   * blow lands there and the slab tips into it, so the dip reads under the
+   * cursor rather than across the whole face.
+   */
+  press: (at?: { clientX: number; clientY: number }) => void;
   /** An impact where the pointer is: the slab takes the hit there and goes under, and stays. */
   impact: (at: { clientX: number; clientY: number }) => void;
 }
@@ -342,7 +346,10 @@ export function InkSink({
     () => ({
       sink: () => setIsSunk(true),
       rise: () => setIsSunk(false),
-      press: () => pondRef.current?.press(),
+      press: (at) => {
+        const pond = pondRef.current;
+        if (pond) pond.press(at ? pond.uv(at) : undefined);
+      },
       impact: (at) => {
         const pond = pondRef.current;
         if (pond) pond.impact(pond.uv(at));

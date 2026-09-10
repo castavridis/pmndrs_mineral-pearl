@@ -186,27 +186,50 @@
   }
 }
 
-/* --- the pill: one slab, moving to whatever the pointer is over ---------- */
-.pillIndicator {
+/* --- the pool: liquid drawn in from the bar's edges, clinging to the item --- */
+.gooDefs {
   position: absolute;
-  left: 0;
-  top: 0;
-  border-radius: 999px;
-  pointer-events: none;
-  opacity: 0;
-  /* the slab itself is the shader's; this element only says where it is */
-  background: transparent;
-  transition:
-    left 420ms cubic-bezier(0.22, 1, 0.36, 1),
-    top 420ms cubic-bezier(0.22, 1, 0.36, 1),
-    width 420ms cubic-bezier(0.22, 1, 0.36, 1),
-    height 260ms ease,
-    opacity 220ms ease;
+  width: 0;
+  height: 0;
+  overflow: hidden;
 }
 
-/* no shader to draw it: the pill is the liquid the bar is not, flat */
-.pillIndicator[data-flat] {
-  background: color-mix(in srgb, var(--nav-active-ink, var(--page-ink)) 88%, transparent);
+.pool {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+.poolCore,
+.poolTongue {
+  position: absolute;
+  /* the liquid the bar is not: the page's own body, showing through it */
+  background: var(--nav-pool, var(--page-bg));
+  transition:
+    left 380ms cubic-bezier(0.22, 1, 0.36, 1),
+    top 380ms cubic-bezier(0.22, 1, 0.36, 1),
+    width 380ms cubic-bezier(0.22, 1, 0.36, 1),
+    height 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.poolCore {
+  border-radius: 999px;
+}
+
+/* square where it meets the edge, round where it meets the pool; the blur
+   softens both, and the necking is what makes it read as liquid drawn up */
+.poolTongue {
+  border-radius: 999px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .poolCore,
+  .poolTongue {
+    transition: none;
+  }
 }
 
 /* the labels ride above the stage's canvas */
@@ -225,9 +248,7 @@
 }
 
 /* with no shader the pill is flat, and it is the bar's opposite again */
-.root:has(.pillIndicator[data-flat]) .row [data-lit] {
-  color: var(--nav-active-ink, var(--page-ink));
-}
+
 
 /* the pill says where you are; the underline would say it twice */
 .link[aria-current='page']::after {

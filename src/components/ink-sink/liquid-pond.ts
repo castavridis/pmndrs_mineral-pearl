@@ -878,10 +878,22 @@ export class LiquidPond {
     this.sunk = true;
   }
 
-  /** A press: the slab goes fully under for a beat with a splash, then bobs back. */
+  /**
+   * A press: the slab dips for a beat and bobs back. (port) The blow lands
+   * where the pointer is rather than on the whole face, so the slab tips into
+   * it and the impact reads under the cursor — the study pressed uniformly.
+   */
   press(pt: [number, number] | null = this._pt) {
-    this._state.pressAt = performance.now() / 1000;
-    this._spawn(pt ? pt[0] : 0, pt ? pt[1] : 0, 0.85);
+    const s = this._state;
+    s.pressAt = performance.now() / 1000;
+    const px = pt ? pt[0] : this._bx;
+    const py = pt ? pt[1] : this._by;
+    const dx = px - this._bx;
+    const dy = py - this._by;
+    // an impulse, not a target: the tilt spring rocks it back as it bobs up
+    s.tiltV[0] += -dx * 7;
+    s.tiltV[1] += -dy * 7;
+    this._spawn(px, py, 0.85);
     this._splat(1);
   }
 

@@ -1,11 +1,17 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react';
 import { Surface, type SurfaceTier } from '../surface/Surface';
 import { POND_BG, type Liquid } from '../ink-sink/liquid-pond';
 import { onInk, page, useResolvedTheme } from '../theme';
-import { palette } from '../theme/palette';
-import { getNacreStage } from '../nacre-callout/stage';
 import { InkSplat } from '../ink-splat';
 import { useNavStore, useNavStoreApi, resolveMode } from './store';
 import { tokens, tokensToCssVars } from './tokens';
@@ -45,32 +51,61 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
   const pillRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLElement>(null);
   const rowRef = useRef<HTMLDivElement>(null);
-  const indicatorRef = useRef<HTMLSpanElement>(null);
+  const poolRef = useRef<HTMLSpanElement>(null);
+  const coreRef = useRef<HTMLSpanElement>(null);
+  const topRef = useRef<HTMLSpanElement>(null);
+  const bottomRef = useRef<HTMLSpanElement>(null);
+  const rawGooId = useId();
+  const gooId = `nav-goo-${rawGooId.replace(/[^a-zA-Z0-9-]/g, '')}`;
   const hovered = useNavStore((s) => s.hovered);
   const setHovered = useNavStore((s) => s.setHovered);
   /** what the pill is under: whatever the pointer is over, else the current page */
   const pillTarget = hovered ?? current;
 
-  // One pill moves along the row, so it stretches between items rather than
-  // appearing per item. It measures against the row, not the link list, so the
-  // Cmd item is as reachable as the links.
+  // The liquid reaches in from the bar's edges and pools around whatever the
+  // pointer is over, clinging to it as it goes. Three shapes do it — a tongue
+  // drawn down from the top, one up from the bottom, and the pool itself —
+  // merged by a gaussian blur and an alpha threshold, the same identity that
+  // makes a metaball field out of a sum of kernels.
   useEffect(() => {
     const row = rowRef.current;
-    const pill = indicatorRef.current;
-    if (!row || !pill) return;
+    const pool = poolRef.current;
+    const core = coreRef.current;
+    const top = topRef.current;
+    const bottom = bottomRef.current;
+    if (!row || !pool || !core || !top || !bottom) return;
     const place = () => {
       const el = pillTarget
         ? row.querySelector<HTMLElement>(`[data-id="${CSS.escape(pillTarget)}"]`)
         : null;
       if (!el) {
-        pill.style.opacity = '0';
+        pool.style.opacity = '0';
         return;
       }
-      pill.style.opacity = '1';
-      pill.style.width = `${el.offsetWidth + 24}px`;
-      pill.style.height = `${el.offsetHeight + 12}px`;
-      pill.style.left = `${el.offsetLeft - 12}px`;
-      pill.style.top = `${el.offsetTop - 6}px`;
+      pool.style.opacity = '1';
+      const x = el.offsetLeft;
+      const y = el.offsetTop;
+      const w = el.offsetWidth;
+      const h = el.offsetHeight;
+      const rowH = row.offsetHeight;
+      core.style.left = `${x - 12}px`;
+      core.style.top = `${y - 6}px`;
+      core.style.width = `${w + 24}px`;
+      core.style.height = `${h + 12}px`;
+      // the tongues are narrower than the pool, so the blur necks them where
+      // they meet it and the liquid reads as drawn up, not boxed in
+      const tw = Math.max(18, w * 0.5);
+      const tx = x + w / 2 - tw / 2;
+      const coreTop = y - 6;
+      const coreBottom = y + h + 6;
+      top.style.left = `${tx}px`;
+      top.style.width = `${tw}px`;
+      top.style.top = '0px';
+      top.style.height = `${Math.max(0, coreTop + 8)}px`;
+      bottom.style.left = `${tx}px`;
+      bottom.style.width = `${tw}px`;
+      bottom.style.top = `${Math.max(0, coreBottom - 8)}px`;
+      bottom.style.height = `${Math.max(0, rowH - coreBottom + 8)}px`;
     };
     place();
     const ro = new ResizeObserver(place);
@@ -78,15 +113,6 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
     return () => ro.disconnect();
   }, [pillTarget, links, mode]);
 
-  // The gooey callout shader draws it: the page's nacre stage, one more card,
-  // with a pill's own corner radius.
-  useEffect(() => {
-    const pill = indicatorRef.current;
-    if (!pill || tier === 'flat') return;
-    const stage = getNacreStage();
-    if (!stage) return;
-    return stage.register({ el: pill, icon: null, accent: palette.dark, radius: 999 });
-  }, [tier]);
   const logoRef = useRef<HTMLAnchorElement>(null);
   const blotRef = useRef<HTMLSpanElement>(null);
 
@@ -143,7 +169,9 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
         '--nav-active-ink': onInk(POND_BG[active]),
         // the sliding pill is drawn by the nacre stage, which is the black
         // mineral body in either scheme, so its label is light in both
-        '--nav-pill-ink': onInk(POND_BG.mineral),
+        // the pool is the page's own liquid, welling up through the bar
+        '--nav-pool': POND_BG[active],
+        '--nav-pill-ink': onInk(POND_BG[active]),
       }) as CSSProperties,
     [bar, active]
   );
@@ -254,12 +282,26 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
           className={styles.pill}
         >
           <div ref={rowRef} className={styles.row}>
+            <svg className={styles.gooDefs} aria-hidden="true" focusable="false">
+              <filter id={gooId}>
+                <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b" />
+                <feColorMatrix
+                  in="b"
+                  type="matrix"
+                  values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -8"
+                />
+              </filter>
+            </svg>
             <span
-              ref={indicatorRef}
-              className={styles.pillIndicator}
-              data-flat={tier === 'flat' || undefined}
+              ref={poolRef}
+              className={styles.pool}
+              style={{ filter: `url(#${gooId})` }}
               aria-hidden="true"
-            />
+            >
+              <span ref={topRef} className={styles.poolTongue} />
+              <span ref={coreRef} className={styles.poolCore} />
+              <span ref={bottomRef} className={styles.poolTongue} />
+            </span>
             <a
               ref={logoRef}
               className={styles.logo}

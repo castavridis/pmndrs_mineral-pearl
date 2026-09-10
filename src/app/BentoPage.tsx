@@ -180,13 +180,14 @@ export function BentoPage() {
                 radius={8}
                 bleed={44}
                 sinkOnClick={false}
+                viscosity={0.22}
                 pressDepth={-0.05}
                 sinkSplash={false}
                 className="launcher-sink"
                 style={{ width: 'calc(100% + 88px)', margin: -44 }}
               >
                 {/* pointerdown bubbles from whichever action was pressed */}
-                <div onPointerDown={() => copySink.current?.press()}>
+                <div onPointerDown={(e) => copySink.current?.press(e.nativeEvent)}>
                   <CopyButton
                     value="pnpm add @react-three/fiber"
                     actions={[
@@ -219,6 +220,7 @@ export function BentoPage() {
                   radius={8}
                   bleed={44}
                   sinkOnClick={false}
+                  viscosity={0.22}
                   sunk={launcherDisabled}
                   sinkDepth={-0.1}
                   pressDepth={-0.05}
@@ -231,8 +233,8 @@ export function BentoPage() {
                     type="button"
                     className="surface-button launcher"
                     aria-disabled={launcherDisabled || undefined}
-                    onPointerDown={() => {
-                      if (!launcherDisabled) launcherSink.current?.press();
+                    onPointerDown={(e) => {
+                      if (!launcherDisabled) launcherSink.current?.press(e.nativeEvent);
                     }}
                   >
                     Article Launcher
