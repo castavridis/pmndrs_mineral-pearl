@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type CSSProperties } from 'react';
 import { Leva, folder, useControls } from 'leva';
 import { useEffect } from 'react';
 import {
@@ -133,7 +133,9 @@ export function BentoPage() {
     if (!el) return;
     const stage = getNacreStage();
     if (!stage) return;
-    return stage.register({ el, icon: null, accent: palette.teal, radius: 8 });
+    // no icon on a control, so the accent would pool in a corner and wash the
+    // label; the nacre's own dark keeps the slab iridescent but legible
+    return stage.register({ el, icon: null, accent: palette.dark, radius: 8 });
   }, []);
   return (
     <main className="bento">
@@ -161,6 +163,7 @@ export function BentoPage() {
         <div className="bento-row">
           <div className="bento-stack">
             <CopyButton
+              className="drift"
               value="pnpm add @react-three/fiber"
               actions={[
                 { key: 'docs', label: 'Open the docs', icon: <InfoIcon />, href: '/dev/' },
@@ -187,7 +190,8 @@ export function BentoPage() {
                 sinkDepth={-0.1}
                 pressDepth={-0.05}
                 sinkSplash={false}
-                className="launcher-sink"
+                className="launcher-sink drift"
+                style={{ '--drift-delay': '-7s' } as CSSProperties}
               >
                 <button
                   ref={launcherFace}
@@ -211,7 +215,11 @@ export function BentoPage() {
             </div>
           </div>
           <div className="bento-grow bento-stack">
-            <NacreCallout kind="tip">
+            <NacreCallout
+              className="drift"
+              style={{ '--drift-delay': '-14s' } as CSSProperties}
+              kind="tip"
+            >
               <p>
                 A callout on black mineral nacre: the droplet follows the pointer under the surface,
                 and the text is refracted through it.

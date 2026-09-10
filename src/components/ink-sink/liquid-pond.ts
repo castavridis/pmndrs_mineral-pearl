@@ -37,7 +37,7 @@ uniform vec2  uBtnC;     // button centre in uv
 uniform vec2  uBtnHalf;  // half extents in uv
 uniform float uBtnR;     // corner radius in uv
 uniform float uDepth;    // top face height: + proud of the surface, - below it
-uniform float uVel;      // vertical velocity (drives the viscous cling)
+uniform float uVel;      // (port) the vertical velocity the *surface* feels: lagged, see velLag
 uniform float uFocus;
 uniform float uMode;     // 0 mineral, 1 pearl
 uniform float uMotion;   // 0 when the user prefers reduced motion
@@ -183,8 +183,22 @@ float surf(vec2 p){
   // displaced volume: the surface is pulled down in a collar around the slab
   float collar = exp(-o * 10.0) * uSlabOn;
   h -= collar * 0.050 * clamp(1.0 + ld / 0.34, 0.0, 1.0) * (1.0 - uGoop);
-  // cling: a sinking slab drags the surface down with it, a rising one lifts it
-  h += clamp(uVel, -1.2, 1.2) * 0.30 * exp(-o * 3.2) * (1.0 - 0.6 * uGoop) * uSlabOn;
+  // Cling: the slab drags the surface with it, down as it sinks and up as it
+  // rises. (port) Three changes from the study's exp(-o * 3.2), each from how
+  // a viscous free surface behaves (Batty and Bridson, SCA 2008):
+  //
+  //  - the reach grows with the square root of viscosity, because that is how
+  //    far momentum diffuses in a given time. Before, a thin liquid and a
+  //    thick one dragged the surface exactly as far, which is the one thing
+  //    viscosity most obviously changes;
+  //  - the profile meets the slab smoothly rather than with a crease. An
+  //    exponential in the outside distance turns a corner at the rim, and a
+  //    free surface carries no shear to hold a corner there;
+  //  - the velocity it follows is lagged rather than instantaneous, so the
+  //    surface is dragged late and keeps moving after the slab has stopped.
+  float reach = 0.31 * sqrt(max(uVisc, 0.05) / 0.4);
+  float q = o / max(reach, 1e-4);
+  h += clamp(uVel, -1.2, 1.2) * 0.30 * exp(-q * q) * (1.0 - 0.6 * uGoop) * uSlabOn;
   return h;
 }
 
@@ -710,6 +724,8 @@ export class LiquidPond {
   private _state: {
     y: number;
     v: number;
+    /** (port) the velocity the surface feels: `v` low-passed over the momentum-diffusion time */
+    velLag: number;
     pressAt: number;
     ripples: Ripple[];
     ptr: [number, number];
@@ -772,6 +788,7 @@ export class LiquidPond {
     this._state = {
       y: 0.014,
       v: 0,
+      velLag: 0,
       pressAt: -99,
       ripples: [],
       ptr: [0, 0],
@@ -1502,6 +1519,11 @@ export class LiquidPond {
         const c = (this._sunk ? 6.4 : 8.2) * visc * cling;
         s.v += (target - s.y) * k * h - s.v * c * h;
         s.y += s.v * h;
+        // (port) the surface feels the slab through the liquid, so it is
+        // dragged late and keeps going once the slab has stopped. The thicker
+        // the liquid the longer that memory.
+        const lagTau = 0.045 + 0.2 * visc;
+        s.velLag += (s.v - s.velLag) * (1 - Math.exp(-h / lagTau));
         this._simStep(h, s.goop, this._sunk || pressed);
         // tilt: like a ball rolling on a plank — the edge under the pointer
         // dips, the far edge lifts; underdamped so it rocks before settling
@@ -1570,7 +1592,7 @@ export class LiquidPond {
       gl.uniform2f(u.uBtnHalf, this._halfX * sc, this._halfY * sc);
       gl.uniform1f(u.uBtnR, this._radius);
       gl.uniform1f(u.uDepth, s.y);
-      gl.uniform1f(u.uVel, s.v);
+      gl.uniform1f(u.uVel, s.velLag);
       gl.uniform1f(u.uFocus, s.focus);
       gl.uniform1f(u.uMode, s.modeT);
       gl.uniform1f(u.uMotion, this._reduce ? 0 : 1);
