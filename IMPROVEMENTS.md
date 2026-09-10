@@ -8,18 +8,18 @@ The through-line: the biggest wins are structural. Fewer WebGL contexts, a small
 front-page bundle, and tests for the state bugs that kept recurring. Nearly every bug
 in the session was a state or timing fault rather than a visual one.
 
-| # | Improvement | Status |
-| --- | --- | --- |
-| 1 | Draw every well with one WebGL context | Next |
-| 2 | Split the front page's bundle | Open |
-| 3 | Tests where the bugs actually were | Next |
-| 4 | Resolve sink options in one place | Done (`a1cdfd9`) |
-| 5 | Make the stacking-context rule a check | Open |
-| 6 | Group per-card and per-pond knobs into named looks | Open |
-| 7 | A debug overlay and a deterministic clock | Open |
-| 8 | Accessibility gaps | Open |
-| 9 | Revisit the "for now" decisions | Open |
-| 10 | Slim the docs | Open |
+| #   | Improvement                                        | Status           |
+| --- | -------------------------------------------------- | ---------------- |
+| 1   | Draw every well with one WebGL context             | Next             |
+| 2   | Split the front page's bundle                      | Open             |
+| 3   | Tests where the bugs actually were                 | Next             |
+| 4   | Resolve sink options in one place                  | Done (`a1cdfd9`) |
+| 5   | Make the stacking-context rule a check             | Open             |
+| 6   | Group per-card and per-pond knobs into named looks | Open             |
+| 7   | A debug overlay and a deterministic clock          | Open             |
+| 8   | Accessibility gaps                                 | Open             |
+| 9   | Revisit the "for now" decisions                    | Open             |
+| 10  | Slim the docs                                      | Open             |
 
 Suggested order: 3, then 1, then 2. Tests first because they are cheap and would have
 prevented most of the session's regressions, and because item 1 is a refactor of the
@@ -36,8 +36,8 @@ cap live WebGL contexts at around sixteen and silently drop the oldest past that
 page with more afloat elements would lose some.
 
 **Why not one overlay canvas, the way the nacre stage works.** The stage can draw every
-callout into one body-level canvas because a card's liquid lies *under* its DOM text.
-A well is the other way up: its liquid must pass *over* its content to swallow it, so
+callout into one body-level canvas because a card's liquid lies _under_ its DOM text.
+A well is the other way up: its liquid must pass _over_ its content to swallow it, so
 its canvas sits above the content, inside the element's own stacking context
 (`.afloat`, `.afloat-front`, and the `z-index: 3` given to the switch's toggle all
 depend on that). One overlay above every well would sit above every well's content at
@@ -86,9 +86,9 @@ the switch's bleed, and the banner still surfaces, presses and dismisses.
 
 One chunk carries everything to the front page:
 
-| Bundle | Size | Gzipped |
-| --- | --- | --- |
-| Main JS | 1.47 MB | 434 kB |
+| Bundle  | Size    | Gzipped |
+| ------- | ------- | ------- |
+| Main JS | 1.47 MB | 434 kB  |
 
 three.js, react-three-fiber, drei and leva are all in it, and leva is a dev tool.
 
@@ -102,14 +102,14 @@ three.js, react-three-fiber, drei and leva are all in it, and leva is a dev tool
 
 No tests exist. The bugs worth pinning, all found during the session:
 
-| Bug | Where the test goes |
-| --- | --- |
-| A pond built on a later pass was never told it was sunk, so it floated while the component believed it was under, and the banner's entrance was a no-op. | `LiquidPond` contract: the first `sunk` assignment snaps (no splash, depth set outright); a later change animates and spawns a ring. Needs the pond constructible without WebGL. |
-| The builder forced mercury off for a well and the updater handed the default back. | `resolvePondOptions`: a well never has `mercuryOnSink`; a well takes the ground's unit and resolution; a prop wins over the look; `updatableOptions` never carries `liquid` or `well`. |
-| The palette panel keyed an effect on leva's setter, which is new every render, and put the stored look back over every edit. | A render smoke test of `/dev/palette` that edits a field and asserts the look changed. |
-| The palette read the store's `look`, which lags a theme change by a render, and wrote the dark look into the light slot. | The look store: `setLook` writes only into the current scheme's slot; `setScheme` switches the look in force. |
-| A stored `system` or `light` theme reopened the page light. | The theme store's persist config: any stored theme migrates to or is ignored for `dark`; `shaders` survives. |
-| — | Presets: `panelFromLook(lookFromPanel(p))` round-trips every shipped preset. |
+| Bug                                                                                                                                                      | Where the test goes                                                                                                                                                                    |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A pond built on a later pass was never told it was sunk, so it floated while the component believed it was under, and the banner's entrance was a no-op. | `LiquidPond` contract: the first `sunk` assignment snaps (no splash, depth set outright); a later change animates and spawns a ring. Needs the pond constructible without WebGL.       |
+| The builder forced mercury off for a well and the updater handed the default back.                                                                       | `resolvePondOptions`: a well never has `mercuryOnSink`; a well takes the ground's unit and resolution; a prop wins over the look; `updatableOptions` never carries `liquid` or `well`. |
+| The palette panel keyed an effect on leva's setter, which is new every render, and put the stored look back over every edit.                             | A render smoke test of `/dev/palette` that edits a field and asserts the look changed.                                                                                                 |
+| The palette read the store's `look`, which lags a theme change by a render, and wrote the dark look into the light slot.                                 | The look store: `setLook` writes only into the current scheme's slot; `setScheme` switches the look in force.                                                                          |
+| A stored `system` or `light` theme reopened the page light.                                                                                              | The theme store's persist config: any stored theme migrates to or is ignored for `dark`; `shaders` survives.                                                                           |
+| —                                                                                                                                                        | Presets: `panelFromLook(lookFromPanel(p))` round-trips every shipped preset.                                                                                                           |
 
 **Tooling.** Vitest with jsdom: it fits Vite and needs no browser download.
 
