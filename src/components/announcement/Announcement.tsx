@@ -5,6 +5,7 @@ import { InkSink, centreOf, type InkSinkHandle } from '../ink-sink/InkSink';
 import { Surface } from '../surface/Surface';
 import type { SinkTier } from '../ink-sink/InkSink';
 import { announcement } from './metrics';
+import { ANNOUNCEMENT_SWALLOW, type AnnouncementSwallow } from './swallow';
 import styles from './Announcement.module.css';
 
 export interface AnnouncementProps {
@@ -24,6 +25,12 @@ export interface AnnouncementProps {
    * once it is gone, so it can be unmounted.
    */
   onDismiss?: () => void;
+  /**
+   * The swallow: how the liquid takes the banner down, over
+   * `ANNOUNCEMENT_SWALLOW`. Only the keys given are changed. `/dev/announcement`
+   * drives these from a panel.
+   */
+  swallow?: Partial<AnnouncementSwallow>;
   className?: string;
   style?: CSSProperties;
 }
@@ -42,9 +49,11 @@ export function Announcement({
   width = announcement.width,
   variant = 'auto',
   onDismiss,
+  swallow,
   className,
   style,
 }: AnnouncementProps) {
+  const look: AnnouncementSwallow = { ...ANNOUNCEMENT_SWALLOW, ...swallow };
   // the sink resolves its own tier; only `flat` opts out of floating
   const liquid = variant !== 'flat';
   const sink = useRef<InkSinkHandle>(null);
@@ -205,32 +214,31 @@ export function Announcement({
         ref={sink}
         well
         radius={announcement.radius}
-        bleed={announcement.bleed}
+        bleed={look.bleed}
         sinkOnClick={false}
         mercuryOnSink={false}
         /* The swallow, as the card afloat on the study's pond has it: big,
            dense droplets that heap above the surface and are lit, rather than
-           the flat coverage a page-sized well would otherwise give. In a well
-           the unit is the ground's (420 px), so a droplet sized for a pond
-           panel reads as a speck against a 652 px banner; `globSize` is the
-           only scale that is the mass's own and not the ground's. */
-        globSize={1.6}
-        globDensity={0.9}
-        globHeight={0.8}
-        globSettle={1.1}
-        globShading
-        // the press drives the point under the finger this far down; the slab
-        // gives a little as a whole and tips about its centre for the rest
-        pressDepth={-0.12}
+           the flat coverage a page-sized well would otherwise give. See
+           `swallow.ts` for what each of these does and why the sizes are what
+           they are; `/dev/announcement` drives them from a panel. */
+        globSize={look.globSize}
+        globDensity={look.globDensity}
+        globHeight={look.globHeight}
+        globSettle={look.globSettle}
+        globShading={look.globShading}
+        viscosity={look.viscosity}
+        sinkDepth={look.sinkDepth}
+        pressDepth={look.pressDepth}
         sunk={dismissed || !surfaced}
         tier={variant}
         onSunkSettled={onSunkSettled}
         onReady={() => setSinkReady(true)}
         className={`${styles.root} ${className ?? ''}`}
         style={{
-          width: `calc(100% + ${announcement.bleed * 2}px)`,
-          maxWidth: width + announcement.bleed * 2,
-          margin: `${-announcement.bleed}px`,
+          width: `calc(100% + ${look.bleed * 2}px)`,
+          maxWidth: width + look.bleed * 2,
+          margin: `${-look.bleed}px`,
           opacity: fading ? 0 : 1,
           transition: `opacity ${FADE_MS}ms ease`,
           ...driftVars,
