@@ -129,6 +129,12 @@ export interface InkSinkProps {
   /** A click on the content is an impact that sinks it there; a click when sunk raises it. Default true. */
   sinkOnClick?: boolean;
   /**
+   * The slab wears a body rather than a flat colour: the pearl where the
+   * ground is mineral and the mineral where it is pearl, so it keeps the
+   * study's contrast and gains that body's nacre and iridescence.
+   */
+  slabLiquid?: boolean;
+  /**
    * The whole page is the well: no pond panel of its own, the liquid around
    * the slab continues the fixed page ground's surface (same frame, clock,
    * pointer, ripples, unit and resolution) and the slab sinks into the page.
@@ -196,6 +202,7 @@ export function InkSink({
   onSunkChange,
   sinkOnClick = true,
   well = false,
+  slabLiquid = false,
   tier: wantedTier = 'auto',
   onSunkSettled,
   onReady,
@@ -276,6 +283,7 @@ export function InkSink({
       pressDepth,
       sinkSplash,
       globShading,
+      slabLiquid,
       radius,
       // in a well the liquid must sample like the ground: its unit and resolution
       maxDpr: ground ? ground.opts.maxDpr : 2,
@@ -336,6 +344,7 @@ export function InkSink({
     pond.opts.pressDepth = pressDepth;
     pond.opts.sinkSplash = sinkSplash;
     pond.opts.globShading = globShading;
+    pond.opts.slabLiquid = slabLiquid;
     pond.opts.radius = radius;
     if (!pond.opts.well) pond.opts.unit = unit;
     Object.assign(pond.opts, merged());
@@ -354,6 +363,7 @@ export function InkSink({
     pressDepth,
     sinkSplash,
     globShading,
+    slabLiquid,
     radius,
     unit,
     look,
@@ -420,6 +430,8 @@ export function InkSink({
   const vars = {
     '--pond-radius': `${radius}px`,
     '--pond-bg': POND_BG[liq],
+    // the study's slab colours stand either way: a slab wearing a body wears
+    // the other one, which is the colour these already are
     '--slab-bg': SLAB_LOOK[liq].bg,
     '--slab-fg': SLAB_LOOK[liq].fg,
     '--pond-bleed': `${bleed}px`,

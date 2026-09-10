@@ -37,7 +37,10 @@ export interface AnnouncementProps {
 
 /** The layer's fade, and the close of the room it held. Both are CSS above. */
 const FADE_MS = 600;
-const COLLAPSE_MS = 700;
+/** The room closing behind a dismissal, and opening as a banner surfaces. One
+    duration for both, and the CSS carries them. */
+const COLLAPSE_MS = 620;
+const OPEN_MS = 620;
 /** The close starts before the fade is quite done, so the two read as one move. */
 const COLLAPSE_AT = 460;
 
@@ -100,6 +103,44 @@ export function Announcement({
     const t = window.setTimeout(() => setSurfaced(true), 450);
     return () => window.clearTimeout(t);
   }, [liquid, pageReady, sinkReady]);
+  // The room opens as the banner comes up. It holds none while it is under —
+  // there is nothing there to hold room for — and grows to the height it wants
+  // as the liquid gives the banner back, so the page moves down under it
+  // rather than having stood aside for it all along. The closed state is the
+  // opening one, so it is set without a transition; only the growth animates.
+  useEffect(() => {
+    const el = slotRef.current;
+    if (!el || !liquid || fading) return;
+    if (!surfaced) {
+      el.style.transition = 'none';
+      el.style.height = '0px';
+      el.style.marginTop = '0px';
+      void el.offsetHeight;
+      el.style.transition = '';
+      return;
+    }
+    // measure the room it wants, from closed, without letting the measurement
+    // itself be seen
+    el.style.transition = 'none';
+    el.style.height = '';
+    el.style.marginTop = '';
+    const want = el.offsetHeight;
+    const mt = getComputedStyle(el).marginTop;
+    el.style.height = '0px';
+    el.style.marginTop = '0px';
+    void el.offsetHeight;
+    el.style.transition = '';
+    el.style.height = `${want}px`;
+    el.style.marginTop = mt;
+    // once it is open the room is the content's again, so the banner can grow
+    // or wrap without a pinned height fighting it
+    const t = window.setTimeout(() => {
+      el.style.height = '';
+      el.style.marginTop = '';
+    }, OPEN_MS + 40);
+    return () => window.clearTimeout(t);
+  }, [liquid, surfaced, fading]);
+
   // the sink says when the liquid has closed over the slab; a backstop keeps
   // a dismissal from hanging if a tier never reports
   useEffect(() => {
@@ -231,6 +272,9 @@ export function Announcement({
         bleed={look.bleed}
         sinkOnClick={false}
         mercuryOnSink={false}
+        // the banner is a piece of the page's own liquid, not a card laid on
+        // it: its face wears the body it floats on, mineral or pearl
+        slabLiquid
         /* The swallow, as the card afloat on the study's pond has it: big,
            dense droplets that heap above the surface and are lit, rather than
            the flat coverage a page-sized well would otherwise give. See

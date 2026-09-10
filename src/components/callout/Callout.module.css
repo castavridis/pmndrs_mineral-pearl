@@ -86,13 +86,23 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--tint);
+  /* the same halo as the title: it is the smallest text on the card */
+  text-shadow: 0 1px 2px color-mix(in srgb, var(--page-bg) 70%, transparent);
 }
 
 .title {
   margin: 0 0 12px;
   font-size: 22px;
-  font-weight: 500;
+  /* The headline lies over a slab of moving liquid, and the liquid's crests
+     come up close to the ink's own lightness where they pass under it. A
+     little more weight and a halo of the page's ground behind the glyphs hold
+     it legible without a plate: the ground is the ink's opposite in either
+     scheme, so the same rule works light and dark. */
+  font-weight: 600;
   letter-spacing: -0.01em;
+  text-shadow:
+    0 1px 2px color-mix(in srgb, var(--page-bg) 78%, transparent),
+    0 0 10px color-mix(in srgb, var(--page-bg) 62%, transparent);
 }
 
 .body {

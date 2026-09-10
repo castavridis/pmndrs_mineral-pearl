@@ -3,12 +3,10 @@ import { Leva, button, folder, useControls } from 'leva';
 import { useEffect } from 'react';
 import {
   Announcement,
-  Logo,
   NACRE_DEFAULT,
   Nav,
   NacreCallout,
   InkSink,
-  Surface,
   centreOf,
   getNacreStage,
   palette,
@@ -194,10 +192,11 @@ function useNacreTweaks() {
 }
 
 /**
- * `/dev/bento`: the shader bento, every element one `Surface` in a shape and
- * a tier of motion. Most expressive: the pill nav and the announcement, full.
- * Somewhat expressive: buttons, calm, beside the nacre and ink callouts.
- * Utilitarian: key caps and a tabbed card, flat.
+ * `/dev/bento`: the shader bento, every element one `Surface` in a shape and a
+ * tier of motion, in three rows that step down through them. The banner and
+ * the pill nav are the full liquid; the copy bar, the launcher and the callout
+ * float on a well; the buttons and key caps are flat. The rows carry no
+ * headings — what the elements are is the point, not what they are called.
  */
 export function BentoPage() {
   useThemeTweak();
@@ -206,7 +205,6 @@ export function BentoPage() {
   const swallow = useControlSwallow();
   const [gone, setGone] = useState(false);
   const [launcherDisabled, setLauncherDisabled] = useState(false);
-  const [tab, setTab] = useState(2);
   // The launcher floats on the page like the announcement, and the nacre stage
   // draws its face, so it is iridescent rather than flat. Disabled it settles
   // just under the surface — still seen through the liquid, which is what
@@ -236,13 +234,10 @@ export function BentoPage() {
   }, []);
   return (
     <main className="bento">
+      {/* the banner sits above the bar, as it does on a page */}
       <section className="bento-tier">
-        <h2>Most Expressive</h2>
         <div className="bento-row">
-          <div className="bento-grow" style={{ flexBasis: 620 }}>
-            <Nav links={LINKS} active="docs" enhancement="full" />
-          </div>
-          <div className="bento-grow" style={{ padding: '52px 0' }}>
+          <div className="bento-grow" style={{ padding: '12px 0 40px' }}>
             {!gone && (
               <Announcement width={720} onDismiss={() => setGone(true)}>
                 <span>
@@ -253,10 +248,14 @@ export function BentoPage() {
             )}
           </div>
         </div>
+        <div className="bento-row">
+          <div className="bento-grow" style={{ flexBasis: 620 }}>
+            <Nav links={LINKS} active="docs" enhancement="full" />
+          </div>
+        </div>
       </section>
 
       <section className="bento-tier">
-        <h2>Somewhat Expressive</h2>
         <div className="bento-row">
           <div className="bento-stack">
             <div ref={copyWake} className="afloat afloat-front">
@@ -360,7 +359,6 @@ export function BentoPage() {
       </section>
 
       <section className="bento-tier">
-        <h2>Utilitarian</h2>
         <div className="bento-row">
           <div className="bento-inline">
             <Button onClick={() => document.querySelector<HTMLElement>('[data-id="cmd"]')?.click()}>
@@ -385,27 +383,6 @@ export function BentoPage() {
               ]}
             />
           </div>
-          <Surface shape="card" expressiveness="flat" className="tabs-card">
-            <div className="tabs" role="tablist">
-              {['Logo', 'React Three Fiber', 'Introduction'].map((t, i) => (
-                <button
-                  key={t}
-                  type="button"
-                  role="tab"
-                  aria-selected={tab === i}
-                  className={tab === i ? 'active' : ''}
-                  onClick={() => setTab(i)}
-                >
-                  {i === 0 ? <Logo width={18} height={18} /> : t}
-                </button>
-              ))}
-            </div>
-            <ul>
-              <li>Does it have limitations?</li>
-              <li>Point 2</li>
-              <li>Point 3</li>
-            </ul>
-          </Surface>
         </div>
       </section>
       <Leva collapsed titleBar={{ title: 'pmndrs' }} />

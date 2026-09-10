@@ -98,6 +98,14 @@ export interface InkSplatProps {
   /** Blot scale relative to the longer canvas edge. Default 1.5. */
   scale?: number;
   /**
+   * How much of the burst flies, 0..1 (default 1, the study's splat). Lower
+   * keeps the ink in the mass: fewer jets and drops, shorter ones, and flatter
+   * lobes, so the blot settles round and near rather than starred and far. The
+   * mark's blot in the nav takes a low one — it is a shape behind a logo, not
+   * an impact.
+   */
+  spatter?: number;
+  /**
    * The surface of the liquid: 0 (default) is matte ink; up to 1, the ink
    * shows surface tension at its rim and a nacre-like iridescence across
    * it, its own colour kept as the body.
@@ -162,6 +170,7 @@ export function InkSplat({
   nacre = 0,
   flood = true,
   scale = BLOT_SCALE,
+  spatter = 1,
   origin,
   clip,
   mode = 'splat',
@@ -224,6 +233,7 @@ export function InkSplat({
         nacre={nacre}
         flood={flood}
         scale={scale}
+        spatter={spatter}
         originX={origin?.[0] ?? 0.5}
         originY={origin?.[1] ?? 0.5}
         clipInset={clip?.inset}
@@ -249,6 +259,7 @@ interface LayerProps {
   nacre: number;
   flood: boolean;
   scale: number;
+  spatter: number;
   originX: number;
   originY: number;
   clipInset: number | undefined;
@@ -416,6 +427,7 @@ function InkSplatLayer({
   nacre,
   flood,
   scale,
+  spatter,
   originX,
   originY,
   clipInset,
@@ -454,7 +466,9 @@ function InkSplatLayer({
   const onDrainRef = useRef(onDrain);
   const reducedRef = useRef(reducedMotion);
   const modeRef = useRef(mode);
+  const spatterRef = useRef(spatter);
   useEffect(() => {
+    spatterRef.current = spatter;
     onSplatRef.current = onSplat;
     onSettleRef.current = onSettle;
     onDrainRef.current = onDrain;
@@ -473,7 +487,7 @@ function InkSplatLayer({
     if (!res) return;
     res.inkMaterial.uniforms.uSeed.value = Math.random() * 100;
     if (modeRef.current === 'engulf') res.particles.spawnEdge();
-    else res.particles.spawn();
+    else res.particles.spawn(Math.random, spatterRef.current);
     // with reduced motion the clock starts at the end: the first frame is
     // the settled ink, no animation
     res.start = performance.now() - (reducedRef.current ? res.duration * 1000 : 0);

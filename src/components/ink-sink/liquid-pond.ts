@@ -48,6 +48,7 @@ uniform vec2  uTilt;     // slab tilt: top-face height gradient across the slab 
 uniform vec3  uGlob;     // x droplet size, y density, z heap height
 uniform float uGlobShade; // (port) 0: the mass is pure coverage, no sheen or lip
 uniform float uShadowK;   // (port) how much of the slab's cast shadow to draw; 0 in a well
+uniform float uSlabLiq;   // 0: the study's dry slab; 1: the slab wears the liquid's own body
 // (port) the mineral and pearl looks, lifted out of the composites' constants
 uniform vec3  uMinBase;   // mineral body colour in the troughs of the nacre noise
 uniform vec3  uMinHigh;   // mineral body colour on its crests
@@ -413,6 +414,14 @@ void main(){
   float domeL = dot(domeN, L);
   float crown = clamp((domeL - dot(vec3(0.0, 0.0, 1.0), L)) * 0.35, -0.08, 0.08);
 
+  // the pearl body, computed first: the mineral's slab wears it (see below)
+  vec3 liqL = uPearlCream * (0.900 + uPearlNacre * nac + 0.028 * lam);
+  liqL = mix(liqL, uPearlShade, smoothstep(0.50, 0.90, nac) * uClouding);
+  liqL = mix(liqL, irid, clamp((0.10 + 0.55 * band) * (0.22 + 0.78 * fres) * uPearlIrid, 0.0, 0.52));
+  liqL += vec3(0.10, 0.10, 0.095) * spec * uPearlSpec;
+  liqL += vec3(0.030, 0.026, 0.016) * glow * 0.7;
+  liqL *= 1.0 - 0.42 * shade;
+
   // --- mineral composite -----------------------------------------------------
   vec3 liqD = uMinBase;
   liqD = mix(liqD, uMinHigh, smoothstep(0.25, 0.80, nac) * uStoneGray);
@@ -425,7 +434,13 @@ void main(){
   liqD  = pow(liqD, vec3(uMinGamma));
 
 
-  vec3 cream = vec3(0.980, 0.961, 0.918);
+  // (port) The study's slab is a dry card: cream on the mineral, ink on the
+  // pearl. uSlabLiq gives it a body instead of a colour — and the other one,
+  // not the one it floats on: a slab wearing the liquid it sits in disappears
+  // into it. The cream card becomes pearl and the ink card mineral, so the
+  // contrast the study set is kept and the face gains the nacre, the clouding
+  // and the iridescence it was flat without.
+  vec3 cream = mix(vec3(0.980, 0.961, 0.918), liqL, uSlabLiq);
   vec3 slabD = cream * (0.90 + 0.10 * (1.0 - smoothstep(-0.13, 0.0, bd)));
   slabD *= 1.0 + crown;
   slabD *= 0.95 + 0.06 * vn(rp * 46.0);
@@ -441,14 +456,8 @@ void main(){
   colD  = clamp(colD, 0.0, 1.0);
 
   // --- pearl composite -------------------------------------------------------
-  vec3 liqL = uPearlCream * (0.900 + uPearlNacre * nac + 0.028 * lam);
-  liqL = mix(liqL, uPearlShade, smoothstep(0.50, 0.90, nac) * uClouding);
-  liqL = mix(liqL, irid, clamp((0.10 + 0.55 * band) * (0.22 + 0.78 * fres) * uPearlIrid, 0.0, 0.52));
-  liqL += vec3(0.10, 0.10, 0.095) * spec * uPearlSpec;
-  liqL += vec3(0.030, 0.026, 0.016) * glow * 0.7;
-  liqL *= 1.0 - 0.42 * shade;
 
-  vec3 ink = vec3(0.070, 0.062, 0.048);
+  vec3 ink = mix(vec3(0.070, 0.062, 0.048), liqD, uSlabLiq);
   vec3 slabL = ink * (1.0 + 0.9 * (1.0 - smoothstep(-0.13, 0.0, bd)));
   slabL *= 1.0 + crown * 1.6;
   slabL += vec3(1.0) * pow(max(dot(N, Hv), 0.0), 46.0) * 0.10;
@@ -465,7 +474,7 @@ void main(){
   // --- mercury composite -----------------------------------------------------
   vec3 liqM = merc + irid * fres * uMercIrid;
   liqM *= 1.0 - 0.35 * shade;
-  vec3 slabM = vec3(0.12, 0.115, 0.13) * (0.9 + 0.3 * (1.0 - smoothstep(-0.13, 0.0, bd)));
+  vec3 slabM = mix(vec3(0.12, 0.115, 0.13), liqM, uSlabLiq) * (0.9 + 0.3 * (1.0 - smoothstep(-0.13, 0.0, bd)));
   slabM *= 1.0 + crown * 1.6;
   slabM += vec3(1.0) * pow(max(dot(N, Hv), 0.0), 46.0) * 0.12;
   vec3 colM = mix(liqM, slabM, bMask);
@@ -643,6 +652,11 @@ export interface PondOptions {
   pressDepth?: number;
   /** (port) Whether going under throws a swallow of droplets. Off for a shallow rest. */
   sinkSplash?: boolean;
+  /**
+   * The slab wears the liquid it floats on — the body's own nacre and
+   * iridescence, lit as a raised face — instead of the study's dry cream card.
+   */
+  slabLiquid?: boolean;
   /** Shade the ink mass (wet-edge sheen, darker lip); off, it is pure coverage. */
   globShading: boolean;
   /** Corner radius of the slab, CSS px. */
@@ -1723,6 +1737,7 @@ export class LiquidPond {
       );
       gl.uniform1f(u.uGlobShade, this.opts.globShading ? 1 : 0);
       gl.uniform1f(u.uShadowK, this.opts.well ? 0 : 1);
+      gl.uniform1f(u.uSlabLiq, this.opts.slabLiquid ? 1 : 0);
       const m = this.opts.mineral,
         pl = this.opts.pearl;
       gl.uniform3f(u.uMinBase, ...hex3(m.base));

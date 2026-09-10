@@ -95,9 +95,19 @@ export class InkParticles {
    * The impact: everything starts at the centre and is thrown outward.
    * Speeds are in units/s; with exponential drag k a droplet travels v/k.
    */
-  spawn(random: () => number = Math.random) {
+  /**
+   * @param spatter How much of the burst flies: 1 is the study's splat, and
+   * lower keeps more of the ink in the mass. It thins the counts of everything
+   * thrown, shortens what is left, and flattens the lobes the launch speed
+   * carries, so the blot draws in toward a round one rather than a starred
+   * one. At 0 only the core lands.
+   */
+  spawn(random: () => number = Math.random, spatter = 1) {
     const { cx, cy } = this;
     const R = random;
+    const sp = Math.max(0, Math.min(1, spatter));
+    /** how many of a group to throw */
+    const N = (n: number) => Math.round(n * sp);
     this.count = 0;
     this.engulf = false;
     const s1 = R() * TAU;
@@ -108,7 +118,9 @@ export class InkParticles {
     // Launch speed follows a few low harmonics so the settled blob has lobes
     const lobeAt = (a: number) =>
       1 +
-      0.5 * (0.5 * Math.sin(3 * a + s1) + 0.3 * Math.sin(5 * a + s2) + 0.2 * Math.sin(8 * a + s3));
+      0.5 *
+        sp *
+        (0.5 * Math.sin(3 * a + s1) + 0.3 * Math.sin(5 * a + s2) + 0.2 * Math.sin(8 * a + s3));
     // a few heavy anchors barely move, so the middle is always solid under
     // the logo whatever the rest of the burst does
     for (let i = 0; i < 6; i++) {
@@ -118,7 +130,7 @@ export class InkParticles {
     }
     for (let i = 0; i < 34; i++) {
       const a = R() * TAU;
-      const speed = (0.35 + 0.85 * R()) * lobeAt(a);
+      const speed = (0.35 + 0.85 * R()) * lobeAt(a) * (0.55 + 0.45 * sp);
       const r = 0.02 + 0.035 * R() * R() + (i < 5 ? 0.025 : 0);
       const d0 = 0.01 * R();
       this.add(
@@ -135,9 +147,9 @@ export class InkParticles {
 
     // rim: mid-weight droplets that land on or just past the edge of the
     // mass, breaking its outline into lumps and stubby lobes
-    for (let i = 0; i < 22; i++) {
+    for (let i = 0; i < N(22); i++) {
       const a = R() * TAU;
-      const speed = (0.95 + 0.95 * R()) * lobeAt(a);
+      const speed = (0.95 + 0.95 * R()) * lobeAt(a) * (0.5 + 0.5 * sp);
       const r = 0.007 + 0.01 * R();
       this.add(cx, cy, Math.cos(a) * speed, Math.sin(a) * speed, r, 7, JET, 0.3);
     }
@@ -147,13 +159,13 @@ export class InkParticles {
     // is a bulb; if the jet is fast enough the neck stretches past the
     // kernel reach and the bulb pinches off on its own. A shared sideways
     // kick that grows with speed bends each strand into a whip.
-    const JETS = 9;
+    const JETS = N(9);
     const LINKS = 8;
     for (let j = 0; j < JETS; j++) {
       const a = ((j + (R() - 0.5) * 0.8) / JETS) * TAU;
       const dx = Math.cos(a);
       const dy = Math.sin(a);
-      let S = 1.7 + 1.6 * R();
+      let S = (1.7 + 1.6 * R()) * (0.35 + 0.65 * sp);
       if (R() < 0.3) S *= 1.3;
       const lat = (R() - 0.5) * 0.4 * S;
       for (let k = 0; k <= LINKS; k++) {
@@ -182,28 +194,28 @@ export class InkParticles {
     const dropA: number[] = [];
     const dropS: number[] = [];
     const dropK: number[] = [];
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < N(30); i++) {
       const a = R() * TAU;
-      const sp = 1.0 + 3.0 * Math.pow(R(), 1.3);
+      const speed = (1.0 + 3.0 * Math.pow(R(), 1.3)) * (0.4 + 0.6 * sp);
       const k = 2.5 + 3 * R();
       const r = 0.0025 + 0.011 * R() * R() * R();
       dropA.push(a);
-      dropS.push(sp);
+      dropS.push(speed);
       dropK.push(k);
-      this.add(cx, cy, Math.cos(a) * sp, Math.sin(a) * sp, r, k, DROP, 0.1 + 0.06 * sp);
+      this.add(cx, cy, Math.cos(a) * speed, Math.sin(a) * speed, r, k, DROP, 0.1 + 0.06 * speed);
     }
 
     // crown: as the mass lands, a second wave of tiny droplets is thrown
     // off its rim a beat after the impact
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < N(16); i++) {
       const a = R() * TAU;
-      const sp = 0.8 + 1.0 * R();
+      const speed = (0.8 + 1.0 * R()) * (0.5 + 0.5 * sp);
       const r = 0.002 + 0.0025 * R();
       this.add(
         cx + Math.cos(a) * 0.12,
         cy + Math.sin(a) * 0.12,
-        Math.cos(a) * sp,
-        Math.sin(a) * sp,
+        Math.cos(a) * speed,
+        Math.sin(a) * speed,
         r,
         5,
         SPATTER,
@@ -213,20 +225,20 @@ export class InkParticles {
     }
 
     // mist: pinpricks that fall close around the blot
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < N(20); i++) {
       const a = R() * TAU;
-      const sp = 0.5 + 1.4 * R();
+      const speed = (0.5 + 1.4 * R()) * (0.5 + 0.5 * sp);
       const r = 0.0012 + 0.001 * R();
-      this.add(cx, cy, Math.cos(a) * sp, Math.sin(a) * sp, r, 5, SPATTER, 0.2, 0.02 + 0.04 * R());
+      this.add(cx, cy, Math.cos(a) * speed, Math.sin(a) * speed, r, 5, SPATTER, 0.2, 0.02 + 0.04 * R());
     }
 
     // spatter: pinpricks shed in the wake of the drops, trailing behind them
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < N(18) && dropA.length; i++) {
       const j = Math.floor(R() * dropA.length);
       const a = dropA[j] + (R() - 0.5) * 0.3;
-      const sp = dropS[j] * (0.35 + 0.45 * R());
+      const speed = dropS[j] * (0.35 + 0.45 * R());
       const r = 0.0015 + 0.0025 * R();
-      this.add(cx, cy, Math.cos(a) * sp, Math.sin(a) * sp, r, dropK[j], SPATTER, 0.25);
+      this.add(cx, cy, Math.cos(a) * speed, Math.sin(a) * speed, r, dropK[j], SPATTER, 0.25);
     }
   }
 

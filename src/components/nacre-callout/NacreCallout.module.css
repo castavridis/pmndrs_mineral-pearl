@@ -36,16 +36,26 @@
 }
 
 .lbl {
-  font-weight: 600;
+  /* The label lies over a slab of moving liquid whose crests come up close to
+     the accent's own lightness. A halo of the page's ground holds it legible
+     without a plate behind it: the ground is the ink's opposite in either
+     scheme, so one rule works light and dark. */
+  font-weight: 700;
   font-size: 14px;
   color: var(--accent);
   margin: 0 0 3px;
+  text-shadow:
+    0 1px 2px color-mix(in srgb, var(--page-bg) 82%, transparent),
+    0 0 10px color-mix(in srgb, var(--page-bg) 66%, transparent);
 }
 
 .body p {
   margin: 0;
   font-size: 14.5px;
   line-height: 1.6;
+  /* the same halo, lighter: this is the smaller text and it runs the width of
+     the card, over whatever the liquid is doing under it */
+  text-shadow: 0 1px 2px color-mix(in srgb, var(--page-bg) 72%, transparent);
 }
 
 .body p + p {
