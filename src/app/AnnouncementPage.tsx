@@ -52,9 +52,10 @@ export function AnnouncementPage() {
       globSettle: { value: d.globSettle, min: 0, max: 4, step: 0.05, label: 'settle (s)' },
       globShading: { value: d.globShading, label: 'lit mass' },
       droplets: { value: d.droplets, label: 'throw droplets' },
-      viscous: { value: false, label: 'own viscosity' },
+      // the panel opens on the shipped look, whatever that is
+      viscous: { value: d.viscosity !== undefined, label: 'own viscosity' },
       viscosity: {
-        value: 0.4,
+        value: d.viscosity ?? 0.4,
         min: 0.15,
         max: 2,
         step: 0.05,

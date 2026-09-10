@@ -41,8 +41,9 @@ export const ANNOUNCEMENT_SWALLOW: AnnouncementSwallow = {
   globHeight: 0.8,
   globSettle: 1.1,
   globShading: true,
-  droplets: true,
-  pressDepth: -0.12,
-  sinkDepth: -0.34,
-  bleed: 96,
+  droplets: false,
+  viscosity: 0.8,
+  pressDepth: -0.06,
+  sinkDepth: -0.38,
+  bleed: 116,
 };

@@ -11,7 +11,6 @@ import {
 import { Surface, type SurfaceTier } from '../surface/Surface';
 import { POND_BG, type Liquid } from '../ink-sink/liquid-pond';
 import { onInk, page, useResolvedTheme } from '../theme';
-import { palette } from '../theme/palette';
 import { InkSplat } from '../ink-splat';
 import { getNacreStage } from '../nacre-callout/stage';
 import { useNavStore, useNavStoreApi, resolveMode } from './store';
@@ -21,10 +20,6 @@ import { Logo } from './Logo';
 import { CmdPalette } from './CmdPalette';
 import styles from './Nav2D.module.css';
 
-/* The accent the stage breathes through the pill's slab. A callout takes its
-   kind's colour; the bar has no kind, so it takes the mark's own green — the
-   one colour that is the collective's rather than a state's. */
-const NAV_PILL_ACCENT = palette.green;
 /** How far the pill's face stands proud of the item's box, px. */
 const PILL_PAD_X = 14;
 const PILL_PAD_Y = 7;
@@ -118,13 +113,18 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
   // The pill's face on the nacre stage: no icon (a control has none, and the
   // accent would pool in a corner and wash the label), a radius large enough
   // that the stage clamps it to half the height, which is the pill.
+  //
+  // A callout's accent is its kind's colour, but the bar stands for no state:
+  // the pill is a window onto the page's own body, so it takes that body's
+  // colour — the black mineral on the dark page, the pearl on the light one,
+  // which is what `--nav-pool` and the label's ink are already keyed to.
   useEffect(() => {
     const el = sliderRef.current;
     if (!el || tier === 'flat') return;
     const stage = getNacreStage();
     if (!stage) return;
     el.dataset.nacre = '';
-    const off = stage.register({ el, icon: null, accent: NAV_PILL_ACCENT, radius: 999 });
+    const off = stage.register({ el, icon: null, accent: POND_BG[active], radius: 999 });
     // the light and dark treatments differ, so the stage has to be told
     const obs = new MutationObserver(() => stage.refresh());
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
@@ -133,7 +133,7 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
       off();
       delete el.dataset.nacre;
     };
-  }, [tier]);
+  }, [tier, active]);
 
   const logoRef = useRef<HTMLAnchorElement>(null);
   const blotRef = useRef<HTMLSpanElement>(null);
