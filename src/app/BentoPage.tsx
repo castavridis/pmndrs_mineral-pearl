@@ -3,7 +3,6 @@ import { Leva, folder, useControls } from 'leva';
 import { useEffect } from 'react';
 import {
   Announcement,
-  InkCallout,
   Logo,
   NACRE_DEFAULT,
   Nav,
@@ -191,9 +190,12 @@ export function BentoPage() {
                 and the text is refracted through it.
               </p>
             </NacreCallout>
-            <InkCallout kind="note" title="And the ink callout" maxWidth="100%">
-              <p>The blot lands when it scrolls into view and floods the card.</p>
-            </InkCallout>
+            <Announcement width={720} kind="note">
+              <span>
+                <strong>And the ink announcement.</strong> The blot lands at the left when it
+                scrolls into view.
+              </span>
+            </Announcement>
           </div>
         </div>
       </section>

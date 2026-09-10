@@ -4,7 +4,7 @@ import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { Surface } from '../surface/Surface';
 import { useResolvedTheme } from '../theme';
 import { useWebGL } from '../gate';
-import { calloutKinds, type CalloutKind } from '../ink-callout/kinds';
+import { calloutKinds, type CalloutKind } from './kinds';
 import { nacreKinds } from '../nacre-callout/NacreCallout';
 import { getNacreStage } from '../nacre-callout/stage';
 import { callout } from './metrics';

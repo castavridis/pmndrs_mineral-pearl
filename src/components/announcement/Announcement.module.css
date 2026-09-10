@@ -55,3 +55,73 @@
 .flat {
   color: var(--page-ink);
 }
+
+/* --- the blot: the kind's ink, landing at the left end -------------------- */
+.blot {
+  position: absolute;
+  left: -28px;
+  top: 50%;
+  width: 132px;
+  height: 132px;
+  transform: translateY(-50%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* fiber sets pointer-events on its wrapper and canvas; the blot must not eat
+   clicks meant for the banner it decorates */
+.blot canvas,
+.blot > * {
+  pointer-events: none !important;
+}
+
+.glyph {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* the row steps aside for the blot */
+.content[data-kind] {
+  padding-left: 104px !important;
+}
+
+/* --- drift: the banner is afloat, so it never sits perfectly still -------- */
+@keyframes drift {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate3d(5px, -4px, 0) rotate(0.14deg);
+  }
+  50% {
+    transform: translate3d(-3px, 4px, 0) rotate(-0.12deg);
+  }
+  75% {
+    transform: translate3d(-5px, -2px, 0) rotate(0.07deg);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+}
+
+.root {
+  animation: drift var(--drift-dur, 19s) ease-in-out var(--drift-delay, 0s) infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root {
+    animation: none;
+  }
+}

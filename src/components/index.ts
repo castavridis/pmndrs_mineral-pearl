@@ -1,6 +1,5 @@
 export * from './ink-splat';
 export * from './ink-theme';
-export * from './ink-callout';
 export * from './ink-engulf';
 export * from './ink-sink';
 export * from './nacre-callout';
@@ -9,4 +8,6 @@ export * from './nav';
 export * from './announcement';
 export * from './callout';
 export * from './theme';
+export { palette, mixHex } from './theme/palette';
+export type { PaletteName } from './theme/palette';
 export { useReducedMotion, useWebGL } from './gate';

@@ -107,6 +107,12 @@ export interface InkSplatProps {
   origin?: [number, number];
   /** Bound the flood to a rounded box; droplets may still overhang it. */
   clip?: InkClip;
+  /**
+   * Whether the ink spills outward once the blot has settled. Off, the mass
+   * stays a blot and its spatter lies where it fell — the decorative form,
+   * as on an announcement. Default true.
+   */
+  flood?: boolean;
   /** `splat` (default) or `engulf`, the inverse. */
   mode?: InkMode;
   /** Splat on pointerdown over the canvas. Default true. */
@@ -154,6 +160,7 @@ export function InkSplat({
   mark,
   logo = true,
   nacre = 0,
+  flood = true,
   scale = BLOT_SCALE,
   origin,
   clip,
@@ -215,6 +222,7 @@ export function InkSplat({
         mark={mark ?? (dark ? '#111111' : '#ffffff')}
         logo={logo}
         nacre={nacre}
+        flood={flood}
         scale={scale}
         originX={origin?.[0] ?? 0.5}
         originY={origin?.[1] ?? 0.5}
@@ -239,6 +247,7 @@ interface LayerProps {
   mark: string;
   logo: boolean;
   nacre: number;
+  flood: boolean;
   scale: number;
   originX: number;
   originY: number;
@@ -405,6 +414,7 @@ function InkSplatLayer({
   mark,
   logo,
   nacre,
+  flood,
   scale,
   originX,
   originY,
@@ -500,9 +510,12 @@ function InkSplatLayer({
     const res = resRef.current;
     if (!res) return;
     const engulf = mode === 'engulf';
-    res.floodStart = engulf ? ENGULF_FLOOD_START : FLOOD_START;
+    // NEVER is far enough away that the front never starts within a session
+    const NEVER = 1e9;
+    res.floodStart = !flood ? NEVER : engulf ? ENGULF_FLOOD_START : FLOOD_START;
     res.floodLen = engulf ? ENGULF_FLOOD_LEN : FLOOD_LEN;
-    res.duration = engulf ? ENGULF_DURATION : DURATION;
+    // with no flood the blot is settled as soon as the droplets have stopped
+    res.duration = !flood ? FLOOD_START : engulf ? ENGULF_DURATION : DURATION;
     res.particles.floodStart = res.floodStart;
     res.particles.floodLen = res.floodLen;
     const u = res.inkMaterial.uniforms;
@@ -510,7 +523,7 @@ function InkSplatLayer({
     u.uFloodLen.value = res.floodLen;
     u.uEngulf.value = engulf ? 1 : 0;
     invalidate();
-  }, [mode, invalidate]);
+  }, [mode, flood, invalidate]);
 
   // viewport geometry in shader units
   useEffect(() => {
@@ -538,15 +551,16 @@ function InkSplatLayer({
     u.uOrigin.value.set(ox, oy);
     // the flood front must reach the farthest corner (or, closing in from the
     // edge, the centre), with room for its fingers
-    u.uCover.value =
-      mode === 'engulf'
+    u.uCover.value = !flood
+      ? 0
+      : mode === 'engulf'
         ? 2 * Math.min(clipOn ? hx : dimX / 2, clipOn ? hy : dimY / 2) + 0.15
         : 2 * Math.hypot(Math.max(ox, dimX - ox), Math.max(oy, dimY - oy)) + 0.15;
     u.uClipHalf.value.set(hx, hy);
     u.uClipRadius.value = clipRadius / unit;
     u.uClipOn.value = clipOn ? 1 : 0;
     invalidate();
-  }, [size, dpr, scale, field, invalidate, originX, originY, clipInset, clipRadius, mode]);
+  }, [size, dpr, scale, field, invalidate, originX, originY, clipInset, clipRadius, mode, flood]);
 
   // the fill: a texture over the given canvas, refreshed every frame it draws
   const fillRef = useRef<THREE.CanvasTexture | null>(null);

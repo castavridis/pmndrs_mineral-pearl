@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Leva, button, useControls } from 'leva';
-import { Announcement } from '../components';
+import { Announcement, CALLOUT_KINDS, calloutKinds } from '../components';
 import { useThemeTweak } from './tweaks';
 
 /** `/dev/announcement`: the banner afloat on the page, at two widths. */
@@ -55,6 +55,21 @@ export function AnnouncementPage() {
       key={gen}
       style={{ minHeight: '100dvh', display: 'grid', placeContent: 'center', gap: 96, padding: 64 }}
     >
+      <section aria-label="Kinds" style={{ display: 'grid', gap: 12 }}>
+        <h2 style={{ margin: 0, fontSize: 13, fontWeight: 500, opacity: 0.6 }}>
+          Announcing a kind · the blot lands at the left, in the kind's palette colour
+        </h2>
+        <div style={{ display: 'grid', gap: 40, width: 652, maxWidth: 'calc(100vw - 128px)' }}>
+          {CALLOUT_KINDS.map((k) => (
+            <Announcement key={k} width={652} variant={variant} kind={k}>
+              <span>
+                <strong>{calloutKinds[k].label}.</strong> The ink is the palette's{' '}
+                {calloutKinds[k].colour}.
+              </span>
+            </Announcement>
+          ))}
+        </div>
+      </section>
       {items.map((it) => (
         <section key={it.id} aria-label={it.title} style={{ display: 'grid', gap: 12 }}>
           <h2 style={{ margin: 0, fontSize: 13, fontWeight: 500, opacity: 0.6 }}>{it.title}</h2>
