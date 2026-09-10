@@ -1024,6 +1024,47 @@ export class LiquidPond {
     gl.uniform4f(u.uMaskRect, r.left / W, r.top / H, r.width / W, r.height / H);
   }
 
+  /**
+   * (port) The surface at a point, in this pond's uv: the ripples running out
+   * from the pointer's wake and the dent under the pointer, mirroring what
+   * `surf()` computes in the shader minus the standing noise. DOM that floats
+   * on the page reads this so it is moved by the same water that is drawn.
+   *
+   * Returns the height and its gradient, so a caller can both lift a thing and
+   * tip it the way the surface slopes.
+   */
+  sampleWake(x: number, y: number): { h: number; gx: number; gy: number } {
+    const at = (px: number, py: number) => {
+      const s = this._state;
+      let h = 0;
+      const visc = this._visc(s.modeT);
+      const thin = Math.max(0, Math.min(1, 1 - visc * 0.5));
+      const spd = 0.42 + (0.78 - 0.42) * thin;
+      const damp = 1 - 0.55 * thin;
+      const freq = 9 + 6 * thin;
+      const now = performance.now() / 1000;
+      for (const r of s.ripples) {
+        if (r.s <= 0) continue;
+        const age = now - r.t;
+        if (age < 0 || age > 4.5) continue;
+        const d = Math.hypot(px - r.x, py - r.y);
+        const band = d - age * spd;
+        const env = Math.exp(-Math.abs(band) * 3.4) * Math.exp(-age * damp) * Math.exp(-d * 0.85);
+        h += Math.sin(band * freq - age * 2.2) * env * 0.085 * r.s;
+      }
+      // the dent under the pointer, the wide bowl of it
+      const pd = Math.hypot(px - s.ptr[0], py - s.ptr[1]);
+      h -= s.ptrOn * this._pr('dimple') * 0.018 * Math.exp(-pd * pd * 26);
+      return h;
+    };
+    const e = 0.006;
+    return {
+      h: at(x, y),
+      gx: (at(x + e, y) - at(x - e, y)) / (2 * e),
+      gy: (at(x, y + e) - at(x, y - e)) / (2 * e),
+    };
+  }
+
   /** (port) a pointer response, scaled by the master `reaction`. */
   private _prOf(p: PointerLook, k: 'dimple' | 'wake' | 'tilt' | 'drift') {
     return p.reaction * p[k];

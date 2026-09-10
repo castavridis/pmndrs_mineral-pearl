@@ -218,7 +218,6 @@ a {
   flex-wrap: wrap;
 }
 
-
 /* buttons and keys as Surfaces */
 .surface-button {
   padding: 12px 22px;
@@ -301,12 +300,6 @@ a {
 .launcher-sink {
   width: max-content;
   margin: -44px;
-  /* The drift animates a transform, which opens a stacking context, and the
-     nacre stage draws this control's face into a canvas at the body. Without a
-     level of its own the whole sink falls under that canvas and the label goes
-     with it. Above it, the face shows through the slab, which is bare. */
-  position: relative;
-  z-index: 1;
 }
 
 .launcher {
@@ -324,34 +317,13 @@ a {
   cursor: not-allowed;
 }
 
-/* --- drift: a thing afloat never sits perfectly still ---------------------
-   Dampened next to the announcement's: these are controls, and a control that
-   wanders is harder to hit. Each takes its own delay so no two move together. */
-@keyframes bento-drift {
-  0% {
-    transform: translate3d(0, 0, 0) rotate(0deg);
-  }
-  25% {
-    transform: translate3d(2px, -1.5px, 0) rotate(0.05deg);
-  }
-  50% {
-    transform: translate3d(-1.5px, 1.5px, 0) rotate(-0.04deg);
-  }
-  75% {
-    transform: translate3d(-2px, -1px, 0) rotate(0.03deg);
-  }
-  100% {
-    transform: translate3d(0, 0, 0) rotate(0deg);
-  }
-}
-
-.drift {
-  animation: bento-drift var(--drift-dur, 23s) ease-in-out var(--drift-delay, 0s) infinite;
+/* a thing the wake moves: it needs a level of its own, since useWake writes a
+   transform and that opens a stacking context the nacre stage's canvas would
+   otherwise be sealed out of (or, for the launcher, sealed above) */
+.afloat {
+  position: relative;
+  z-index: 1;
+  width: max-content;
+  max-width: 100%;
   will-change: transform;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .drift {
-    animation: none;
-  }
 }

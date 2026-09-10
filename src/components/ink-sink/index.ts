@@ -24,3 +24,4 @@ export type {
   PondOptions,
   SpectrumLook,
 } from './liquid-pond';
+export { useWake } from './useWake';

@@ -1,4 +1,4 @@
-import { useRef, useState, type CSSProperties } from 'react';
+import { useRef, useState } from 'react';
 import { Leva, folder, useControls } from 'leva';
 import { useEffect } from 'react';
 import {
@@ -11,6 +11,7 @@ import {
   Surface,
   getNacreStage,
   palette,
+  useWake,
   type InkSinkHandle,
   type NacreConfig,
   type NavLink,
@@ -126,6 +127,14 @@ export function BentoPage() {
   // draws its face, so it is iridescent rather than flat. Disabled it settles
   // just under the surface — still seen through the liquid, which is what
   // unavailable should look like. A press dips it and it bobs back.
+  // Nothing in this tier idles. Each floats on the ground and is moved only
+  // by the wake the pointer drags across it.
+  const copyWake = useRef<HTMLDivElement>(null);
+  const launcherWake = useRef<HTMLDivElement>(null);
+  const calloutWake = useRef<HTMLDivElement>(null);
+  useWake(copyWake, 0.8);
+  useWake(launcherWake, 0.8);
+  useWake(calloutWake, 0.6);
   const launcherSink = useRef<InkSinkHandle>(null);
   const launcherFace = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -162,49 +171,56 @@ export function BentoPage() {
         <h2>Somewhat Expressive</h2>
         <div className="bento-row">
           <div className="bento-stack">
-            <CopyButton
-              className="drift"
-              value="pnpm add @react-three/fiber"
-              actions={[
-                { key: 'docs', label: 'Open the docs', icon: <InfoIcon />, href: '/dev/' },
-                { key: 'sandbox', label: 'Open a sandbox', icon: <ExternalIcon />, href: '/dev/splat' },
-                {
-                  key: 'repo',
-                  label: 'View the repository',
-                  icon: <GitHubIcon />,
-                  href: 'https://github.com/pmndrs',
-                },
-                { key: 'run', label: 'Run it', icon: <BoltIcon /> },
-                { key: 'cli', label: 'Copy the CLI command', icon: <TerminalIcon /> },
-              ]}
-            />
+            <div ref={copyWake} className="afloat">
+              <CopyButton
+                value="pnpm add @react-three/fiber"
+                actions={[
+                  { key: 'docs', label: 'Open the docs', icon: <InfoIcon />, href: '/dev/' },
+                  {
+                    key: 'sandbox',
+                    label: 'Open a sandbox',
+                    icon: <ExternalIcon />,
+                    href: '/dev/splat',
+                  },
+                  {
+                    key: 'repo',
+                    label: 'View the repository',
+                    icon: <GitHubIcon />,
+                    href: 'https://github.com/pmndrs',
+                  },
+                  { key: 'run', label: 'Run it', icon: <BoltIcon /> },
+                  { key: 'cli', label: 'Copy the CLI command', icon: <TerminalIcon /> },
+                ]}
+              />
+            </div>
             <div className="bento-inline">
-              <InkSink
-                ref={launcherSink}
-                well
-                bare
-                radius={8}
-                bleed={44}
-                sinkOnClick={false}
-                sunk={launcherDisabled}
-                sinkDepth={-0.1}
-                pressDepth={-0.05}
-                sinkSplash={false}
-                className="launcher-sink drift"
-                style={{ '--drift-delay': '-7s' } as CSSProperties}
-              >
-                <button
-                  ref={launcherFace}
-                  type="button"
-                  className="surface-button wide launcher"
-                  aria-disabled={launcherDisabled || undefined}
-                  onPointerDown={() => {
-                    if (!launcherDisabled) launcherSink.current?.press();
-                  }}
+              <div ref={launcherWake} className="afloat">
+                <InkSink
+                  ref={launcherSink}
+                  well
+                  bare
+                  radius={8}
+                  bleed={44}
+                  sinkOnClick={false}
+                  sunk={launcherDisabled}
+                  sinkDepth={-0.1}
+                  pressDepth={-0.05}
+                  sinkSplash={false}
+                  className="launcher-sink"
                 >
-                  Article Launcher
-                </button>
-              </InkSink>
+                  <button
+                    ref={launcherFace}
+                    type="button"
+                    className="surface-button wide launcher"
+                    aria-disabled={launcherDisabled || undefined}
+                    onPointerDown={() => {
+                      if (!launcherDisabled) launcherSink.current?.press();
+                    }}
+                  >
+                    Article Launcher
+                  </button>
+                </InkSink>
+              </div>
               <button
                 type="button"
                 className="text-button"
@@ -215,17 +231,14 @@ export function BentoPage() {
             </div>
           </div>
           <div className="bento-grow bento-stack">
-            <NacreCallout
-              className="drift"
-              style={{ '--drift-delay': '-14s' } as CSSProperties}
-              kind="tip"
-            >
-              <p>
-                A callout on black mineral nacre: the droplet follows the pointer under the surface,
-                and the text is refracted through it.
-              </p>
-            </NacreCallout>
-
+            <div ref={calloutWake} className="afloat">
+              <NacreCallout kind="tip">
+                <p>
+                  A callout on black mineral nacre: the droplet follows the pointer under the surface,
+                  and the text is refracted through it.
+                </p>
+              </NacreCallout>
+            </div>
           </div>
         </div>
       </section>
@@ -234,9 +247,7 @@ export function BentoPage() {
         <h2>Utilitarian</h2>
         <div className="bento-row">
           <div className="bento-inline">
-            <Button
-              onClick={() => document.querySelector<HTMLElement>('[data-id="cmd"]')?.click()}
-            >
+            <Button onClick={() => document.querySelector<HTMLElement>('[data-id="cmd"]')?.click()}>
               Cmd <Kbd>K</Kbd>
             </Button>
             <ButtonLink icon href="https://twitter.com/pmndrs" aria-label="Twitter">
