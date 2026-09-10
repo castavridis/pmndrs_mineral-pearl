@@ -34,16 +34,6 @@ export class InkParticles {
   born = new Float32Array(MAX_PARTICLES);
   count = 0;
 
-  // --- anisotropic kernels (Yu & Turk 2013) ---------------------------------
-  /** Kernel centre after neighbourhood smoothing. */
-  sx = new Float32Array(MAX_PARTICLES);
-  sy = new Float32Array(MAX_PARTICLES);
-  /** Principal direction of the neighbourhood, and its axis ratio (1 = round). */
-  aTh = new Float32Array(MAX_PARTICLES);
-  aRatio = new Float32Array(MAX_PARTICLES);
-  /** How far to follow the neighbourhood: 0 the ballistic shape alone, 1 fully. */
-  anisotropy = 1;
-
   /** Impact point in shader units; set from the viewport before spawning. */
   cx = 0.5;
   cy = 0.5;
@@ -383,84 +373,8 @@ export class InkParticles {
    * column, 16-bit fixed point for position and reach — no float-texture
    * extension needed, and far finer than a pixel.
    */
-  /**
-   * Shape each droplet's kernel to the neighbourhood it sits in, after Yu and
-   * Turk, "Reconstructing Surfaces of Particle-Based Fluids Using Anisotropic
-   * Kernels" (TOG 2013). A sum of round kernels reads as lumps; orienting each
-   * one along the local run of droplets makes a strand read as a strand.
-   *
-   * Their weighted covariance is taken about the weighted mean and decomposed;
-   * here that is a symmetric 2x2, so the eigenproblem is closed form. Their
-   * clamp on the eigenvalue ratio is `RATIO_MAX`, and their rule that a droplet
-   * with too few neighbours keeps a round kernel is `NEIGHBOURS_MIN`. Centres
-   * are drawn toward the weighted mean as they do, but only where that rule
-   * holds, so lone spatter stays exactly where it fell.
-   */
-  private shape(t: number) {
-    const { px, py, rad, born, count, sx, sy, aTh, aRatio } = this;
-    const RATIO_MAX = 4;
-    const NEIGHBOURS_MIN = 5;
-    const LAMBDA = 0.55;
-    for (let i = 0; i < count; i++) {
-      sx[i] = px[i]!;
-      sy[i] = py[i]!;
-      aTh[i] = 0;
-      aRatio[i] = 1;
-      if (born[i]! > t) continue;
-      // the neighbourhood: a few kernel widths, as their h is a few smoothing radii
-      const h = Math.max(rad[i]! * 4.5, 0.02);
-      const h2 = h * h;
-      // one pass of raw moments; the covariance follows from the identity
-      // C = E[xx] - E[x]E[x], so the neighbours are visited only once
-      let w = 0,
-        mx = 0,
-        my = 0,
-        mxx = 0,
-        mxy = 0,
-        myy = 0,
-        n = 0;
-      for (let j = 0; j < count; j++) {
-        if (born[j]! > t) continue;
-        const dx = px[j]! - px[i]!;
-        const dy = py[j]! - py[i]!;
-        const d2 = dx * dx + dy * dy;
-        if (d2 >= h2) continue;
-        // their isotropic weight, 1 - (r/h)^3
-        const wj = 1 - Math.pow(Math.sqrt(d2) / h, 3);
-        if (wj <= 0) continue;
-        w += wj;
-        mx += wj * px[j]!;
-        my += wj * py[j]!;
-        mxx += wj * px[j]! * px[j]!;
-        mxy += wj * px[j]! * py[j]!;
-        myy += wj * py[j]! * py[j]!;
-        n++;
-      }
-      if (n < NEIGHBOURS_MIN || w <= 1e-9) continue;
-      mx /= w;
-      my /= w;
-      const cxx = mxx / w - mx * mx;
-      const cxy = mxy / w - mx * my;
-      const cyy = myy / w - my * my;
-      // symmetric 2x2 eigenvalues
-      const tr = cxx + cyy;
-      const disc = Math.sqrt(Math.max((tr * tr) / 4 - (cxx * cyy - cxy * cxy), 0));
-      const l1 = tr / 2 + disc;
-      const l2 = tr / 2 - disc;
-      if (l1 <= 1e-12) continue;
-      // ...and the principal axis
-      aTh[i] = Math.abs(cxy) > 1e-12 ? Math.atan2(cxy, l1 - cyy) : cxx >= cyy ? 0 : Math.PI / 2;
-      // their clamp on how far the axes may differ
-      aRatio[i] = Math.min(Math.sqrt(l1 / Math.max(l2, l1 / (RATIO_MAX * RATIO_MAX))), RATIO_MAX);
-      const lam = LAMBDA * this.anisotropy;
-      sx[i] = px[i]! * (1 - lam) + mx * lam;
-      sy[i] = py[i]! * (1 - lam) + my * lam;
-    }
-  }
-
   encode(t: number, data: Uint8Array) {
-    if (this.anisotropy > 0) this.shape(t);
-    const { px, py, vx, vy, rad, kind, head, elong, born, count, sx, sy, aTh, aRatio } = this;
+    const { px, py, vx, vy, rad, kind, head, elong, born, count } = this;
     const clipped = this.clipHalfX > 0 && this.clipHalfY > 0;
     const { hx, hy, mx, my } = this.box();
     const fs = this.phase(t);
@@ -473,8 +387,8 @@ export class InkParticles {
     for (let i = 0; i < count; i++) {
       const o0 = i * 4;
       const o1 = (MAX_PARTICLES + i) * 4;
-      enc16(this.anisotropy > 0 ? sx[i]! : px[i]!, -1, 2, o0);
-      enc16(this.anisotropy > 0 ? sy[i]! : py[i]!, -1, 2, o0 + 2);
+      enc16(px[i], -1, 2, o0);
+      enc16(py[i], -1, 2, o0 + 2);
       // droplets swell as the flood arrives so they merge into the front. With
       // a clip box the front alone covers it, and a swollen core would burst
       // out past the box, so droplets keep their size and lie around as
@@ -488,22 +402,16 @@ export class InkParticles {
           ? 0
           : FLOOD_GROW[kind[i]];
       const r = born[i] > t ? 0.0001 : rad[i] * (1 + grow * flood * 4);
+      enc16(r / KERNEL_Q, 0, 4, o1);
       const speed = Math.hypot(vx[i], vy[i]);
-      // the ballistic shape: a fast droplet streaks along its own heading
-      const ballistic = Math.min(
+      const th = speed > 0.05 ? Math.atan2(vy[i], vx[i]) : head[i];
+      data[o1 + 2] = Math.round(((((th % TAU) + TAU) % TAU) / TAU) * 255);
+      // fast droplets streak along their heading on top of their lasting shape
+      const stretch = Math.min(
         elong[i] * (1 - fs) + (kind[i] === CORE ? 0 : Math.min(speed * 0.3, 1.2)),
         3
       );
-      // the neighbourhood's shape, blended in by `anisotropy`
-      const neigh = 1 + (aRatio[i]! - 1) * this.anisotropy;
-      const stretch = Math.min(Math.max(ballistic, 1) * neigh, 3);
-      // a droplet whose kernel is drawn out must thin across it, or it would
-      // gain mass as it stretches (Yu and Turk normalise the same way)
-      enc16(r / KERNEL_Q / Math.pow(Math.max(stretch, 1), 0.5 * this.anisotropy), 0, 4, o1);
-      const th =
-        aRatio[i]! > 1.05 ? aTh[i]! : speed > 0.05 ? Math.atan2(vy[i], vx[i]) : head[i]!;
-      data[o1 + 2] = Math.round(((((th % TAU) + TAU) % TAU) / TAU) * 255);
-      data[o1 + 3] = Math.round((Math.min(stretch, 3) / 3) * 255);
+      data[o1 + 3] = Math.round((stretch / 3) * 255);
     }
   }
 }

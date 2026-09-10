@@ -53,48 +53,6 @@ void main() {
 }
 `;
 
-/**
- * Smoothing pass: mean curvature flow on the density field, adapted from
- * van der Laan, Green and Sainz, "Screen Space Fluid Rendering with Curvature
- * Flow" (I3D 2009). They smooth a depth buffer so a particle fluid stops
- * looking blobby without polygonising it; the same motion applied to this
- * field rounds off the lumps between droplets while leaving the level set
- * where it is, since the surface moves along its own normal by its curvature.
- *
- * They work on depth with a perspective correction. Here the field is flat and
- * orthographic, so this is the plain level-set form of the same equation,
- * df/dt = div(grad f / |grad f|) * |grad f|, which expands to the term below.
- */
-export const SMOOTH_FRAG = /* glsl */ `
-varying vec2 vUv;
-uniform sampler2D uField;
-uniform vec2 uTexel;
-uniform float uDt;
-
-void main() {
-  float c  = texture2D(uField, vUv).r;
-  float xl = texture2D(uField, vUv + vec2(-uTexel.x, 0.0)).r;
-  float xr = texture2D(uField, vUv + vec2( uTexel.x, 0.0)).r;
-  float yd = texture2D(uField, vUv + vec2(0.0, -uTexel.y)).r;
-  float yu = texture2D(uField, vUv + vec2(0.0,  uTexel.y)).r;
-  float dl = texture2D(uField, vUv + vec2(-uTexel.x, -uTexel.y)).r;
-  float dr = texture2D(uField, vUv + vec2( uTexel.x, -uTexel.y)).r;
-  float ul = texture2D(uField, vUv + vec2(-uTexel.x,  uTexel.y)).r;
-  float ur = texture2D(uField, vUv + vec2( uTexel.x,  uTexel.y)).r;
-
-  float fx  = (xr - xl) * 0.5;
-  float fy  = (yu - yd) * 0.5;
-  float fxx = xr - 2.0 * c + xl;
-  float fyy = yu - 2.0 * c + yd;
-  float fxy = (ur - ul - dr + dl) * 0.25;
-
-  float g2 = fx * fx + fy * fy;
-  // curvature times the gradient magnitude, the level set's own motion
-  float k = g2 > 1e-8 ? (fxx * fy * fy - 2.0 * fx * fy * fxy + fyy * fx * fx) / g2 : 0.0;
-  gl_FragColor = vec4(c + uDt * k);
-}
-`;
-
 /** Pass 2: threshold the field into ink, add the flood front, grain, the logo. */
 export const INK_FRAG = /* glsl */ `
 varying vec2 vUv;

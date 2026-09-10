@@ -111,7 +111,7 @@ a {
   display: grid;
   gap: 4px;
   padding: 16px 18px;
-  border-radius: 14px;
+  border-radius: 8px;
   background: color-mix(in srgb, currentColor 5%, transparent);
   border: 1px solid color-mix(in srgb, currentColor 10%, transparent);
   text-decoration: none;
@@ -131,7 +131,7 @@ a {
 /* engulf page demos */
 .prose-card {
   padding: 20px 24px;
-  border-radius: 14px;
+  border-radius: 8px;
   border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
   font-size: 15px;
   line-height: 1.55;
@@ -167,7 +167,7 @@ a {
   display: grid;
   place-items: center;
   height: 88px;
-  border-radius: 14px;
+  border-radius: 8px;
   border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
   background: color-mix(in srgb, currentColor 5%, transparent);
   text-decoration: none;

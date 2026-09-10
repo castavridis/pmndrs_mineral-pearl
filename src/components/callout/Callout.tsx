@@ -111,6 +111,7 @@ export function Callout({
         <span className={styles.blot} aria-hidden="true">
           <InkSplat
             ref={splatRef}
+            preserve
             ink={blotInk}
             logo={false}
             interactive={false}

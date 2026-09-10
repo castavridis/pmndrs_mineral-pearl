@@ -72,15 +72,6 @@
      at the body. Surface isolates by default, which would seal that canvas
      out of the pill; the labels rise above it on their own z-index instead. */
   isolation: auto;
-  /* the mark's blot is thrown from inside the bar and has to carry past its
-     edge, so the pill does not clip; the liquid keeps the pill's shape on its
-     own layer instead */
-  overflow: visible;
-}
-
-.root .pill > [data-liquid] {
-  border-radius: inherit;
-  overflow: hidden;
 }
 
 .root .active {
@@ -99,6 +90,7 @@
 }
 
 .row {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--gap);
@@ -144,23 +136,15 @@
   outline: 2px solid currentColor;
 }
 
-.logoWrap {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  flex: none;
-}
-
-/* the blot the mark sits on: the page's own liquid, splashed onto the bar */
+/* The mark's blot, in the bar's own bleed and behind it: the bar's liquid
+   paints over whatever lands on it, so only the spill past the edge shows.
+   Placed on the mark from JS, since the mark moves with the layout mode. */
 .logoBlot {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  /* wider than the bar is tall, so the mark's blot carries past its edge */
+  /* wider than the bar is tall, so it carries past the edge */
   width: 168px;
   height: 168px;
   transform: translate(-50%, -50%);
-  z-index: 0;
   pointer-events: none;
 }
 
@@ -170,8 +154,6 @@
 }
 
 .logo {
-  position: relative;
-  z-index: 1;
   font-size: var(--nav-logo-size);
   flex: none;
   /* the blot is the page's own ink and the bar is the liquid the page is not,
@@ -205,10 +187,6 @@
 }
 
 /* --- the pill: one slab, moving to whatever the pointer is over ---------- */
-.links {
-  position: relative;
-}
-
 .pillIndicator {
   position: absolute;
   left: 0;
@@ -231,7 +209,8 @@
 }
 
 /* the labels ride above the stage's canvas */
-.links .link {
+.row .link,
+.row .cmd {
   position: relative;
   z-index: 1;
   transition:
@@ -240,13 +219,12 @@
 }
 
 /* the one the pill is under reads against the pill, not against the bar */
-.links .link[data-lit] {
+.row [data-lit] {
   color: var(--nav-pill-ink, var(--nav-active-ink, var(--page-ink)));
 }
 
 /* with no shader the pill is flat, and it is the bar's opposite again */
-.links .link[data-lit]:has(~ .pillIndicator[data-flat]),
-.root:has(.pillIndicator[data-flat]) .links .link[data-lit] {
+.root:has(.pillIndicator[data-flat]) .row [data-lit] {
   color: var(--nav-active-ink, var(--page-ink));
 }
 

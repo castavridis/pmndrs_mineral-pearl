@@ -44,6 +44,72 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
   const rootRef = useRef<HTMLDivElement>(null);
   const pillRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLElement>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
+  const indicatorRef = useRef<HTMLSpanElement>(null);
+  const hovered = useNavStore((s) => s.hovered);
+  const setHovered = useNavStore((s) => s.setHovered);
+  /** what the pill is under: whatever the pointer is over, else the current page */
+  const pillTarget = hovered ?? current;
+
+  // One pill moves along the row, so it stretches between items rather than
+  // appearing per item. It measures against the row, not the link list, so the
+  // Cmd item is as reachable as the links.
+  useEffect(() => {
+    const row = rowRef.current;
+    const pill = indicatorRef.current;
+    if (!row || !pill) return;
+    const place = () => {
+      const el = pillTarget
+        ? row.querySelector<HTMLElement>(`[data-id="${CSS.escape(pillTarget)}"]`)
+        : null;
+      if (!el) {
+        pill.style.opacity = '0';
+        return;
+      }
+      pill.style.opacity = '1';
+      pill.style.width = `${el.offsetWidth + 24}px`;
+      pill.style.height = `${el.offsetHeight + 12}px`;
+      pill.style.transform = `translate(${el.offsetLeft - 12}px, ${el.offsetTop - 6}px)`;
+    };
+    place();
+    const ro = new ResizeObserver(place);
+    ro.observe(row);
+    return () => ro.disconnect();
+  }, [pillTarget, links, mode]);
+
+  // The gooey callout shader draws it: the page's nacre stage, one more card,
+  // with a pill's own corner radius.
+  useEffect(() => {
+    const pill = indicatorRef.current;
+    if (!pill || tier === 'flat') return;
+    const stage = getNacreStage();
+    if (!stage) return;
+    return stage.register({ el: pill, icon: null, accent: palette.dark, radius: 999 });
+  }, [tier]);
+  const logoRef = useRef<HTMLAnchorElement>(null);
+  const blotRef = useRef<HTMLSpanElement>(null);
+
+  // The mark's blot lives outside the bar and behind it, so the bar's liquid
+  // covers the part that lands on it and only the spill shows. It has to be
+  // told where the mark is, since that moves with the layout mode.
+  useEffect(() => {
+    const nav = navRef.current;
+    const logo = logoRef.current;
+    const blot = blotRef.current;
+    if (!nav || !logo || !blot) return;
+    const place = () => {
+      const nr = nav.getBoundingClientRect();
+      const lr = logo.getBoundingClientRect();
+      if (!lr.width) return;
+      blot.style.left = `${lr.left - nr.left + lr.width / 2}px`;
+      blot.style.top = `${lr.top - nr.top + lr.height / 2}px`;
+    };
+    place();
+    const ro = new ResizeObserver(place);
+    ro.observe(nav);
+    ro.observe(logo);
+    return () => ro.disconnect();
+  }, [tier, mode]);
 
   /**
    * A click is a blow: the bar gives in the direction of the hit, then drifts
@@ -86,7 +152,9 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
     if (current !== null) return;
     const path = window.location.pathname;
     const match = links.find((l) => l.href === path);
-    if (match) setActive(match.id);
+    // No link is this page (the home page is not one of them), so the first
+    // link stands as the current one: the pill always has somewhere to be.
+    setActive(match?.id ?? links[0]?.id ?? null);
   }, [links, current, setActive]);
 
   // Measure + resolve mode. Runs on container resize, pill resize (fonts, links) and links change.
@@ -161,40 +229,47 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
       style={cssVars}
     >
       <nav aria-label="Main" className={styles.nav} ref={navRef} onPointerDown={impact}>
+        {tier !== 'flat' && (
+          <span ref={blotRef} className={styles.logoBlot} aria-hidden="true">
+            <InkSplat
+              autoplay
+              interactive={false}
+              logo={false}
+              flood={false}
+              preserve
+              ink={page[scheme].ink}
+              nacre={0.85}
+              scale={0.95}
+            />
+          </span>
+        )}
         <Surface
           ref={pillRef}
           shape="pill"
           material={bar}
+          radius={tokens.pillRadius}
           expressiveness={tier}
           unit={tokens.pillHeight * 4}
           className={styles.pill}
         >
-          <div className={styles.row}>
-            <span className={styles.logoWrap}>
-              {tier !== 'flat' && (
-                <span className={styles.logoBlot} aria-hidden="true">
-                  <InkSplat
-                    autoplay
-                    interactive={false}
-                    logo={false}
-                    flood={false}
-                    ink={page[scheme].ink}
-                    nacre={0.85}
-                    scale={0.95}
-                  />
-                </span>
-              )}
-              <a
-                className={styles.logo}
-                href="/"
-                aria-label="pmndrs home"
-                data-id="logo"
-                onFocus={() => setFocused('logo')}
-                onBlur={() => setFocused(null)}
-              >
-                <Logo />
-              </a>
-            </span>
+          <div ref={rowRef} className={styles.row}>
+            <span
+              ref={indicatorRef}
+              className={styles.pillIndicator}
+              data-flat={tier === 'flat' || undefined}
+              aria-hidden="true"
+            />
+            <a
+              ref={logoRef}
+              className={styles.logo}
+              href="/"
+              aria-label="pmndrs home"
+              data-id="logo"
+              onFocus={() => setFocused('logo')}
+              onBlur={() => setFocused(null)}
+            >
+              <Logo />
+            </a>
 
             <button
               type="button"
@@ -218,17 +293,26 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
             </button>
 
             {/* Always in the DOM so every mode can be measured; CSS hides it in collapsed. */}
-            <LinkList links={links} active={current} tier={tier} />
+            <LinkList links={links} active={current} />
 
             <button
               type="button"
               className={styles.cmd}
               data-id="cmd"
+              data-lit={pillTarget === 'cmd' || undefined}
               aria-haspopup="dialog"
               aria-keyshortcuts="Meta+K Control+K"
               onClick={() => setPaletteOpen(true)}
-              onFocus={() => setFocused('cmd')}
-              onBlur={() => setFocused(null)}
+              onPointerEnter={() => setHovered('cmd')}
+              onPointerLeave={() => setHovered(null)}
+              onFocus={() => {
+                setFocused('cmd');
+                setHovered('cmd');
+              }}
+              onBlur={() => {
+                setFocused(null);
+                setHovered(null);
+              }}
             >
               Cmd
               <kbd aria-hidden="true" className={styles.kbd}>
@@ -244,7 +328,7 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
           data-open={menuOpen}
           hidden={mode !== 'collapsed' || !menuOpen}
         >
-          {mode === 'collapsed' && <LinkList links={links} active={current} tier={tier} />}
+          {mode === 'collapsed' && <LinkList links={links} active={current} />}
         </div>
       </nav>
       <CmdPalette />
@@ -255,58 +339,15 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
 function LinkList({
   links,
   active,
-  tier,
 }: {
   links: NavLink[];
   active: string | null;
-  tier: SurfaceTier;
 }) {
-  const hovered = useNavStore((st) => st.hovered);
   const setHovered = useNavStore((st) => st.setHovered);
   const setFocused = useNavStore((st) => st.setFocused);
-  const listRef = useRef<HTMLUListElement>(null);
-  const pillRef = useRef<HTMLSpanElement>(null);
-
-  // The pill is one element that moves: it sits behind whichever item the
-  // pointer is over, and falls back to the current page when the pointer
-  // leaves. Measuring the anchor rather than tracking per-item pills keeps a
-  // single slab for the shader to draw, so it stretches between items.
-  const target = hovered ?? active;
-  useEffect(() => {
-    const list = listRef.current;
-    const pill = pillRef.current;
-    if (!list || !pill) return;
-    const place = () => {
-      const el = target ? list.querySelector<HTMLElement>(`[data-id="${CSS.escape(target)}"]`) : null;
-      if (!el) {
-        pill.style.opacity = '0';
-        return;
-      }
-      pill.style.opacity = '1';
-      pill.style.width = `${el.offsetWidth + 24}px`;
-      pill.style.height = `${el.offsetHeight + 12}px`;
-      pill.style.transform = `translate(${el.offsetLeft - 12}px, ${el.offsetTop - 6}px)`;
-    };
-    place();
-    // labels and the mode change the boxes; follow them
-    const ro = new ResizeObserver(place);
-    ro.observe(list);
-    return () => ro.disconnect();
-  }, [target, links]);
-
-  // The gooey callout shader draws it: the page's single nacre stage, one more
-  // card, with a pill's own corner radius.
-  useEffect(() => {
-    const pill = pillRef.current;
-    if (!pill || tier === 'flat') return;
-    const stage = getNacreStage();
-    if (!stage) return;
-    return stage.register({ el: pill, icon: null, accent: palette.dark, radius: 999 });
-  }, [tier]);
-
+  const target = useNavStore((st) => st.hovered) ?? active;
   return (
-    <ul ref={listRef} className={styles.links}>
-      <span ref={pillRef} className={styles.pillIndicator} data-flat={tier === 'flat' || undefined} aria-hidden="true" />
+    <ul className={styles.links}>
       {links.map((l) => (
         <li key={l.id}>
           <a

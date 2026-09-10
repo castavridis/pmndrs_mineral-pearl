@@ -51,6 +51,8 @@ so the study can still be diffed against.
 | Irregular two-layer facet scatter (`429a71c`) | The regular grid read as a pattern. Two jittered layers at different scales read as glitter. |
 | `well` mode: the whole page is the well (`59855de`) | Asked for the announcement to behave like the card afloat with the site as the liquid. A pond in a well draws in the *viewport's* frame (`uShiftPx`, the ground's vignette, unit and resolution), shares one clock with every other pond, takes the window's pointer, shares the ground's ripple array, and registers as a ground so the theme's mask rolls it over. Only the slab, its collar and its droplets are its own. |
 | A landed glob relaxes flat | Asked for. The relief belongs to the arrival: a bead of liquid holds its own height for a moment and then the surface takes it. `globHeight` is now the height they land at and `globSettle` how long they take to lose it, rather than a constant the mass keeps forever. |
+| The stage's canvas was sized from `innerWidth` | That includes the scrollbar, while the canvas is fixed and inset 0, so its box excludes it. Everything the stage drew was stretched across the page and drifted right, which is why a callout's slab sat outside its own border. It measures its own box now, and watches it, since a scrollbar coming and going fires no resize. |
+| One corner, 8px, everywhere but the nav's bar | The bar is a stadium by shape; everything else agrees. `Surface` no longer picks a radius per shape, and `radius` is the opt-out. |
 | The pointer's dent has its core everywhere | The deep core was reached only through `uGoop`, which rises as a slab goes under. A page-sized ground has no slab, so it never got past the shallow bowl and the cursor barely marked it. The dent is now a bowl, a tight core and the meniscus the displaced liquid pushes up, at every size. |
 | Tilt and drift capped at 1 in a well | The page look's reaction of 3 is right for the liquid and far too much for a thing floating on it. |
 | The well layer feathers out over its last 48 px (`fcddabc`) | The slab's displacement collar reaches past the canvas; without the fade a rectangle showed on the ground. |
@@ -191,7 +193,18 @@ sources for the methods, not citations made by the studies themselves.
 - *Premultiplied alpha compositing.* The ink material blends `One / OneMinusSrcAlpha` and
   outputs `col * alpha` — Porter and Duff, "Compositing Digital Images", SIGGRAPH 1984.
 
-**Fluid surfaces from particles**
+**Fluid surfaces from particles** — implemented, measured, then backed out
+
+Both were implemented and verified in isolation (the numbers below are real),
+and both were then removed from the render path because, integrated, they
+erode a blot at icon size to nothing. A blot here is usually a mark a hundred
+pixels across, not a wash over a viewport, and that case has to keep working.
+The code is in git at `d4fe3b0` and `7061faf` for a second attempt; what is
+missing is a step size and a kernel scale that follow the feature size rather
+than the texel grid. One real bug was found and fixed along the way: the
+smoothing pass had blending left on, so every iteration multiplied the field
+by its own alpha and squared it.
+
 
 - *Anisotropic kernels.* J. Yu and G. Turk, "Reconstructing Surfaces of
   Particle-Based Fluids Using Anisotropic Kernels", *ACM TOG* 32(1), 2013.

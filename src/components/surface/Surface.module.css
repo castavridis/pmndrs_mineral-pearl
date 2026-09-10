@@ -11,14 +11,9 @@
   isolation: isolate;
 }
 
-.surface[data-shape='pill'] {
-  border-radius: var(--surface-radius, 999px);
-}
-
-.surface[data-shape='card'] {
-  border-radius: var(--surface-radius, 14px);
-}
-
+/* one corner for every shape; `radius` overrides where a stadium is wanted */
+.surface[data-shape='pill'],
+.surface[data-shape='card'],
 .surface[data-shape='key'] {
   border-radius: var(--surface-radius, 8px);
 }

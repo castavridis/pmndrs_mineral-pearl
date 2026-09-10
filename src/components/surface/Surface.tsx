@@ -82,7 +82,9 @@ export function Surface({
   const tier = useSurfaceTier(expressiveness);
   const unavailable = exit === 'disable' || exit === 'pending';
   const engulfed = exit !== 'none';
-  const radius = radiusProp ?? (shape === 'pill' ? 999 : shape === 'card' ? 14 : 8);
+  // One corner everywhere: 8px. A stadium is opt-in through `radius`, which is
+  // what the nav's bar and its moving pill use.
+  const radius = radiusProp ?? 8;
   const vars = radiusProp !== undefined ? { '--surface-radius': `${radiusProp}px` } : undefined;
   // any intrinsic or component tag; attributes are passed through untyped
   const Tag = as as unknown as FC<Record<string, unknown>>;

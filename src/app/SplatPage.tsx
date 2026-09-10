@@ -20,16 +20,12 @@ export function SplatPage() {
     mark,
     originX,
     originY,
-    anisotropy,
-    smooth,
     nacre,
   } = useControls(
     'ink splat',
     {
       logo: true,
       scale: { value: BLOT_SCALE, min: 0.5, max: 4, step: 0.05 },
-      anisotropy: { value: 1, min: 0, max: 1, step: 0.05, label: 'anisotropic kernels' },
-      smooth: { value: 2, min: 0, max: 6, step: 1, label: 'curvature flow' },
       nacre: { value: 0, min: 0, max: 1, step: 0.05, label: 'nacre surface' },
       interactive: { value: true, label: 'click to splat' },
       inkOverride: { value: false, label: 'custom colours' },
@@ -52,8 +48,6 @@ export function SplatPage() {
           mark={inkOverride ? mark : undefined}
           logo={logo}
           scale={scale}
-          anisotropy={anisotropy}
-          smooth={smooth}
           nacre={nacre}
           origin={[originX, originY]}
           interactive={interactive}

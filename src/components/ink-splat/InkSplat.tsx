@@ -26,7 +26,7 @@ import {
   MAX_PARTICLES,
 } from './config';
 import { DATA_BYTES, InkParticles } from './particles';
-import { FIELD_FRAG, INK_FRAG, SMOOTH_FRAG, VERT } from './shaders';
+import { FIELD_FRAG, INK_FRAG, VERT } from './shaders';
 
 // A react-three-fiber port of Kris's ink splat (see ./reference). The CPU
 // particle sim is unchanged; the two WebGL passes now run through three:
@@ -113,18 +113,6 @@ export interface InkSplatProps {
    * as on an announcement. Default true.
    */
   flood?: boolean;
-  /**
-   * How far each droplet's kernel follows the run of droplets around it, after
-   * Yu and Turk's anisotropic kernels. 0 is the ballistic shape alone, which is
-   * rounder; 1 (default) lets strands read as strands.
-   */
-  anisotropy?: number;
-  /**
-   * Iterations of curvature-flow smoothing over the density field before it is
-   * thresholded, after van der Laan et al. Each one rounds the lumps between
-   * droplets a little further. 0 skips the pass; default 2.
-   */
-  smooth?: number;
   /** `splat` (default) or `engulf`, the inverse. */
   mode?: InkMode;
   /** Splat on pointerdown over the canvas. Default true. */
@@ -173,8 +161,6 @@ export function InkSplat({
   logo = true,
   nacre = 0,
   flood = true,
-  anisotropy = 1,
-  smooth = 2,
   scale = BLOT_SCALE,
   origin,
   clip,
@@ -237,8 +223,6 @@ export function InkSplat({
         logo={logo}
         nacre={nacre}
         flood={flood}
-        anisotropy={anisotropy}
-        smooth={smooth}
         scale={scale}
         originX={origin?.[0] ?? 0.5}
         originY={origin?.[1] ?? 0.5}
@@ -264,8 +248,6 @@ interface LayerProps {
   logo: boolean;
   nacre: number;
   flood: boolean;
-  anisotropy: number;
-  smooth: number;
   scale: number;
   originX: number;
   originY: number;
@@ -285,11 +267,9 @@ interface Resources {
   dataTex: THREE.DataTexture;
   geometry: THREE.BufferGeometry;
   fieldMaterial: THREE.ShaderMaterial;
-  smoothMaterial: THREE.ShaderMaterial;
   inkMaterial: THREE.ShaderMaterial;
   camera: THREE.Camera;
   fieldScene: THREE.Scene;
-  smoothScene: THREE.Scene;
   inkScene: THREE.Scene;
   particles: InkParticles;
   /** performance.now() of the last impact; the screen is blank while < 0 */
@@ -379,24 +359,10 @@ function createResources(): Resources {
   });
 
   const camera = new THREE.Camera();
-  const smoothMaterial = new THREE.ShaderMaterial({
-    vertexShader: VERT,
-    fragmentShader: SMOOTH_FRAG,
-    uniforms: {
-      uField: { value: null as THREE.Texture | null },
-      uTexel: { value: new THREE.Vector2(1, 1) },
-      uDt: { value: 0.18 },
-    },
-    depthTest: false,
-    depthWrite: false,
-  });
-
   const fieldScene = new THREE.Scene();
   const fieldMesh = new THREE.Mesh(geometry, fieldMaterial);
   fieldMesh.frustumCulled = false;
   fieldScene.add(fieldMesh);
-  const smoothScene = new THREE.Scene();
-  smoothScene.add(new THREE.Mesh(geometry, smoothMaterial));
   const inkScene = new THREE.Scene();
   const inkMesh = new THREE.Mesh(geometry, inkMaterial);
   inkMesh.frustumCulled = false;
@@ -407,11 +373,9 @@ function createResources(): Resources {
     dataTex,
     geometry,
     fieldMaterial,
-    smoothMaterial,
     inkMaterial,
     camera,
     fieldScene,
-    smoothScene,
     inkScene,
     particles: new InkParticles(),
     start: -1,
@@ -429,7 +393,6 @@ function disposeResources(res: Resources) {
   res.dataTex.dispose();
   res.geometry.dispose();
   res.fieldMaterial.dispose();
-  res.smoothMaterial.dispose();
   res.inkMaterial.dispose();
 }
 
@@ -452,8 +415,6 @@ function InkSplatLayer({
   logo,
   nacre,
   flood,
-  anisotropy,
-  smooth,
   scale,
   originX,
   originY,
@@ -477,17 +438,6 @@ function InkSplatLayer({
   const fieldW = Math.max(1, Math.ceil((size.width * dpr) / fieldScale));
   const fieldH = Math.max(1, Math.ceil((size.height * dpr) / fieldScale));
   const field = useFBO(fieldW, fieldH, {
-    minFilter: THREE.LinearFilter,
-    magFilter: THREE.LinearFilter,
-    type: THREE.UnsignedByteType,
-    format: THREE.RGBAFormat,
-    depthBuffer: false,
-    stencilBuffer: false,
-    generateMipmaps: false,
-  });
-
-  // the curvature-flow pass ping-pongs between this and `field`
-  const fieldB = useFBO(fieldW, fieldH, {
     minFilter: THREE.LinearFilter,
     magFilter: THREE.LinearFilter,
     type: THREE.UnsignedByteType,
@@ -566,7 +516,6 @@ function InkSplatLayer({
     res.floodLen = engulf ? ENGULF_FLOOD_LEN : FLOOD_LEN;
     // with no flood the blot is settled as soon as the droplets have stopped
     res.duration = !flood ? FLOOD_START : engulf ? ENGULF_DURATION : DURATION;
-    res.particles.anisotropy = anisotropy;
     res.particles.floodStart = res.floodStart;
     res.particles.floodLen = res.floodLen;
     const u = res.inkMaterial.uniforms;
@@ -574,7 +523,7 @@ function InkSplatLayer({
     u.uFloodLen.value = res.floodLen;
     u.uEngulf.value = engulf ? 1 : 0;
     invalidate();
-  }, [mode, flood, anisotropy, invalidate]);
+  }, [mode, flood, invalidate]);
 
   // viewport geometry in shader units
   useEffect(() => {
@@ -747,24 +696,6 @@ function InkSplatLayer({
     gl.setRenderTarget(field);
     gl.clear();
     gl.render(res.fieldScene, res.camera);
-    // pass 1b: mean curvature flow over the field, so the sum of kernels stops
-    // reading as lumps (van der Laan et al.); each iteration is one step
-    let src = field;
-    const smoothSteps = Math.max(0, Math.min(6, Math.round(smooth)));
-    if (smoothSteps > 0) {
-      res.smoothMaterial.uniforms.uTexel.value.set(1 / fieldW, 1 / fieldH);
-      let dst = fieldB;
-      for (let i = 0; i < smoothSteps; i++) {
-        res.smoothMaterial.uniforms.uField.value = src.texture;
-        gl.setRenderTarget(dst);
-        gl.clear();
-        gl.render(res.smoothScene, res.camera);
-        const swap = src;
-        src = dst;
-        dst = swap;
-      }
-    }
-    res.inkMaterial.uniforms.uField.value = src.texture;
     // pass 2: ink, flood, logo at full resolution
     gl.setRenderTarget(null);
     gl.clear();

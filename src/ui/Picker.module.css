@@ -112,7 +112,7 @@
 }
 .title mark {
   padding: 1px 6px;
-  border-radius: 5px;
+  border-radius: 8px;
   background: var(--ui-match-bg);
   color: var(--ui-match-ink);
   font-weight: 700;

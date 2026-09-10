@@ -6,7 +6,7 @@
   display: flex;
   gap: 14px;
   padding: 16px 18px;
-  border-radius: 12px;
+  border-radius: 8px;
   background: transparent;
   border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
   /* the card is black mineral on the dark page and the page's own ground on

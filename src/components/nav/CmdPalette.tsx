@@ -90,6 +90,7 @@ export function CmdPalette() {
         onIndexChange={setIndex}
         onSelect={(item) => go((item as PickerItem & { href: string }).href)}
         onDismiss={() => setOpen(false)}
+        caption={null}
         inputRef={inputRef}
         placeholder="Where to?"
         inputLabel="Search pages"

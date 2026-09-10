@@ -576,6 +576,7 @@ export class NacreStage {
   private _packedBlob = new Float32Array(BLOBS * 2);
   private _packedBlobR = new Float32Array(BLOBS);
   private _reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  private _ro: ResizeObserver | null = null;
   private _onResize = () => {
     this._resize();
     this._dirty = true;
@@ -591,6 +592,9 @@ export class NacreStage {
     this.supported = this._init();
     if (!this.supported) return;
     window.addEventListener('resize', this._onResize);
+    // a scrollbar appearing or going changes the canvas's box without a resize
+    this._ro = new ResizeObserver(this._onResize);
+    this._ro.observe(this.canvas);
     window.addEventListener('scroll', this._onScroll, { passive: true });
     this._resize();
     this._raf = requestAnimationFrame(this._loop);
@@ -664,6 +668,7 @@ export class NacreStage {
     cancelAnimationFrame(this._raf);
     window.removeEventListener('resize', this._onResize);
     window.removeEventListener('scroll', this._onScroll);
+    this._ro?.disconnect();
     for (const c of this._cards.values()) {
       c.off();
       this._dropGhost(c);
@@ -725,8 +730,13 @@ export class NacreStage {
   private _resize() {
     const q = QUALITY[this.config.quality];
     this._dpr = Math.min(window.devicePixelRatio || 1, q.dpr);
-    this._viewW = window.innerWidth;
-    this._viewH = window.innerHeight;
+    // (port) The canvas is fixed and inset 0, so its box is the viewport
+    // *without* the scrollbar, while innerWidth includes it. Sizing the buffer
+    // from innerWidth stretches everything the stage draws across the page,
+    // further off the further right it sits, so a card's slab drifts out of
+    // its own border. Measure the canvas's own box instead.
+    this._viewW = this.canvas.clientWidth || document.documentElement.clientWidth;
+    this._viewH = this.canvas.clientHeight || document.documentElement.clientHeight;
     this.canvas.width = Math.round(this._viewW * this._dpr);
     this.canvas.height = Math.round(this._viewH * this._dpr);
     for (const c of this._cards.values()) this._dropGhost(c);

@@ -149,7 +149,7 @@ export function InkSink({
   spectrum,
   pointer,
   mercury,
-  radius = 16,
+  radius = 8,
   bleed = 96,
   unit,
   sunk,

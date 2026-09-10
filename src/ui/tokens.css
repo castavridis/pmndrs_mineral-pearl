@@ -37,10 +37,11 @@
   --ui-match-bg: #e4fb9a;
   --ui-match-ink: #23290c;
 
-  --ui-radius: 10px;
-  --ui-radius-lg: 14px;
-  --ui-radius-xl: 18px;
-  --ui-radius-sm: 6px;
+  /* One corner everywhere: 8px. The nav's bar is the exception and sets its own. */
+  --ui-radius: 8px;
+  --ui-radius-lg: 8px;
+  --ui-radius-xl: 8px;
+  --ui-radius-sm: 8px;
 
   --ui-font: 'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --ui-font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
