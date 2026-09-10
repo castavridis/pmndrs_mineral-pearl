@@ -47,6 +47,7 @@ uniform float uMerc;     // 0 mineral/pearl body, 1 the liquid itself is mercury
 uniform vec2  uTilt;     // slab tilt: top-face height gradient across the slab (uv per uv)
 uniform vec3  uGlob;     // x droplet size, y density, z heap height
 uniform float uGlobShade; // (port) 0: the mass is pure coverage, no sheen or lip
+uniform float uShadowK;   // (port) how much of the slab's cast shadow to draw; 0 in a well
 // (port) the mineral and pearl looks, lifted out of the composites' constants
 uniform vec3  uMinBase;   // mineral body colour in the troughs of the nacre noise
 uniform vec3  uMinHigh;   // mineral body colour on its crests
@@ -356,7 +357,11 @@ void main(){
   // (port) the shadow the slab casts on the liquid around it fades as it goes
   // under: nothing stands proud of the surface to cast one
   float under = smoothstep(-0.02, -0.14, uDepth);
-  float shade = exp(-max(bd, 0.0) * 9.0) * step(0.0, bd) * (1.0 - inkM) * (1.0 - under) * uSlabOn;
+  // (port) In a well this is switched off. The canvas is a window onto the
+  // page's own surface, and the ground on the other side of the window casts
+  // no shadow, so what is drawn here is a patch of darkness belonging to no
+  // light — invisible against the black mineral, a grey box on the pearl.
+  float shade = exp(-max(bd, 0.0) * 9.0) * step(0.0, bd) * (1.0 - inkM) * (1.0 - under) * uSlabOn * uShadowK;
 
   // --- facet glitter ---------------------------------------------------------
   // (port) a light hanging over the pointer: facets that catch it flare as the
@@ -1436,6 +1441,7 @@ export class LiquidPond {
       'uSplatT',
       'uSeed',
       'uGlobShade',
+      'uShadowK',
       'uMinBase',
       'uMinHigh',
       'uMinIrid',
@@ -1681,6 +1687,7 @@ export class LiquidPond {
         this.opts.globHeight * this._globH
       );
       gl.uniform1f(u.uGlobShade, this.opts.globShading ? 1 : 0);
+      gl.uniform1f(u.uShadowK, this.opts.well ? 0 : 1);
       const m = this.opts.mineral,
         pl = this.opts.pearl;
       gl.uniform3f(u.uMinBase, ...hex3(m.base));
