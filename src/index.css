@@ -188,6 +188,12 @@ a {
   border-bottom: 1px solid color-mix(in srgb, var(--page-ink) 12%, transparent);
 }
 
+/* the first row starts where the page's own top padding leaves off: its tier
+   padding on top of that put the banner adrift in empty space */
+.bento-tier:first-child {
+  padding-top: 0;
+}
+
 .bento-tier h2 {
   margin: 0 0 32px;
   font-size: 17px;
