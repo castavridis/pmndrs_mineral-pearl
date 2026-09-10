@@ -121,6 +121,8 @@ uniform float uDark;
 uniform vec2 uIcon;
 uniform float uIconR;
 uniform float uRadius;
+uniform float uSheenK;   // per card: how much of the nacre's spectrum the body carries
+uniform float uSheer;    // per card: draw the sheen alone, leaving the body it lies on
 uniform sampler2D uGhost;
 uniform float uGhostOn;
 uniform float uGhostOpacity;
@@ -261,8 +263,11 @@ vec4 card(vec2 p, float t){
   vec3 paper = mix(uBg, uColor, 0.07) * (0.94 + 0.13 * crest);
   vec3 col = mix(paper, mineral, uDark);
   float phase = (nac * 1.9 + 0.3 + uvn.x * 0.3) * uSpread - t * 0.02;
-  vec3 irid = mix(brand(phase), vec3(1.0), uWhite);
-  col += irid * 0.05 * uMinIrid;
+  // uWhite is how much of the spectrum washes out to white. Turning a card's
+  // sheen up and leaving that alone only makes it brighter, not more
+  // iridescent, so the same knob pulls the wash back as it raises the colour.
+  vec3 irid = mix(brand(phase), vec3(1.0), uWhite / max(uSheenK, 1.0));
+  col += irid * 0.05 * uMinIrid * uSheenK;
   // the kind's colour, breathing softly round its icon
   float ir = length(p - uIcon) / max(uIconR, 1.0);
   col = mix(col, uColor, mix(0.30, 0.22, uDark) * exp(-ir * ir * 0.35) * (0.8 + 0.2 * sin(t * 1.2)));
@@ -395,8 +400,14 @@ void main(){
   float fres = pow(1.0 - clamp(n.z, 0.0, 1.0), 1.6);
   vec2 uvn = p / uSize.y;
   float nac2 = fbm(uvn * uSwirl * 1.3 + 4.7);
-  vec3 iridS = mix(brand((nac2 * 1.9 + fres * 1.5) * uSpread - uTime * 0.02), vec3(1.0), uWhite);
-  col += iridS * (0.07 + 0.75 * fres) * 0.45 * uMinIrid;
+  // the same knob as the body's: a wide, shallow slab has little fresnel to
+  // carry the spectrum, so a surface with no kind's colour of its own asks for
+  // more of it, and for less of the wash to white
+  vec3 iridS = mix(brand((nac2 * 1.9 + fres * 1.5) * uSpread - uTime * 0.02), vec3(1.0), uWhite / max(uSheenK, 1.0));
+  // what the surface adds over the body it lies on, kept apart so a sheer card
+  // can be drawn as that alone
+  vec3 sheen = iridS * (0.07 + 0.75 * fres) * 0.45 * uMinIrid * uSheenK;
+  col += sheen;
 
   vec3 Hv = normalize(uLight + vec3(0.0, 0.0, 1.0));
   // (port) the study set one facet per grid cell, jittered within it, and the
@@ -429,15 +440,32 @@ void main(){
       }
     }
   }
-  col += sparkC * 1.15 * uGlint;
+  vec3 spark = sparkC * 1.15 * uGlint;
+  col += spark;
+  sheen += spark;
 
   float calm = mix(1.0, 0.5, uWhole);
-  col += glints * uIridescence * calm;
+  vec3 glint = glints * uIridescence * calm;
+  col += glint;
+  sheen += glint;
   // (port) the study's film: hue from the view angle, strongest at grazing
   float cosV = clamp(n.z, 0.0, 1.0);
   float filmFres = 0.14 + 0.86 * pow(1.0 - cosV, 3.0);
-  col += thinFilm(cosV, uFilmNm) * filmFres * uFilm * calm;
-  col += uLightColor * (spec * uShine * calm);
+  vec3 film = thinFilm(cosV, uFilmNm) * filmFres * uFilm * calm;
+  vec3 shine = uLightColor * (spec * uShine * calm);
+  col += film + shine;
+  sheen += film + shine;
+
+  // A sheer card is not a card: it is the callout's iridescence laid over
+  // whatever is already there. The body, the refraction and the ghost are all
+  // dropped and only what the surface added is drawn, its own brightness
+  // standing as its alpha, so the liquid underneath shows through it.
+  if (uSheer > 0.5) {
+    float lum = max(sheen.r, max(sheen.g, sheen.b));
+    float a = clamp(lum * 1.5, 0.0, 1.0) * cov * baseCol.a;
+    gl_FragColor = vec4(sheen * a, a);
+    return;
+  }
 
   vec3 outCol = mix(baseCol.rgb, col, cov);
   gl_FragColor = vec4(outCol * baseCol.a, baseCol.a);
@@ -457,6 +485,32 @@ export interface NacreCard {
    * rather than a patch of it.
    */
   invert?: boolean;
+  /**
+   * Scale this card's thin film. The light treatment is a quiet one — a card
+   * the size of a callout carries its iridescence in the droplets and the
+   * blobs — and a wide, shallow slab like the nav bar has little relief to
+   * catch it, so it asks for more.
+   */
+  film?: number;
+  /**
+   * Scale the spectrum the card's body carries — the nacre's own iridescence,
+   * as opposed to the film on its surface. A card gets most of its colour from
+   * its kind's accent; a surface with no kind, like the nav bar, has only this.
+   */
+  sheen?: number;
+  /**
+   * Draw the sheen alone: the iridescence, the glitter and the film, with the
+   * body they would lie on left out, so whatever is already behind the card
+   * shows through. For a surface that has its own liquid and only wants the
+   * callout's shine on top of it.
+   */
+  sheer?: boolean;
+  /**
+   * The ambient blobs under the surface. On by default; a long, shallow
+   * surface like the nav bar reads them as blotches rather than as liquid
+   * under glass, and wants the sheen smooth.
+   */
+  blobs?: boolean;
 }
 
 interface CardState {
@@ -913,7 +967,7 @@ export class NacreStage {
       gl.uniform1f(u.uDark, cd ? 1 : 0);
       gl.uniform3fv(u.uBg, c.card.invert ? invBg : bg);
       // the film is the light page's iridescence; the dark page keeps the nacre's
-      gl.uniform1f(u.uFilm, cfg.film * (cd ? 0.3 : 1));
+      gl.uniform1f(u.uFilm, cfg.film * (cd ? 0.3 : 1) * (c.card.film ?? 1));
       const r = el.getBoundingClientRect();
       if (r.bottom < -80 || r.top > this._viewH + 80 || r.width < 2) {
         c.primed = false;
@@ -922,6 +976,8 @@ export class NacreStage {
       const w = r.width;
       const h = r.height;
       gl.uniform1f(u.uRadius, Math.min(c.card.radius ?? 12, w / 2, h / 2));
+      gl.uniform1f(u.uSheenK, c.card.sheen ?? 1);
+      gl.uniform1f(u.uSheer, c.card.sheer ? 1 : 0);
       const icon = c.card.icon;
       const ix = icon ? icon.offsetLeft + icon.offsetWidth / 2 : 24;
       const iy = icon ? icon.offsetTop + icon.offsetHeight / 2 : 24;
@@ -988,7 +1044,7 @@ export class NacreStage {
       gl.uniform1f(u.uBaseRadius, cfg.size / h / count);
       gl.uniform2fv(u.uBlob, this._packedBlob);
       gl.uniform1fv(u.uBlobR, this._packedBlobR);
-      gl.uniform1i(u.uBlobCount, live ? BLOBS : 0);
+      gl.uniform1i(u.uBlobCount, live && (c.card.blobs ?? true) ? BLOBS : 0);
       gl.uniform3fv(
         u.uSheenA,
         c.rgb.map((v) => Math.min(1, v * 0.55 + 0.3))

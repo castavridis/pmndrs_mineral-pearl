@@ -110,6 +110,49 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
     return () => ro.disconnect();
   }, [pillTarget, links, mode]);
 
+  const logoRef = useRef<HTMLAnchorElement>(null);
+  const blotRef = useRef<HTMLSpanElement>(null);
+
+  // The callout's iridescence, laid over the bar's own liquid. The bar keeps
+  // the pearl (or the mineral, on the light page) that its `Surface` draws;
+  // the stage adds the shine on top of it — `sheer`, so the body of the card
+  // is left out and only what the surface catches is drawn.
+  //
+  // Registered before the pill so the stage draws it first and the pill, whose
+  // box sits inside this one, lands on top of it.
+  useEffect(() => {
+    const el = pillRef.current;
+    if (!el || tier === 'flat') return;
+    const stage = getNacreStage();
+    if (!stage) return;
+    el.dataset.nacre = '';
+    const off = stage.register({
+      el,
+      // the droplet rests on the mark when the pointer is elsewhere, rather
+      // than in the corner a card's icon would be in
+      icon: logoRef.current,
+      accent: POND_BG[bar],
+      radius: tokens.pillRadius,
+      invert: true,
+      sheer: true,
+      // no ambient blobs: on a long, shallow bar they read as blotches
+      blobs: false,
+      // A bar is a wide, shallow slab: little relief to catch the film, and no
+      // kind's colour to bloom through it the way a callout has, so it would
+      // otherwise be flat cream. Both are turned up, and what shows is the
+      // nacre's own spectrum running through the pearl.
+      film: 1.2,
+      sheen: 2,
+    });
+    const obs = new MutationObserver(() => stage.refresh());
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => {
+      obs.disconnect();
+      off();
+      delete el.dataset.nacre;
+    };
+  }, [tier, bar]);
+
   // The pill's face on the nacre stage: no icon (a control has none, and the
   // accent would pool in a corner and wash the label), a radius large enough
   // that the stage clamps it to half the height, which is the pill.
@@ -134,9 +177,6 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
       delete el.dataset.nacre;
     };
   }, [tier, active]);
-
-  const logoRef = useRef<HTMLAnchorElement>(null);
-  const blotRef = useRef<HTMLSpanElement>(null);
 
   // The mark's blot lives outside the bar and behind it, so the bar's liquid
   // covers the part that lands on it and only the spill shows. It has to be
