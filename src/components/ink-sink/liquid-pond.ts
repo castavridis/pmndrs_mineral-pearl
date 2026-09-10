@@ -1487,8 +1487,17 @@ export class LiquidPond {
         // (port) 0.55 in the study; with the liquid closing over whatever dips
         // below the surface, that much tilt drowns a whole side on a hover
         const tiltK = 0.22 * this._pr('tilt');
-        const tx = -(s.ptr[0] - this._bx) * under * tiltK;
-        const ty = -(s.ptr[1] - this._by) * under * tiltK;
+        // (port) The plank tips by the same amount whichever edge is leaned on.
+        // The study took the raw offset, so the reach of each axis scaled with
+        // that axis's half extent: a wide, short slab (the announcement) tipped
+        // freely left to right and barely at all front to back. Normalising the
+        // offset per axis and scaling both by the slab's mean size leaves a
+        // square slab exactly as it was and balances everything else.
+        const ref = Math.sqrt(Math.max(this._halfX * this._halfY, 1e-8));
+        const reach = (d: number, half: number) =>
+          Math.max(-1, Math.min(1, d / Math.max(half, 1e-4)));
+        const tx = -reach(s.ptr[0] - this._bx, this._halfX) * ref * under * tiltK;
+        const ty = -reach(s.ptr[1] - this._by, this._halfY) * ref * under * tiltK;
         const tk = 60;
         const tc = 5.5 * visc;
         s.tiltV[0] += (tx - s.tilt[0]) * tk * h - s.tiltV[0] * tc * h;
