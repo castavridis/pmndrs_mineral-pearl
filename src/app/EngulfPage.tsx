@@ -54,6 +54,7 @@ export function EngulfPage() {
       globSize: { value: 1, min: 0.4, max: 2.5, step: 0.1, label: 'size' },
       globDensity: { value: 0.5, min: 0, max: 1, step: 0.05, label: 'density' },
       globHeight: { value: 0, min: 0, max: 2.5, step: 0.1, label: 'height' },
+      globSettle: { value: 0.9, min: 0, max: 4, step: 0.05, label: 'settle (s)' },
       globShading: { value: false, label: 'shading' },
     }),
     radius: { value: 16, min: 0, max: 40, step: 1 },
@@ -364,6 +365,7 @@ export function EngulfPage() {
           globSize={sink.globSize}
           globDensity={sink.globDensity}
           globHeight={sink.globHeight}
+          globSettle={sink.globSettle}
           globShading={sink.globShading}
           mineral={mineral}
           pearl={pearl}

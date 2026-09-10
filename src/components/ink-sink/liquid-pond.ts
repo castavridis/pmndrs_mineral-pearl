@@ -598,6 +598,12 @@ export interface PondOptions {
   globSize: number;
   globDensity: number;
   globHeight: number;
+  /**
+   * (port) Seconds a landed glob takes to relax from `globHeight` to flat. A
+   * bead cannot hold its own height once the liquid has taken it, so the relief
+   * belongs to the arrival, not to the mass. 0 keeps them proud indefinitely.
+   */
+  globSettle?: number;
   /** Shade the ink mass (wet-edge sheen, darker lip); off, it is pure coverage. */
   globShading: boolean;
   /** Corner radius of the slab, CSS px. */
@@ -720,6 +726,8 @@ export class LiquidPond {
   private _vh = 0;
   /** (port) well: ripples belong to the ground; this pond spawns no wake of its own */
   private _noWake = false;
+  /** (port) how much of `globHeight` the globs still stand in, 0..1 */
+  private _globH = 0;
   /** CSS px per uv unit (opts.unit, else the host height) */
   private _unit = 1;
   private _halfX = 0.3;
@@ -1556,7 +1564,25 @@ export class LiquidPond {
       gl.uniform1f(u.uVisc, this._viscOf(this.opts.viscosity));
       gl.uniform1f(u.uMerc, s.mercT);
       gl.uniform2f(u.uTilt, s.tilt[0], s.tilt[1]);
-      gl.uniform3f(u.uGlob, this.opts.globSize, this.opts.globDensity, this.opts.globHeight);
+      // (port) the globs stand proud as they land and then relax into the
+      // surface: the relief belongs to the arrival, not to the settled mass
+      const settle = this.opts.globSettle ?? 0.9;
+      const P = this._P;
+      const landed = P && P.n > 0;
+      const hold = 0.45;
+      const globTarget =
+        !landed || settle <= 0
+          ? landed
+            ? 1
+            : 0
+          : Math.max(0, 1 - Math.max(0, P.t - hold) / settle);
+      this._globH += (globTarget - this._globH) * (1 - Math.exp(-dt * 7));
+      gl.uniform3f(
+        u.uGlob,
+        this.opts.globSize,
+        this.opts.globDensity,
+        this.opts.globHeight * this._globH
+      );
       gl.uniform1f(u.uGlobShade, this.opts.globShading ? 1 : 0);
       const m = this.opts.mineral,
         pl = this.opts.pearl;

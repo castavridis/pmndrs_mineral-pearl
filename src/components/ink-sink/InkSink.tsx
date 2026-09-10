@@ -70,6 +70,11 @@ export interface InkSinkProps {
   globSize?: number;
   globDensity?: number;
   globHeight?: number;
+  /**
+   * Seconds a landed glob takes to relax from `globHeight` to flat; the relief
+   * belongs to the arrival, not to the settled mass. 0 keeps them proud.
+   */
+  globSettle?: number;
   /** Shade the ink mass (sheen and lip). Default false: pure coverage. */
   globShading?: boolean;
   /** The mineral body's colours and strengths; defaults are the study's. */
@@ -137,6 +142,7 @@ export function InkSink({
   globSize = 1,
   globDensity = 0.5,
   globHeight = 0,
+  globSettle = 0.9,
   globShading = false,
   mineral,
   pearl,
@@ -210,6 +216,7 @@ export function InkSink({
       globSize,
       globDensity,
       globHeight,
+      globSettle,
       globShading,
       radius,
       // in a well the liquid must sample like the ground: its unit and resolution
@@ -255,6 +262,7 @@ export function InkSink({
     pond.opts.globSize = globSize;
     pond.opts.globDensity = globDensity;
     pond.opts.globHeight = globHeight;
+    pond.opts.globSettle = globSettle;
     pond.opts.globShading = globShading;
     pond.opts.radius = radius;
     if (!pond.opts.well) pond.opts.unit = unit;
@@ -269,6 +277,7 @@ export function InkSink({
     globSize,
     globDensity,
     globHeight,
+    globSettle,
     globShading,
     radius,
     unit,
