@@ -4,8 +4,8 @@ Why this repo looks the way it does: the choices made while building it, the stu
 they came from, and the algorithms and theory the code implements. Commit hashes
 anchor each decision; `git show <hash>` has the diff.
 
-Everything here was built in one session on 2026-09-09, so the order below is the order
-of the work, not of the calendar.
+Everything here was built in one long session over 2026-09-09 and 09-10, so the order
+below is the order of the work, not of the calendar.
 
 ---
 
@@ -109,6 +109,7 @@ so the study can still be diffed against.
 | Callouts stay on mineral on either page, for now | Asked for. The stage gained a per-card `dark` that holds the mineral treatment whatever the page is, and the plain and flat callouts take `material="mineral"`. Inside a callout the page's tokens are set to the dark page's, so the text and the halos drawn in the ground's colour read against the mineral rather than against whichever page the card lies on — which also retires the black-headline rule for the light page, since there is no pale card left for it to apply to. |
 | Dark on every load, not only the first | Asked for again, which was the tell: dark was already the first-visit default, but the store remembered the theme a visitor last switched to, so after one press of "Apply Light Theme" every reload opened light. The theme is no longer persisted — only the shaders switch is — and a theme stored by an earlier version is ignored rather than restored. The leva theme select offers dark and light only. It is written into AGENTS.md as the project's rule. |
 | The bento links to the splat | Asked for: "The ink splat →" under the plain controls, to `/dev/splat`, where the page's ink comes from. |
+| The banner speaks for this repo (`29e91cf`) | It still announced the sibling repo's release. It now reads "Mineral & pearl. Liquid surfaces for pmndrs, grown from Kris's ink splat." and links to the `/dev` pages; the announcement page's second sample describes the sink instead of offering a workshop. |
 | A press throws no droplets | It used to fire the rim's whole swallow. On the copy bar that read as spatter; on the announcement, tuned for a dramatic dismissal, one click buried the entire face. A press displaces liquid locally, so it leaves a ring and nothing else; the burst belongs to going under. |
 | The banner's swallow is a named look, not numbers in the JSX | Asked for a way to tune the dismissal. `ANNOUNCEMENT_SWALLOW` holds the shipped values with a note on what each does, `swallow` overrides any of them, and `/dev/announcement` drives the set from a panel — the same arrangement the pond's own look already had. |
 | The bento's two controls share one named look as well | Asked for a way to change their swallow. `SwallowLook` moved to `ink-sink` so the banner and the controls describe the same thing, `CONTROL_SWALLOW` holds what the copy bar and the launcher ship, and `/dev/bento` drives it from a panel with the same copy-back button. They are tuned together on purpose: they sit in the same row and read as a pair. |
@@ -159,6 +160,25 @@ so the study can still be diffed against.
 | The nav pill is a `Surface`; the DOM nav is the source of truth in every tier | Progressive enhancement: the liquid is only the pill's face. Accessibility, SEO and the tab order never depend on WebGL. |
 
 ---
+
+
+## 6. Review: what to improve, and what was done about it
+
+A review at the end of the session, ranked by what each would buy. The status column
+is kept current as items are taken on.
+
+| # | Improvement | Why | Status |
+| --- | --- | --- | --- |
+| 1 | Draw every well with one WebGL context | Every afloat element ran its own context, on top of the ground, the nacre stage and each blot's renderer: about eight on the bento, against a browser limit near sixteen past which the oldest is dropped. | In progress |
+| 2 | Split the front page's bundle | One 1.47 MB chunk (434 kB gzipped) carries three, fiber, drei and leva to the front page; leva is a dev tool. | Open |
+| 3 | Tests where the bugs actually were | Nearly every bug this session was a state or timing fault: a pond born late and never told it was sunk, the mercury rule undone on update, a setter's identity driving an overwrite loop, the dark look written into the light slot. | In progress |
+| 4 | Resolve sink options in one place | The sink built its pond with one set of rules and updated it with a hand-copied second set behind a disabled lint rule; that duplication is how the mercury bug happened. | In progress |
+| 5 | Make the stacking-context rule a check | It bit three times and lives only as a comment. | Open |
+| 6 | Group per-card and per-pond knobs into named looks | `invert`, `dark`, `sheen`, `film`, `blobs` on a card; `pressHeave`, `sinkSpeed`, `slabLiquid` on a pond. | Open |
+| 7 | A debug overlay and a deterministic clock | Several motions could not be verified because a hidden pane produces no frames. | Open |
+| 8 | Accessibility gaps | The banner is under the liquid for up to 1.5 s on load; contrast over moving liquid is protected by halos but never measured; `prefers-reduced-transparency` is not honoured. | Open |
+| 9 | Revisit the "for now" decisions | Callouts pinned to mineral, dark forced on every load, the system preference ignored, the leva panel on the front page. | Open |
+| 10 | Slim the docs | A narrative README and a long decision log; a short README and a separate decisions document would serve both readers. | Open |
 
 ## Sources
 
