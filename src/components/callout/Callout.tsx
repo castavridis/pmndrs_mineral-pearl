@@ -48,8 +48,9 @@ export function Callout({
   const theme = useResolvedTheme();
   const webgl = useWebGL();
   const nacre = variant === 'surface' && webgl !== false;
-  // on the nacre the kind's accent reads against the black mineral in any scheme
-  const tint = nacre ? n.accent : k.ink[theme];
+  // the DOM always takes the readable ink for the scheme; the raw palette
+  // colour goes to the shader, whose glow is behind the text rather than in it
+  const tint = k.ink[theme];
   const vars = {
     '--tint': tint,
     '--accent': n.accent,

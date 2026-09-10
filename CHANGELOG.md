@@ -68,6 +68,10 @@ so the study can still be diffed against.
 | One pill that moves, not a pill per item | The pill follows the pointer and falls back to the current page, so there is a single slab for the shader to draw and it stretches between labels as it goes. |
 | The pill's label is light in both schemes | The gooey callout shader is the black mineral body in either scheme, so the ink above it cannot follow the page. It follows the pill. |
 
+| The callout has a light treatment, not a dark one dimmed | Asked for. On the light page the card is the page's own ground faintly tinted by the kind, from `callout-shaders-iridescence.html`, rather than black stone on cream. The nacre's structure stays as shading. |
+| Thin-film interference, not another colour ramp | The iridescence study derives hue from optical path difference through a film of a given thickness, sampled at three wavelengths, so the colour tracks the view angle physically. It is the light page's iridescence; the dark page keeps the nacre's ramp and takes only a third of the film. |
+| The nacre panel merges over the defaults | It replaced the whole config, so any key it did not show became `undefined`, uploaded NaN and read back as zero. That is why the new film was inert until it was exposed. |
+
 ## 4. Theme, ground and page look
 
 | Decision | Why |

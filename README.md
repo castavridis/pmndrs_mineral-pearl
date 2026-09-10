@@ -176,6 +176,8 @@ The glass callout's layout on a `Surface`: the kind's symbol in a lens ring at t
 </NacreCallout>
 ```
 
+On the dark page the slab is the black mineral nacre. On the light page it takes the light treatment of the companion study (`reference/callout-shaders/callout-shaders-iridescence.html`): the card is the page's own ground, faintly tinted by the kind, with the nacre's structure kept as shading rather than as stone. Riding both is that study's thin film — interference from a film a few hundred nanometres thick, sampled at 650, 545 and 460 nm, so the hue tracks the view angle instead of being painted on by a ramp. The film carries the light page's iridescence and is dialled back on the dark page, where the nacre already has its own.
+
 A port of the "single-context callout shaders" study (`reference/callout-shaders/`): every nacre callout on the page is drawn by one stage, one WebGL context and one framebuffer with a scissor per card. The slab over the card is raymarched: a droplet trail follows the pointer under the surface, ambient blobs drift beneath it, the card and a ghost of its own text are refracted through it with dispersion, and sheen glints, rim and specular ride the surface. The material is the black mineral nacre of the pond rather than the study's tinted glass, with brand iridescence where the slab curves away and the pond's facet glitter. Kinds are the study's (note, tip, important, warning, caution) with their accents and icons. The content is DOM on top; without WebGL it is a bordered card.
 
 ## Pages

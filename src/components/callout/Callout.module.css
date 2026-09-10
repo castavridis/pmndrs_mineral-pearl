@@ -10,13 +10,14 @@
 }
 
 /* the nacre slab is drawn beneath by the page's stage; the DOM is a bordered
-   card over it, its text light on the black mineral in any scheme */
+   card over it. The slab is black mineral on the dark page and the page's own
+   ground on the light one, so the text follows the page. */
 .nacre {
   z-index: 1;
   border-radius: 8px;
   background: transparent;
   border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
-  color: #eeeeea;
+  color: var(--page-ink);
 }
 
 /* the lens: a ring at the corner, the kind's tint pooled in it */

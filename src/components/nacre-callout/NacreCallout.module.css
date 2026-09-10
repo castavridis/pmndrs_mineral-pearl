@@ -9,8 +9,10 @@
   border-radius: 12px;
   background: transparent;
   border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
-  /* the text reads on the black mineral whatever the scheme */
-  color: #eeeeea;
+  /* the card is black mineral on the dark page and the page's own ground on
+     the light one (the iridescence study's light treatment), so the text
+     follows the page rather than being pinned to one of them */
+  color: var(--page-ink);
 }
 
 .ico {

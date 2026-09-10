@@ -34,6 +34,10 @@ export interface NacreConfig {
   shine: number;
   rim: number;
   iridescence: number;
+  /** (port) Thin-film strength. The light page's iridescence; the dark page keeps the nacre's. */
+  film: number;
+  /** (port) Film thickness in nm; the study's default is 380. */
+  filmNm: number;
   intensity: number;
   thickness: number;
   cornerN: number;
@@ -70,6 +74,8 @@ export const NACRE_DEFAULT: NacreConfig = {
   shine: 0.3,
   rim: 0.55,
   iridescence: 1.0,
+  film: 0.5,
+  filmNm: 380,
   intensity: 0.9,
   thickness: 0.15,
   cornerN: 2.9,
@@ -127,6 +133,9 @@ uniform float uDispersion;
 uniform float uShine;
 uniform float uRim;
 uniform float uIridescence;
+// (port) the iridescence study's thin film: strength, and thickness in nm
+uniform float uFilm;
+uniform float uFilmNm;
 uniform float uIntensity;
 uniform vec3 uSheenA;
 uniform vec3 uSheenB;
@@ -232,19 +241,41 @@ vec4 card(vec2 p, float t){
   // laminar striations running across the nacre, bent by the noise
   float lam = vnoise(vec2(uvn.x * 3.0 + nac * 2.0, uvn.y * uLamina + nac * 6.0) + 11.0);
   nac = clamp(nac + (lam - 0.5) * uStriation, 0.0, 1.0);
-  vec3 col = mix(uMinBase, uMinHigh, smoothstep(0.25, 0.80, nac) * uStoneGray);
+  float crest = smoothstep(0.25, 0.80, nac);
+  vec3 mineral = mix(uMinBase, uMinHigh, crest * uStoneGray);
+  // (port) the light treatment: on the light page the card is the page's own
+  // ground, faintly tinted by the kind, as the iridescence study's card is.
+  // The nacre's structure stays, but as shading rather than as stone.
+  vec3 paper = mix(uBg, uColor, 0.07) * (0.94 + 0.13 * crest);
+  vec3 col = mix(paper, mineral, uDark);
   float phase = (nac * 1.9 + 0.3 + uvn.x * 0.3) * uSpread - t * 0.02;
   vec3 irid = mix(brand(phase), vec3(1.0), uWhite);
   col += irid * 0.05 * uMinIrid;
   // the kind's colour, breathing softly round its icon
   float ir = length(p - uIcon) / max(uIconR, 1.0);
-  col = mix(col, uColor, 0.22 * exp(-ir * ir * 0.35) * (0.8 + 0.2 * sin(t * 1.2)));
+  col = mix(col, uColor, mix(0.30, 0.22, uDark) * exp(-ir * ir * 0.35) * (0.8 + 0.2 * sin(t * 1.2)));
   if(uGhostOn > 0.5){
     vec2 mid = uSize * 0.5;
     vec4 g = ghostSample(mid + (p - mid) / max(uGhostScale, 0.05));
     col = col * (1.0 - g.a * uGhostOpacity) + g.rgb * uGhostOpacity;
   }
   return vec4(col, inside);
+}
+
+/**
+ * (port) Thin-film interference, from the iridescence study. Light off the
+ * back of a film nm thick travels far enough to interfere with light off the
+ * front; sampling that optical path difference at 650, 545 and 460 nm gives
+ * the RGB directly, so the hue tracks the view angle instead of being painted
+ * on by a ramp.
+ */
+vec3 thinFilm(float cosV, float nm){
+  float filmIor = 1.38;
+  float sinT2 = (1.0 - cosV * cosV) / (filmIor * filmIor);
+  float cosT = sqrt(max(1.0 - sinT2, 0.0));
+  float opd = 2.0 * filmIor * nm * cosT;
+  vec3 lambda = vec3(650.0, 545.0, 460.0);
+  return 0.5 + 0.5 * cos(6.2831853 * opd / lambda + 3.14159265);
 }
 
 float rnd3(vec3 p){ return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453123); }
@@ -379,6 +410,10 @@ void main(){
 
   float calm = mix(1.0, 0.5, uWhole);
   col += glints * uIridescence * calm;
+  // (port) the study's film: hue from the view angle, strongest at grazing
+  float cosV = clamp(n.z, 0.0, 1.0);
+  float filmFres = 0.14 + 0.86 * pow(1.0 - cosV, 3.0);
+  col += thinFilm(cosV, uFilmNm) * filmFres * uFilm * calm;
   col += uLightColor * (spec * uShine * calm);
 
   vec3 outCol = mix(baseCol.rgb, col, cov);
@@ -768,6 +803,9 @@ export class NacreStage {
     gl.uniform1f(u.uShine, cfg.shine);
     gl.uniform1f(u.uRim, cfg.rim);
     gl.uniform1f(u.uIridescence, cfg.iridescence);
+    // the film is the light page's iridescence; the dark page keeps the nacre's
+    gl.uniform1f(u.uFilm, cfg.film * (dark ? 0.3 : 1));
+    gl.uniform1f(u.uFilmNm, cfg.filmNm);
     gl.uniform1f(u.uIntensity, cfg.intensity);
     gl.uniform1f(u.uSheenTime, this._sheenClock);
     gl.uniform3f(u.uLight, lv[0] / ll, lv[1] / ll, lv[2] / ll);
