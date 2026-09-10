@@ -1,7 +1,25 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Leva, button, folder, useControls } from 'leva';
-import { ANNOUNCEMENT_SWALLOW, Announcement } from '../components';
+import { ANNOUNCEMENT_SWALLOW, Announcement, type AnnouncementSwallow } from '../components';
 import { useThemeTweak } from './tweaks';
+
+/* The panel's current values, where leva's buttons can reach them: a button's
+   callback is made during render, so it cannot read a ref of its own. Same
+   arrangement as `latest` in presets.ts. */
+const current: { look: AnnouncementSwallow } = { look: ANNOUNCEMENT_SWALLOW };
+
+/** The look as `swallow.ts` would write it, on the clipboard and in the console. */
+function copyDefaults(v: AnnouncementSwallow) {
+  const lines = Object.entries(v)
+    .filter(([, x]) => x !== undefined)
+    .map(([k, x]) => `  ${k}: ${x},`)
+    .join('\n');
+  const text = `export const ANNOUNCEMENT_SWALLOW: AnnouncementSwallow = {\n${lines}\n};`;
+  navigator.clipboard?.writeText(text).catch(() => {});
+  // the clipboard can be refused (an unfocused pane, a permission), so the
+  // text is printed as well and nothing is lost either way
+  console.log(text);
+}
 
 /** `/dev/announcement`: the banner afloat on the page, at two widths. */
 export function AnnouncementPage() {
@@ -20,6 +38,11 @@ export function AnnouncementPage() {
       setGone({});
       setGen((g) => g + 1);
     }),
+    // The panel is where a look is found; `swallow.ts` is where it lives. This
+    // writes the current values as that file's literal, ready to paste over
+    // the one there — leva has no persistence of its own, and a default the
+    // site ships has to be in the source rather than in a browser's storage.
+    'copy as defaults': button(() => copyDefaults(current.look)),
     // the dismissal: what the liquid does as it takes the banner down. Dismiss
     // a banner, tune, hit restore, dismiss again.
     swallow: folder({
@@ -42,7 +65,7 @@ export function AnnouncementPage() {
       bleed: { value: d.bleed, min: 24, max: 200, step: 4 },
     }),
   });
-  const swallow = {
+  const swallow: AnnouncementSwallow = {
     globSize: c.globSize,
     globDensity: c.globDensity,
     globHeight: c.globHeight,
@@ -50,10 +73,15 @@ export function AnnouncementPage() {
     globShading: c.globShading,
     droplets: c.droplets,
     viscosity: c.viscous ? c.viscosity : undefined,
-    sinkDepth: c.sinkDepth,
+    // in the order `AnnouncementSwallow` declares them, so the copied block
+    // reads as a straight replacement for the one in swallow.ts
     pressDepth: c.pressDepth,
+    sinkDepth: c.sinkDepth,
     bleed: c.bleed,
   };
+  useEffect(() => {
+    current.look = swallow;
+  });
   const variant = c.variant as 'auto' | 'liquid' | 'swallow' | 'quiet' | 'flat';
   const dismiss = (id: string) => () => setGone((g) => ({ ...g, [id]: true }));
   const items = [
