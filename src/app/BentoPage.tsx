@@ -135,6 +135,7 @@ export function BentoPage() {
   useWake(copyWake, 0.8);
   useWake(launcherWake, 0.8);
   useWake(calloutWake, 0.6);
+  const copySink = useRef<InkSinkHandle>(null);
   const launcherSink = useRef<InkSinkHandle>(null);
   const launcherFace = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -171,27 +172,43 @@ export function BentoPage() {
         <h2>Somewhat Expressive</h2>
         <div className="bento-row">
           <div className="bento-stack">
-            <div ref={copyWake} className="afloat">
-              <CopyButton
-                value="pnpm add @react-three/fiber"
-                actions={[
-                  { key: 'docs', label: 'Open the docs', icon: <InfoIcon />, href: '/dev/' },
-                  {
-                    key: 'sandbox',
-                    label: 'Open a sandbox',
-                    icon: <ExternalIcon />,
-                    href: '/dev/splat',
-                  },
-                  {
-                    key: 'repo',
-                    label: 'View the repository',
-                    icon: <GitHubIcon />,
-                    href: 'https://github.com/pmndrs',
-                  },
-                  { key: 'run', label: 'Run it', icon: <BoltIcon /> },
-                  { key: 'cli', label: 'Copy the CLI command', icon: <TerminalIcon /> },
-                ]}
-              />
+            <div ref={copyWake} className="afloat afloat-front">
+              <InkSink
+                ref={copySink}
+                well
+                bare
+                radius={8}
+                bleed={44}
+                sinkOnClick={false}
+                pressDepth={-0.05}
+                sinkSplash={false}
+                className="launcher-sink"
+                style={{ width: 'calc(100% + 88px)', margin: -44 }}
+              >
+                {/* pointerdown bubbles from whichever action was pressed */}
+                <div onPointerDown={() => copySink.current?.press()}>
+                  <CopyButton
+                    value="pnpm add @react-three/fiber"
+                    actions={[
+                      { key: 'docs', label: 'Open the docs', icon: <InfoIcon />, href: '/dev/' },
+                      {
+                        key: 'sandbox',
+                        label: 'Open a sandbox',
+                        icon: <ExternalIcon />,
+                        href: '/dev/splat',
+                      },
+                      {
+                        key: 'repo',
+                        label: 'View the repository',
+                        icon: <GitHubIcon />,
+                        href: 'https://github.com/pmndrs',
+                      },
+                      { key: 'run', label: 'Run it', icon: <BoltIcon /> },
+                      { key: 'cli', label: 'Copy the CLI command', icon: <TerminalIcon /> },
+                    ]}
+                  />
+                </div>
+              </InkSink>
             </div>
             <div className="bento-inline">
               <div ref={launcherWake} className="afloat afloat-inline">

@@ -336,6 +336,13 @@ a {
   will-change: transform;
 }
 
+/* One that has to sit over its neighbour. The launcher's sink bleeds 44px past
+   its box, up into the copy bar's, and being later in the DOM at the same
+   level it would otherwise paint over the bar's lower edge. */
+.afloat-front {
+  z-index: 2;
+}
+
 /* one that shares a row: it grows and shrinks with the room left over */
 .afloat-inline {
   flex: 1 1 180px;
