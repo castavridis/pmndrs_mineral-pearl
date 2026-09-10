@@ -213,7 +213,7 @@ The pages mirror the 3d-2d-nav repo's, page for page, with the liquid where it h
 | `/dev/callout`      | Callout surface / plain / every kind, then the ink blots with their panel              |
 | `/dev/announcement` | The banner afloat at 652 and 900 px; variant and dismissal in the panel                |
 | `/dev/palette`      | Every liquid as a live sample, and the saved presets, each applicable to the page      |
-| `/dev/bento`        | The shader bento: the components by expressiveness                                     |
+| `/dev/bento`        | The shader bento: one centred column, banner to bar to controls, and their panels      |
 | `/dev/splat`        | Full-viewport splat with the leva panel (colour, mark, origin…)                        |
 | `/dev/engulf`       | Engulf and the pond, every knob; presets are saved here                                |
 

@@ -234,10 +234,12 @@ export function BentoPage() {
   }, []);
   return (
     <main className="bento">
-      {/* the banner sits above the bar, as it does on a page */}
+      {/* One centred column, in the order the elements would meet a reader:
+          the banner over the bar, then the things you use, then the plain
+          controls. */}
       <section className="bento-tier">
-        <div className="bento-row">
-          <div className="bento-grow" style={{ padding: '12px 0 40px' }}>
+        <div className="bento-col">
+          <div className="bento-cell" style={{ maxWidth: 720 }}>
             {!gone && (
               <Announcement width={720} onDismiss={() => setGone(true)}>
                 <span>
@@ -247,132 +249,115 @@ export function BentoPage() {
               </Announcement>
             )}
           </div>
-        </div>
-        <div className="bento-row">
-          <div className="bento-grow" style={{ flexBasis: 620 }}>
+          <div className="bento-cell" style={{ maxWidth: 620 }}>
             <Nav links={LINKS} active="docs" enhancement="full" />
           </div>
         </div>
       </section>
 
       <section className="bento-tier">
-        <div className="bento-row">
-          <div className="bento-stack">
-            <div ref={copyWake} className="afloat afloat-front">
-              <InkSink
-                ref={copySink}
-                well
-                bare
-                radius={8}
-                sinkOnClick={false}
-                {...sinkProps(swallow)}
-                className="launcher-sink"
-                style={bleedBox(swallow.bleed)}
-              >
-                {/* pointerdown bubbles from whichever action was pressed; a
+        <div className="bento-col">
+          <div ref={copyWake} className="afloat afloat-front bento-cell fit" style={{ maxWidth: 520 }}>
+            <InkSink
+              ref={copySink}
+              well
+              bare
+              radius={8}
+              sinkOnClick={false}
+              {...sinkProps(swallow)}
+              className="launcher-sink"
+              style={bleedBox(swallow.bleed)}
+            >
+              {/* pointerdown bubbles from whichever action was pressed; a
                     keyboard activation arrives as a click with no pointer
                     behind it, and the action that was activated stands in for
                     the hand */}
-                <div
-                  onPointerDown={(e) => copySink.current?.press(e.nativeEvent)}
-                  onClick={(e) => {
-                    if (e.detail !== 0) return;
-                    const el = e.target instanceof Element ? e.target : e.currentTarget;
-                    copySink.current?.press(centreOf(el));
-                  }}
-                >
-                  <CopyButton
-                    value="pnpm add @react-three/fiber"
-                    actions={[
-                      { key: 'docs', label: 'Open the docs', icon: <InfoIcon />, href: '/dev/' },
-                      {
-                        key: 'sandbox',
-                        label: 'Open a sandbox',
-                        icon: <ExternalIcon />,
-                        href: '/dev/splat',
-                      },
-                      {
-                        key: 'repo',
-                        label: 'View the repository',
-                        icon: <GitHubIcon />,
-                        href: 'https://github.com/pmndrs',
-                      },
-                      { key: 'run', label: 'Run it', icon: <BoltIcon /> },
-                      { key: 'cli', label: 'Copy the CLI command', icon: <TerminalIcon /> },
-                    ]}
-                  />
-                </div>
-              </InkSink>
-            </div>
-            <div className="bento-inline">
-              <div ref={launcherWake} className="afloat afloat-inline">
-                <InkSink
-                  ref={launcherSink}
-                  well
-                  bare
-                  radius={8}
-                  sinkOnClick={false}
-                  sunk={launcherDisabled}
-                  {...sinkProps(swallow)}
-                  className="launcher-sink"
-                  style={bleedBox(swallow.bleed)}
-                >
-                  <button
-                    ref={launcherFace}
-                    type="button"
-                    className="surface-button launcher"
-                    aria-disabled={launcherDisabled || undefined}
-                    onPointerDown={(e) => {
-                      if (!launcherDisabled) launcherSink.current?.press(e.nativeEvent);
-                    }}
-                    onClick={(e) => {
-                      // Enter or Space: the blow comes from the middle of the
-                      // button, since the keyboard gives no point of its own
-                      if (launcherDisabled || e.detail !== 0) return;
-                      launcherSink.current?.press(centreOf(e.currentTarget));
-                    }}
-                  >
-                    Article Launcher
-                  </button>
-                </InkSink>
-              </div>
-              <button
-                type="button"
-                className="text-button"
-                onClick={() => setLauncherDisabled((d) => !d)}
+              <div
+                onPointerDown={(e) => copySink.current?.press(e.nativeEvent)}
+                onClick={(e) => {
+                  if (e.detail !== 0) return;
+                  const el = e.target instanceof Element ? e.target : e.currentTarget;
+                  copySink.current?.press(centreOf(el));
+                }}
               >
-                {launcherDisabled ? 'enable' : 'disable'}
+                <CopyButton
+                  value="pnpm add @react-three/fiber"
+                  actions={[
+                    { key: 'docs', label: 'Open the docs', icon: <InfoIcon />, href: '/dev/' },
+                    {
+                      key: 'sandbox',
+                      label: 'Open a sandbox',
+                      icon: <ExternalIcon />,
+                      href: '/dev/splat',
+                    },
+                    {
+                      key: 'repo',
+                      label: 'View the repository',
+                      icon: <GitHubIcon />,
+                      href: 'https://github.com/pmndrs',
+                    },
+                    { key: 'run', label: 'Run it', icon: <BoltIcon /> },
+                    { key: 'cli', label: 'Copy the CLI command', icon: <TerminalIcon /> },
+                  ]}
+                />
+              </div>
+            </InkSink>
+          </div>
+          <div ref={calloutWake} className="afloat bento-cell" style={{ maxWidth: 560 }}>
+            <NacreCallout kind="tip">
+              <p>
+                A callout on black mineral nacre: the droplet follows the pointer under the surface,
+                and the text is refracted through it.
+              </p>
+            </NacreCallout>
+          </div>
+          <div ref={launcherWake} className="afloat bento-cell" style={{ maxWidth: 320 }}>
+            <InkSink
+              ref={launcherSink}
+              well
+              bare
+              radius={8}
+              sinkOnClick={false}
+              sunk={launcherDisabled}
+              {...sinkProps(swallow)}
+              className="launcher-sink"
+              style={bleedBox(swallow.bleed)}
+            >
+              <button
+                ref={launcherFace}
+                type="button"
+                className="surface-button launcher"
+                aria-disabled={launcherDisabled || undefined}
+                onPointerDown={(e) => {
+                  if (!launcherDisabled) launcherSink.current?.press(e.nativeEvent);
+                }}
+                onClick={(e) => {
+                  // Enter or Space: the blow comes from the middle of the
+                  // button, since the keyboard gives no point of its own
+                  if (launcherDisabled || e.detail !== 0) return;
+                  launcherSink.current?.press(centreOf(e.currentTarget));
+                }}
+              >
+                Article Launcher
               </button>
-            </div>
+            </InkSink>
           </div>
-          <div className="bento-grow bento-stack">
-            <div ref={calloutWake} className="afloat">
-              <NacreCallout kind="tip">
-                <p>
-                  A callout on black mineral nacre: the droplet follows the pointer under the surface,
-                  and the text is refracted through it.
-                </p>
-              </NacreCallout>
-            </div>
-          </div>
+          <button
+            type="button"
+            className="text-button"
+            onClick={() => setLauncherDisabled((d) => !d)}
+          >
+            {launcherDisabled ? 'enable' : 'disable'}
+          </button>
         </div>
       </section>
 
       <section className="bento-tier">
-        <div className="bento-row">
+        <div className="bento-col">
           <div className="bento-inline">
             <Button onClick={() => document.querySelector<HTMLElement>('[data-id="cmd"]')?.click()}>
               Cmd <Kbd>K</Kbd>
             </Button>
-            <ButtonLink icon href="https://twitter.com/pmndrs" aria-label="Twitter">
-              <TwitterIcon />
-            </ButtonLink>
-            <ButtonLink icon href="https://discord.gg/poimandres" aria-label="Discord">
-              <DiscordIcon />
-            </ButtonLink>
-            <ButtonLink icon href="https://github.com/pmndrs" aria-label="GitHub">
-              <GitHubIcon />
-            </ButtonLink>
             <Popover
               label="Open"
               items={[
@@ -382,6 +367,17 @@ export function BentoPage() {
                 { key: 'cursor', label: 'Open in Cursor', href: 'https://cursor.com' },
               ]}
             />
+          </div>
+          <div className="bento-inline">
+            <ButtonLink icon href="https://twitter.com/pmndrs" aria-label="Twitter">
+              <TwitterIcon />
+            </ButtonLink>
+            <ButtonLink icon href="https://discord.gg/poimandres" aria-label="Discord">
+              <DiscordIcon />
+            </ButtonLink>
+            <ButtonLink icon href="https://github.com/pmndrs" aria-label="GitHub">
+              <GitHubIcon />
+            </ButtonLink>
           </div>
         </div>
       </section>

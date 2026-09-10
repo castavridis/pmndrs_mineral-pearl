@@ -193,6 +193,28 @@ a {
   font-weight: 600;
 }
 
+/* the bento is one centred column: every element on its own line, each as wide
+   as it wants to be up to its own cap, and nothing to the side of anything */
+.bento-col {
+  display: grid;
+  justify-items: center;
+  gap: 32px;
+  width: 100%;
+}
+
+.bento-cell {
+  width: 100%;
+  min-width: 0;
+}
+
+/* a cell that hugs what is in it: the copy bar is as wide as its actions, and
+   the sink's slab is drawn to the cell, so a cell wider than the bar would
+   leave the slab standing out to one side of it */
+.bento-cell.fit {
+  width: max-content;
+  max-width: 100%;
+}
+
 .bento-row {
   display: flex;
   flex-wrap: wrap;
@@ -215,6 +237,7 @@ a {
   display: flex;
   gap: 10px;
   align-items: center;
+  justify-content: center;
   flex-wrap: wrap;
 }
 
