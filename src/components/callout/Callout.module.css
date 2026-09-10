@@ -20,6 +20,25 @@
   color: var(--page-ink);
 }
 
+/* the blot under the lens: the kind's ink, thrown at the card's corner */
+.blot {
+  position: absolute;
+  left: var(--icon-x);
+  top: var(--icon-y);
+  width: calc(var(--icon) * 2.4);
+  height: calc(var(--icon) * 2.4);
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* fiber sets pointer-events on its wrapper and canvas; the blot must not eat
+   clicks meant for the card it decorates */
+.blot canvas,
+.blot > * {
+  pointer-events: none !important;
+}
+
 /* the lens: a ring at the corner, the kind's tint pooled in it */
 .lens {
   position: absolute;

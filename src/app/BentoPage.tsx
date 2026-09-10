@@ -194,12 +194,7 @@ export function BentoPage() {
                 and the text is refracted through it.
               </p>
             </NacreCallout>
-            <Announcement width={720} kind="note">
-              <span>
-                <strong>And the ink announcement.</strong> The blot lands at the left when it
-                scrolls into view.
-              </span>
-            </Announcement>
+
           </div>
         </div>
       </section>

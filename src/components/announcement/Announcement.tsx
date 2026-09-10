@@ -3,10 +3,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { InkSink, type InkSinkHandle } from '../ink-sink/InkSink';
 import { Surface } from '../surface/Surface';
-import { InkSplat, type InkSplatHandle } from '../ink-splat';
-import { useWebGL } from '../gate';
-import { onInk, useResolvedTheme } from '../theme';
-import { calloutKinds, type CalloutKind } from '../callout/kinds';
 import type { SinkTier } from '../ink-sink/InkSink';
 import { announcement } from './metrics';
 import styles from './Announcement.module.css';
@@ -28,14 +24,6 @@ export interface AnnouncementProps {
    * once it is gone, so it can be unmounted.
    */
   onDismiss?: () => void;
-  /**
-   * Announce a kind: a blot of the kind's palette colour lands at the banner's
-   * left end when it scrolls into view, with the kind's glyph on it. This is
-   * where the ink blot lives now — it is an announcement, not a callout.
-   */
-  kind?: CalloutKind;
-  /** Hold the blot until `ref.splat()`; by default it lands when it scrolls in. */
-  blotTrigger?: 'view' | 'manual';
   className?: string;
   style?: CSSProperties;
 }
@@ -50,8 +38,6 @@ export function Announcement({
   width = announcement.width,
   variant = 'auto',
   onDismiss,
-  kind,
-  blotTrigger = 'view',
   className,
   style,
 }: AnnouncementProps) {
@@ -73,30 +59,6 @@ export function Announcement({
     if (isSunk) setFading(true);
   };
 
-  // The blot: the kind's palette colour, landing at the left end.
-  const spec = kind ? calloutKinds[kind] : null;
-  const scheme = useResolvedTheme();
-  const webgl = useWebGL();
-  const blotInk = spec ? spec.ink[scheme] : '#000';
-  const splatRef = useRef<InkSplatHandle>(null);
-  const rootRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!spec || blotTrigger !== 'view' || webgl === false) return;
-    const el = rootRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) {
-          splatRef.current?.splat();
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.4 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [spec, blotTrigger, webgl]);
-
   // Each banner drifts on its own clock, so two on a page never move together.
   const [drift] = useState(() => ({
     dur: `${17 + Math.random() * 9}s`,
@@ -107,32 +69,14 @@ export function Announcement({
     '--drift-delay': drift.delay,
   } as CSSProperties;
 
-  const blot = spec && webgl !== false && (
-    <span className={styles.blot} aria-hidden="true">
-      <InkSplat
-        ref={splatRef}
-        ink={blotInk}
-        logo={false}
-        interactive={false}
-        scale={0.55}
-        nacre={0.85}
-        flood={false}
-      />
-      <span className={styles.glyph} style={{ color: onInk(blotInk) }}>
-        {spec.glyph}
-      </span>
-    </span>
-  );
+  // the flat card's dismissal is the ink exit rather than a sinking
   const [exit, setExit] = useState<'none' | 'dismiss'>('none');
 
   const content = (
     <div
-      ref={rootRef}
       className={styles.content}
-      data-kind={kind || undefined}
       style={{ minHeight: announcement.height, padding: `16px ${announcement.paddingX}px` }}
     >
-      {blot}
       <div className={styles.body}>{children}</div>
       {onDismiss && (
         <button

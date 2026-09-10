@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
+import { InkSplat, type InkSplatHandle } from '../ink-splat';
 import { Surface } from '../surface/Surface';
 import { useResolvedTheme } from '../theme';
 import { useWebGL } from '../gate';
@@ -64,6 +65,28 @@ export function Callout({
   // (the accent breathes round it) and the text is its ghost
   const cardRef = useRef<HTMLDivElement>(null);
   const lensRef = useRef<HTMLDivElement>(null);
+
+  // The blot behind the lens: the kind's ink, landing at the card's top-left
+  // corner when the card scrolls into view. It does not flood — it is a mark
+  // under the icon, not a wash over the card.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const splatRef = useRef<InkSplatHandle>(null);
+  useEffect(() => {
+    if (webgl === false) return;
+    const el = rootRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          splatRef.current?.splat();
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.35 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [webgl]);
   useEffect(() => {
     const el = cardRef.current;
     if (!nacre || !el) return;
@@ -80,6 +103,19 @@ export function Callout({
 
   const inner = (
     <>
+      {webgl !== false && (
+        <span className={styles.blot} aria-hidden="true">
+          <InkSplat
+            ref={splatRef}
+            ink={tint}
+            logo={false}
+            interactive={false}
+            flood={false}
+            nacre={0.85}
+            scale={0.5}
+          />
+        </span>
+      )}
       {/* The kind's symbol, centred in the lens (DOM, so it stays crisp at any size). */}
       <div ref={lensRef} className={styles.lens} aria-hidden="true">
         <svg className={styles.symbol} viewBox="0 0 16 16">
@@ -101,7 +137,11 @@ export function Callout({
   );
 
   return (
-    <div className={`${styles.root} ${className ?? ''}`} style={{ width: '100%', maxWidth, ...vars, ...style }}>
+    <div
+      ref={rootRef}
+      className={`${styles.root} ${className ?? ''}`}
+      style={{ width: '100%', maxWidth, ...vars, ...style }}
+    >
       {nacre ? (
         <div ref={cardRef} className={`${styles.card} ${styles.nacre}`} data-variant="surface">
           {inner}

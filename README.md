@@ -156,7 +156,7 @@ One pill moves under the items: it follows whatever the pointer is over and fall
 </Announcement>
 ```
 
-The wide banner, afloat: the whole page is the well. It is an `InkSink` in `well` mode, so the liquid around the slab is the fixed page ground's own surface, drawn in the same frame, and the slab tips under the pointer and sinks into the page. `kind` announces one of the callout kinds: a blot of that kind's palette colour lands at the banner's left end when it scrolls into view, with the kind's glyph on it. This is where the ink blot lives — it announces, it does not call out. Every banner also drifts on its own clock, a few pixels over twenty-odd seconds, so two on a page never move together; reduced motion stills them.
+The wide banner, afloat: the whole page is the well. It is an `InkSink` in `well` mode, so the liquid around the slab is the fixed page ground's own surface, drawn in the same frame, and the slab tips under the pointer and sinks into the page. Every banner drifts on its own clock, a few pixels over twenty-odd seconds, so two on a page never move together; reduced motion stills them.
 
 `onDismiss` adds a close button; the click is an impact at that point, the banner plunges and the liquid closes over it, then the layer fades (the liquid it shows is the ground's, so only the slab goes) and `onDismiss` fires. Flat (`variant="flat"`, or the gates) it is a flat `Surface` card and the dismissal is the `exit`.
 
@@ -168,7 +168,7 @@ The wide banner, afloat: the whole page is the well. It is an `InkSink` in `well
 </Callout>
 ```
 
-The glass callout's layout on a `Surface`: the kind's symbol in a lens ring at the top-left corner (the glass metrics: 96 px at 64, 64), the kind label, a title and body. `surface` is the liquid in full motion, `plain` the liquid calm, `svg` a flat outline; each steps down to what the page can run. Kinds are `note`, `tip`, `important`, `warning` and `caution`, mapped onto the official pmndrs palette (blue, green, purple, orange, red) in `callout/kinds.ts`. The palette itself is `theme/palette.ts`, the same nine colours the pond's `brand()` spectrum runs through. The palette is pitched for light on dark, so a kind's colour is used as it is on the dark page and carried toward the page's ink on the light one.
+The glass callout's layout on a `Surface`: the kind's symbol in a lens ring at the top-left corner (the glass metrics: 96 px at 64, 64), the kind label, a title and body. `surface` is the liquid in full motion, `plain` the liquid calm, `svg` a flat outline; each steps down to what the page can run. A blot of the kind's ink is thrown at the card's top-left corner when it scrolls into view, under the lens ring, and does not flood the card. Kinds are `note`, `tip`, `important`, `warning` and `caution`, mapped onto the official pmndrs palette (blue, green, purple, orange, red) in `callout/kinds.ts`. The palette itself is `theme/palette.ts`, the same nine colours the pond's `brand()` spectrum runs through. The palette is pitched for light on dark, so a kind's colour is used as it is on the dark page and carried toward the page's ink on the light one.
 
 ### `<NacreCallout>`
 
