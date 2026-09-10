@@ -366,7 +366,7 @@ export function BentoPage() {
           </div>
           <button
             type="button"
-            className="text-button above-liquid"
+            className="text-button above-liquid cta-toggle"
             onClick={() => setLauncherDisabled((d) => !d)}
           >
             {launcherDisabled ? 'Enable Theme Switcher' : 'Disable Theme Switcher'}

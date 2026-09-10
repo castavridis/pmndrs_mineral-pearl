@@ -172,14 +172,8 @@ a {
 .bento {
   max-width: 1200px;
   margin: 0 auto;
-  /* The column sits in the middle of the viewport, top to bottom: it is the
-     whole page now, and a page that short reads better held in the centre
-     than hung from the top. 3rem stays the least it keeps from either edge. */
-  min-height: 100dvh;
-  display: grid;
-  align-content: center;
-  padding: 3rem clamp(16px, 4vw, 40px);
-  box-sizing: border-box;
+  /* hung from the top: the banner is the first thing on the page, 3rem down */
+  padding: 3rem clamp(16px, 4vw, 40px) 96px;
 }
 
 /* No rules between the groups: the column's own spacing says where one ends,
@@ -384,6 +378,12 @@ a {
 .above-liquid {
   position: relative;
   z-index: 3;
+}
+
+/* the switch's own toggle closes its group; the plain controls start a
+   little further on, so the two do not read as one run of buttons */
+.cta-toggle {
+  margin-bottom: 1.5rem;
 }
 
 /* a thing the wake moves: it needs a level of its own, since useWake writes a
