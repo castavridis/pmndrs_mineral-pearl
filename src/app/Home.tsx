@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Announcement, Callout, Nav, type NavLink } from '../components';
+import { Announcement, Callout, Nav, useDismissal, type NavLink } from '../components';
 
 const LINKS: NavLink[] = [
   {
@@ -32,7 +31,8 @@ const LINKS: NavLink[] = [
  * layer is DOM first; the liquid arrives after mount where it can run.
  */
 export function Home() {
-  const [bannerGone, setBannerGone] = useState(false);
+  // a theme change brings a dismissed banner back
+  const [bannerGone, dismissBanner] = useDismissal();
   return (
     <>
       <header style={{ padding: '72px 8px 0' }}>
@@ -45,7 +45,7 @@ export function Home() {
           leave a hole where the banner had been. An empty row is nothing. */}
       <div className="announcement-row">
         {!bannerGone && (
-          <Announcement width={652} onDismiss={() => setBannerGone(true)}>
+          <Announcement width={652} onDismiss={dismissBanner}>
             <span>
               <strong>Mineral &amp; pearl.</strong> Liquid surfaces for pmndrs, grown from Kris's ink
               splat.

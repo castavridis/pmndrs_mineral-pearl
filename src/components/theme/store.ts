@@ -24,6 +24,13 @@ interface ThemeState {
   commit: () => void;
   /** The overlay has faded; the transition is over. */
   finish: () => void;
+  /**
+   * How many times the theme has changed in this visit: counted when a change
+   * commits, through the ink or at once. Not persisted. Whatever should be
+   * undone by a change of theme (a dismissed banner) remembers the count it
+   * happened at.
+   */
+  changes: number;
   /** The liquid shaders. Off, the ground is a flat colour and the theme floods in a flat colour. */
   shaders: boolean;
   setShaders: (on: boolean) => void;
@@ -38,13 +45,19 @@ export const useThemeStore = create<ThemeState>()(
       pending: null,
       requestTheme: (theme, origin) => {
         if (get().pending) return;
-        if (!origin) set({ theme });
+        if (!origin) set({ theme, changes: get().changes + 1 });
         else set({ pending: { theme, origin, phase: 'splat' } });
       },
       commit: () => {
-        const { pending } = get();
-        if (pending) set({ theme: pending.theme, pending: { ...pending, phase: 'fade' } });
+        const { pending, changes } = get();
+        if (pending)
+          set({
+            theme: pending.theme,
+            pending: { ...pending, phase: 'fade' },
+            changes: changes + 1,
+          });
       },
+      changes: 0,
       finish: () => set({ pending: null }),
       shaders: true,
       setShaders: (shaders) => set({ shaders }),

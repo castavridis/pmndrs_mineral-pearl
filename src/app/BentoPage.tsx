@@ -10,6 +10,7 @@ import {
   centreOf,
   getNacreStage,
   palette,
+  useDismissal,
   useResolvedTheme,
   useThemeStore,
   useWake,
@@ -214,7 +215,8 @@ export function BentoPage() {
   useNacreTweaks();
   // one look for both controls: they float on the same page and read as a pair
   const swallow = useControlSwallow();
-  const [gone, setGone] = useState(false);
+  // a theme change brings a dismissed banner back
+  const [gone, dismiss] = useDismissal();
   const [launcherDisabled, setLauncherDisabled] = useState(false);
   // The launcher floats on the page like the announcement, and the nacre stage
   // draws its face, so it is iridescent rather than flat. Disabled it settles
@@ -252,7 +254,7 @@ export function BentoPage() {
         <div className="bento-col">
           <div className="bento-cell" style={{ maxWidth: 720 }}>
             {!gone && (
-              <Announcement width={720} onDismiss={() => setGone(true)}>
+              <Announcement width={720} onDismiss={dismiss}>
                 <span>
                   <strong>Mineral &amp; pearl.</strong> Liquid surfaces for pmndrs, grown from Kris's
                   ink splat.
