@@ -93,9 +93,10 @@ export function AnnouncementPage() {
       body: (
         <>
           <span>
-            <strong>v10 is out.</strong> Petals, glass and the growing pill, in one package.
+            <strong>Mineral &amp; pearl.</strong> Liquid surfaces for pmndrs, grown from Kris's ink
+            splat.
           </span>
-          <a href="/blog">Read more</a>
+          <a href="/dev/">Look inside</a>
         </>
       ),
     },
@@ -106,9 +107,10 @@ export function AnnouncementPage() {
       body: (
         <>
           <span>
-            <strong>Workshop next week.</strong> Bring your own GLBs; we will make them iridescent.
+            <strong>Everything sinks.</strong> Banners, controls and callouts float on the page's own
+            liquid, and go under when they leave.
           </span>
-          <a href="/events">Register</a>
+          <a href="/dev/engulf">Try one</a>
         </>
       ),
     },

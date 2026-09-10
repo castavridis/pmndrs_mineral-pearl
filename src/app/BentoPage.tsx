@@ -254,9 +254,10 @@ export function BentoPage() {
             {!gone && (
               <Announcement width={720} onDismiss={() => setGone(true)}>
                 <span>
-                  <strong>v10 is out.</strong> Petals, glass and the growing pill, in one package.
+                  <strong>Mineral &amp; pearl.</strong> Liquid surfaces for pmndrs, grown from Kris's
+                  ink splat.
                 </span>
-                <a href="/blog/v10">Read more</a>
+                <a href="/dev/">Look inside</a>
               </Announcement>
             )}
           </div>

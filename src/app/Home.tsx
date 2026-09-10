@@ -47,9 +47,10 @@ export function Home() {
         {!bannerGone && (
           <Announcement width={652} onDismiss={() => setBannerGone(true)}>
             <span>
-              <strong>v10 is out.</strong> Petals, glass and the growing pill, in one package.
+              <strong>Mineral &amp; pearl.</strong> Liquid surfaces for pmndrs, grown from Kris's ink
+              splat.
             </span>
-            <a href="/blog/v10">Read more</a>
+            <a href="/dev/">Look inside</a>
           </Announcement>
         )}
       </div>
@@ -57,8 +58,8 @@ export function Home() {
         <section className="hero">
           <h1>React, three and a well of ink.</h1>
           <p>
-            The pmndrs collective builds the tools that make 3D on the web feel like the rest of
-            your app: a renderer that speaks React, layout that flexes, springs that settle.
+            The pmndrs collective builds the tools that make 3D on the web feel like the rest of your
+            app: a renderer that speaks React, layout that flexes, springs that settle.
           </p>
         </section>
         <section aria-label="Callouts" className="callouts" style={{ justifyItems: 'center' }}>
@@ -70,8 +71,8 @@ export function Home() {
           </Callout>
           <Callout variant="plain" kind="warning" title="Big models load lazily">
             <p>
-              The liquid layers arrive after mount. Flat outlines stand in until the canvas has
-              drawn its first frame.
+              The liquid layers arrive after mount. Flat outlines stand in until the canvas has drawn
+              its first frame.
             </p>
           </Callout>
         </section>
