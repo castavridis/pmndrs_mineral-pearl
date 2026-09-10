@@ -112,7 +112,7 @@ Without the pond there are two fallback tiers, picked by `tier` (`auto` by defau
 
 The cling, where a slab drags the surface with it, is shaped by the viscous free-surface papers rather than solving them: its reach grows as the square root of viscosity (momentum diffusion), its profile meets the slab without a crease, and it follows a lagged velocity so the surface is dragged late and keeps moving after the slab stops.
 
-`sinkDepth` sets how deep a sunk slab rests and `pressDepth` how far a press dips it, both in uv. The study takes a slab right under and closes the liquid over it; a shallower rest leaves it under the surface but still seen through it, which is what a disabled control wants — unavailable, still findable. `sinkSplash={false}` drops the swallow that goes with a full sink, and `bare` drops the slab's own colours so whatever is drawn behind it shows through. The bento's article launcher is all four: a slab afloat whose face the nacre stage draws, settling just under when disabled and dipping under a press.
+`sinkDepth` sets how deep a sunk slab rests and `pressDepth` how far a press dips it, both in uv. The study takes a slab right under and closes the liquid over it; a shallower rest leaves it under the surface but still seen through it, which is what a disabled control wants — unavailable, still findable. `sinkSplash={false}` drops the swallow that goes with a full sink, and `bare` drops the slab's own colours so whatever is drawn behind it shows through. The bento's article launcher is all four: a slab afloat whose face the nacre stage draws, settling just under when disabled and dipping under a press. Its ground is the page's opposite body — pearl where the page is mineral and mineral where the page is pearl — the same stand the nav bar takes. Naming the liquid also keeps that well out of the theme's masked switch, which is what makes it the page's opposite rather than a patch of it.
 
 The globs stand proud as they land and then relax flat: `globSettle` (seconds, default 0.9) eases their relief from `globHeight` to nothing once they have arrived, because a bead cannot hold its own height after the liquid has taken it. Set it to 0 to keep them raised.
 
@@ -168,7 +168,9 @@ One pill slides behind whatever the pointer is over, falling back to the current
 
 The wide banner, afloat: the whole page is the well. It is an `InkSink` in `well` mode, so the liquid around the slab is the fixed page ground's own surface, drawn in the same frame, and the slab tips under the pointer and sinks into the page. Every banner drifts on its own clock, a few pixels over twenty-odd seconds, so two on a page never move together; reduced motion stills them.
 
-`onDismiss` adds a close button; the click is an impact at that point, the banner plunges and the liquid closes over it, then the layer fades (the liquid it shows is the ground's, so only the slab goes) and `onDismiss` fires. Flat (`variant="flat"`, or the gates) it is a flat `Surface` card and the dismissal is the `exit`.
+It arrives out of the liquid. The banner is submerged for its first frames and comes up once the page is ready — `load` and the web fonts, with a backstop in case either never resolves — so it surfaces rather than appearing, and the beat before the shaders have drawn anything is spent under the surface where nothing is expected to be legible. The sink only splashes for a change of state, never for its opening one, so going under costs nothing and the rise is the whole movement.
+
+`onDismiss` adds a close button; the click is an impact at that point, the banner plunges and the liquid closes over it, then the layer fades (the liquid it shows is the ground's, so only the slab goes) and `onDismiss` fires. It settles under twice in a life, once on load and once for good, and only the second is a dismissal. Flat (`variant="flat"`, or the gates) it is a flat `Surface` card and the dismissal is the `exit`.
 
 ### `<Callout>`
 

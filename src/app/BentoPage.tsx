@@ -11,6 +11,7 @@ import {
   Surface,
   getNacreStage,
   palette,
+  useResolvedTheme,
   useWake,
   type InkSinkHandle,
   type NacreConfig,
@@ -119,6 +120,13 @@ function useNacreTweaks() {
  */
 export function BentoPage() {
   useThemeTweak();
+  // The launcher stands against the page the way the nav bar does: the dark
+  // page carries the mineral ground, so the launcher floats on pearl, and the
+  // light page the other way about. Naming the liquid also keeps this well out
+  // of the theme's masked switch, which is what makes it the page's opposite
+  // rather than a patch of it.
+  const scheme = useResolvedTheme();
+  const launcherGround = scheme === 'dark' ? 'pearl' : 'mineral';
   useNacreTweaks();
   const [gone, setGone] = useState(false);
   const [launcherDisabled, setLauncherDisabled] = useState(false);
@@ -217,6 +225,7 @@ export function BentoPage() {
                   ref={launcherSink}
                   well
                   bare
+                  liquid={launcherGround}
                   radius={8}
                   bleed={44}
                   sinkOnClick={false}

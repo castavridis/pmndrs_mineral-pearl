@@ -44,19 +44,53 @@ export function Announcement({
   // the sink resolves its own tier; only `flat` opts out of floating
   const liquid = variant !== 'flat';
   const sink = useRef<InkSinkHandle>(null);
-  // sunk: the slab is under; after a beat the whole thing fades, leaving the
-  // ground (the liquid it shows is the ground's, so nothing else changes)
-  const [sunk, setSunk] = useState(false);
+  // dismissed: the slab is under for good; after a beat the whole thing fades,
+  // leaving the ground (the liquid it shows is the ground's, so nothing else
+  // changes)
+  const [dismissed, setDismissed] = useState(false);
   const [fading, setFading] = useState(false);
+  // The banner starts under the surface and comes up once the page is ready:
+  // it arrives out of the liquid rather than being there from the first frame,
+  // which also covers the beat before the shaders have drawn anything. The
+  // sink never splashes for its opening state, only for a change, so going
+  // under costs nothing and the rise is the movement.
+  const [surfaced, setSurfaced] = useState(false);
+  useEffect(() => {
+    // the flat card has no liquid to be under, so nothing to come up from
+    if (!liquid) return;
+    let done = false;
+    const rise = () => {
+      if (done) return;
+      done = true;
+      setSurfaced(true);
+    };
+    // a backstop, in case a font never resolves or `load` never fires
+    const backstop = window.setTimeout(rise, 1500);
+    const loaded =
+      document.readyState === 'complete'
+        ? Promise.resolve()
+        : new Promise<void>((res) => window.addEventListener('load', () => res(), { once: true }));
+    Promise.all([loaded, document.fonts?.ready ?? Promise.resolve()])
+      // a beat after the page has settled, so the rise is not competing with
+      // the last of the layout
+      .then(() => window.setTimeout(rise, 160))
+      .catch(rise);
+    return () => {
+      done = true;
+      window.clearTimeout(backstop);
+    };
+  }, [liquid]);
   // the sink says when the liquid has closed over the slab; a backstop keeps
   // a dismissal from hanging if a tier never reports
   useEffect(() => {
-    if (!sunk) return;
+    if (!dismissed) return;
     const t = window.setTimeout(() => setFading(true), 3000);
     return () => window.clearTimeout(t);
-  }, [sunk]);
+  }, [dismissed]);
+  // it settles under twice — once on load, once for good — and only the
+  // second is a dismissal
   const onSunkSettled = (isSunk: boolean) => {
-    if (isSunk) setFading(true);
+    if (isSunk && dismissed) setFading(true);
   };
 
   // Each banner drifts on its own clock, so two on a page never move together.
@@ -84,9 +118,9 @@ export function Announcement({
           className={styles.dismiss}
           aria-label="Dismiss announcement"
           onPointerDown={(e) => {
-            if (e.button !== 0 || sunk) return;
+            if (e.button !== 0 || dismissed) return;
             sink.current?.impact(e.nativeEvent);
-            setSunk(true);
+            setDismissed(true);
           }}
           onClick={() => {
             if (!liquid) setExit('dismiss');
@@ -132,7 +166,7 @@ export function Announcement({
       globHeight={0.8}
       globSettle={1.1}
       globShading
-      sunk={sunk}
+      sunk={dismissed || !surfaced}
       tier={variant}
       onSunkSettled={onSunkSettled}
       className={`${styles.root} ${className ?? ''}`}
