@@ -24,6 +24,12 @@ export interface AnnouncementProps {
    */
   variant?: 'auto' | SinkTier | 'flat';
   /**
+   * The meniscus at the rim of the face's nacre: a band where the lip darkens
+   * and the edge catches the light and the iridescence. Off, the nacre runs
+   * to a hard edge. Default true.
+   */
+  meniscus?: boolean;
+  /**
    * Dismissible: a close button. Afloat, the blow sinks the banner into the
    * page and the liquid closes over it; flat, the ink closes over it. Called
    * once it is gone, so it can be unmounted.
@@ -57,6 +63,7 @@ export function Announcement({
   children,
   width = announcement.width,
   variant = 'auto',
+  meniscus = true,
   onDismiss,
   swallow,
   className,
@@ -248,7 +255,7 @@ export function Announcement({
             interactive={false}
             flooded
             nacre={nacreFace.nacre}
-            meniscus={nacreFace.meniscus}
+            meniscus={meniscus ? nacreFace.meniscus : 0}
             clip={{ inset: 0, radius: announcement.radius }}
           />
         </span>

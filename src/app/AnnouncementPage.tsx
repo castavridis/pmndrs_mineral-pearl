@@ -34,6 +34,7 @@ export function AnnouncementPage() {
       hint: 'liquid is the pond; swallow and quiet are the fallbacks; flat opts out of floating',
     },
     dismissible: true,
+    meniscus: { value: true, hint: "the band at the rim of the face's nacre" },
     restore: button(() => {
       setGone({});
       setGen((g) => g + 1);
@@ -129,6 +130,7 @@ export function AnnouncementPage() {
                 width={it.width}
                 variant={variant}
                 swallow={swallow}
+                meniscus={c.meniscus}
                 onDismiss={c.dismissible ? dismiss(it.id) : undefined}
               >
                 {it.body}
