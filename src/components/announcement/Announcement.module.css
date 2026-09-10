@@ -138,18 +138,20 @@
   }
 }
 
-/* --- the blot: ink thrown at the banner's top-left corner -----------------
-   Centred on the corner, so it lies half on the slab and spills half onto
-   the liquid beside it. It fades as the banner is struck: it lies above the
-   liquid, so the liquid cannot take it down with the slab. */
-.blot {
+/* --- the face: the ink splat's nacre ---------------------------------------
+   The ink, flooded to the slab's box in the slab's own colour, lies behind
+   the text as the face's surface. It is inside the slab, so it tips with it
+   and the liquid closes over it as the slab goes under. */
+.nacre {
   position: absolute;
-  left: 0;
-  top: 0;
-  transform: translate(-50%, -50%);
-  transition: opacity 360ms ease;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
 }
 
-.blot[data-leaving] {
-  opacity: 0;
+/* fiber sets pointer-events on its wrapper and canvas; the face's own
+   handlers take the pointer */
+.nacre,
+.nacre * {
+  pointer-events: none !important;
 }

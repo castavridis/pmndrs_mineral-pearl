@@ -123,6 +123,18 @@ export interface InkSplatProps {
   flood?: boolean;
   /** `splat` (default) or `engulf`, the inverse. */
   mode?: InkMode;
+  /**
+   * The ink covers its clip box from the first frame, with no impact and no
+   * droplets: a surface rather than an event. For a face that wears the
+   * ink's nacre. Needs `clip`, and `flood` left on.
+   */
+  flooded?: boolean;
+  /**
+   * CSS px over which the ink's depth falls away at the clip box's edge: a
+   * meniscus, where the lip darkens and the rim catches the light. Default 0,
+   * a hard edge.
+   */
+  meniscus?: number;
   /** Splat on pointerdown over the canvas. Default true. */
   interactive?: boolean;
   /** Splat once on mount (and again if this turns on later). Default false. */
@@ -174,6 +186,8 @@ export function InkSplat({
   origin,
   clip,
   mode = 'splat',
+  flooded = false,
+  meniscus = 0,
   interactive = true,
   autoplay = false,
   onSplat,
@@ -211,8 +225,11 @@ export function InkSplat({
       frameloop="demand"
       dpr={dpr}
       // measure on resize only; the scroll-tracking measure can miss the first
-      // layout of an absolutely positioned container and leave the canvas 300×150
-      resize={{ scroll: false, debounce: { scroll: 50, resize: 0 } }}
+      // layout of an absolutely positioned container and leave the canvas 300×150.
+      // Measure the layout box, not the painted one: a splat inside something
+      // transformed (a slab scaled down under the liquid) would otherwise take
+      // the scaled size, and keep it — a transform changing is not a resize.
+      resize={{ scroll: false, offsetSize: true, debounce: { scroll: 50, resize: 0 } }}
       flat
       linear
       gl={{
@@ -239,6 +256,8 @@ export function InkSplat({
         clipInset={clip?.inset}
         clipRadius={clip?.radius ?? 0}
         mode={mode}
+        flooded={flooded}
+        meniscus={meniscus}
         interactive={interactive}
         autoplay={autoplay}
         onSplat={onSplat}
@@ -265,6 +284,8 @@ interface LayerProps {
   clipInset: number | undefined;
   clipRadius: number;
   mode: InkMode;
+  flooded: boolean;
+  meniscus: number;
   interactive: boolean;
   autoplay: boolean;
   onSplat?: () => void;
@@ -283,12 +304,17 @@ interface Resources {
   fieldScene: THREE.Scene;
   inkScene: THREE.Scene;
   particles: InkParticles;
-  /** performance.now() of the last impact; the screen is blank while < 0 */
+  /**
+   * performance.now() of the last impact; the screen is blank while there has
+   * been none (`NONE`). A clock started at the end of a splat (reduced motion,
+   * `flooded`) is set back from now and can be negative early in a page's
+   * life, so the sign cannot be the marker.
+   */
   start: number;
   /** fixed-step simulation clock, seconds since impact */
   simT: number;
   settled: boolean;
-  /** performance.now() when a drain began; < 0 while not draining */
+  /** performance.now() when a drain began; `NONE` while not draining */
   drainStart: number;
   drained: boolean;
   /** flood timing for the current mode */
@@ -296,6 +322,9 @@ interface Resources {
   floodLen: number;
   duration: number;
 }
+
+/** No impact yet, or no drain under way. */
+const NONE = -Infinity;
 
 function createResources(): Resources {
   // droplet state lives in a tiny RGBA8 texture (two rows per droplet
@@ -359,6 +388,7 @@ function createResources(): Resources {
       uClipHalf: { value: new THREE.Vector2(0, 0) },
       uClipRadius: { value: 0 },
       uClipOn: { value: 0 },
+      uMeniscus: { value: 0 },
       uFloodStart: { value: FLOOD_START },
       uFloodLen: { value: FLOOD_LEN },
       uEngulf: { value: 0 },
@@ -389,10 +419,10 @@ function createResources(): Resources {
     fieldScene,
     inkScene,
     particles: new InkParticles(),
-    start: -1,
+    start: NONE,
     simT: 0,
     settled: false,
-    drainStart: -1,
+    drainStart: NONE,
     drained: false,
     floodStart: FLOOD_START,
     floodLen: FLOOD_LEN,
@@ -433,6 +463,8 @@ function InkSplatLayer({
   clipInset,
   clipRadius,
   mode,
+  flooded,
+  meniscus,
   interactive,
   autoplay,
   onSplat,
@@ -493,7 +525,7 @@ function InkSplatLayer({
     res.start = performance.now() - (reducedRef.current ? res.duration * 1000 : 0);
     res.simT = 0;
     res.settled = false;
-    res.drainStart = -1;
+    res.drainStart = NONE;
     res.drained = false;
     onSplatRef.current?.();
     invalidate();
@@ -501,7 +533,7 @@ function InkSplatLayer({
 
   const drain = useCallback(() => {
     const res = resRef.current;
-    if (!res || res.start < 0 || res.drainStart >= 0) return;
+    if (!res || res.start === NONE || res.drainStart !== NONE) return;
     res.drainStart = performance.now() - (reducedRef.current ? DRAIN_LEN * 1000 : 0);
     res.drained = false;
     invalidate();
@@ -573,8 +605,38 @@ function InkSplatLayer({
     u.uClipHalf.value.set(hx, hy);
     u.uClipRadius.value = clipRadius / unit;
     u.uClipOn.value = clipOn ? 1 : 0;
+    u.uMeniscus.value = meniscus / unit;
     invalidate();
-  }, [size, dpr, scale, field, invalidate, originX, originY, clipInset, clipRadius, mode, flood]);
+  }, [
+    size,
+    dpr,
+    scale,
+    field,
+    invalidate,
+    originX,
+    originY,
+    clipInset,
+    clipRadius,
+    mode,
+    flood,
+    meniscus,
+  ]);
+
+  // flooded: the ink is already everywhere in its box, so the clock starts at
+  // the end of a splat that threw nothing. After the timing above, which sets
+  // how long a splat runs.
+  useEffect(() => {
+    const res = resRef.current;
+    if (!res || !flooded) return;
+    res.inkMaterial.uniforms.uSeed.value = Math.random() * 100;
+    res.particles.count = 0;
+    res.start = performance.now() - res.duration * 1000;
+    res.simT = res.duration;
+    res.settled = false;
+    res.drainStart = NONE;
+    res.drained = false;
+    invalidate();
+  }, [flooded, invalidate]);
 
   // the fill: a texture over the given canvas, refreshed every frame it draws
   const fillRef = useRef<THREE.CanvasTexture | null>(null);
@@ -623,7 +685,10 @@ function InkSplatLayer({
       const r = gl.domElement.getBoundingClientRect();
       if (!r.width || !r.height) return;
       const unit = Math.max(r.width, r.height) * scale;
-      res.inkMaterial.uniforms.uPtr.value.set((at.clientX - r.left) / unit, (at.clientY - r.top) / unit);
+      res.inkMaterial.uniforms.uPtr.value.set(
+        (at.clientX - r.left) / unit,
+        (at.clientY - r.top) / unit
+      );
       res.inkMaterial.uniforms.uPtrOn.value = 1;
       invalidate();
     },
@@ -665,14 +730,14 @@ function InkSplatLayer({
   useFrame(({ gl }) => {
     const res = resRef.current;
     gl.setClearColor(0x000000, 0);
-    if (!res || res.start < 0) {
+    if (!res || res.start === NONE) {
       gl.setRenderTarget(null);
       gl.clear();
       return;
     }
     let t = Math.min((performance.now() - res.start) / 1000, res.duration);
     let draining = false;
-    if (res.drainStart >= 0) {
+    if (res.drainStart !== NONE) {
       // draining runs the flood clock backwards over DRAIN_LEN with the
       // droplets frozen where they lie: the front withdraws, they un-swell
       const back = (performance.now() - res.drainStart) / 1000 / DRAIN_LEN;
@@ -715,7 +780,7 @@ function InkSplatLayer({
     gl.clear();
     gl.render(res.inkScene, res.camera);
 
-    if (res.drainStart >= 0) {
+    if (res.drainStart !== NONE) {
       if (draining) invalidate();
       else if (!res.drained) {
         res.drained = true;

@@ -30,17 +30,6 @@
   pointer-events: none;
 }
 
-/* above the liquid, over the slab's box: marks that lie on the surface */
-.overlay {
-  position: absolute;
-  z-index: 3;
-  pointer-events: none;
-}
-
-.overlay * {
-  pointer-events: none !important;
-}
-
 /* the content is the slab: real DOM in the study's slab colours, transformed
    by the pond to follow it down into the ground */
 .slab {

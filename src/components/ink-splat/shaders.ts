@@ -84,6 +84,10 @@ uniform vec4 uFillRect;
 uniform vec2 uClipHalf;
 uniform float uClipRadius;
 uniform float uClipOn;
+// a meniscus at the clip box's edge, in units: the ink's depth falls to the
+// threshold at the edge itself over this band, so the lip and the rim's
+// highlight have somewhere to sit. 0 is a hard edge.
+uniform float uMeniscus;
 // when the flood begins and how long it takes
 uniform float uFloodStart;
 uniform float uFloodLen;
@@ -153,6 +157,11 @@ void main() {
   float boxRadius = uClipOn > 0.5 ? uClipRadius : 0.0;
   float dBox = sdBox(p - uDims * 0.5, boxHalf - boxRadius) - boxRadius;
   float inside = 1.0 - smoothstep(-uPx, uPx, dBox);
+  if (uMeniscus > 0.0) {
+    inside = dBox < 0.0
+      ? 0.5 + 0.5 * smoothstep(0.0, uMeniscus, -dBox)
+      : 0.5 * (1.0 - smoothstep(0.0, 2.0 * uPx, dBox));
+  }
   float front;
   if (uEngulf > 0.5) {
     // engulf: the ink closes in from the box's edge behind a ragged front of

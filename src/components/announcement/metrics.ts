@@ -13,17 +13,10 @@ export const announcement = {
   bleed: 96,
 } as const;
 
-/** The ink blot at the banner's top-left corner. */
-export const blot = {
-  /** The blot's canvas, px square, centred on the corner. */
-  size: 132,
-  /** Blot size relative to that canvas. */
-  scale: 0.7,
-  /** How much of the burst flies, 0..1. */
-  spatter: 0.8,
-  /** Surface tension and iridescence on the ink, 0..1: the callout lens's. */
+/** The banner's face: the ink splat's nacre, flooded to the slab's box. */
+export const nacreFace = {
+  /** Surface tension and iridescence, 0..1: the callout lens's blot. */
   nacre: 0.85,
-  /** The ink lands when the sink says the rise has settled; where it cannot
-      say (the swallow tier), this long after the banner starts up, ms. */
-  backstop: 4500,
+  /** The meniscus at the rim, px: where the lip darkens and the edge catches the light. */
+  meniscus: 7,
 } as const;

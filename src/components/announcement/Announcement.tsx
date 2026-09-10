@@ -3,11 +3,12 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { InkSink, centreOf, type InkSinkHandle } from '../ink-sink/InkSink';
 import { InkSplat, type InkSplatHandle } from '../ink-splat';
+import { SLAB_LOOK } from '../ink-sink/liquid-pond';
 import { Surface } from '../surface/Surface';
-import { palette } from '../theme/palette';
 import { useWebGL } from '../gate';
+import { useResolvedTheme, useThemeStore } from '../theme';
 import type { SinkTier } from '../ink-sink/InkSink';
-import { announcement, blot } from './metrics';
+import { announcement, nacreFace } from './metrics';
 import { ANNOUNCEMENT_SWALLOW, type AnnouncementSwallow } from './swallow';
 import styles from './Announcement.module.css';
 
@@ -22,11 +23,6 @@ export interface AnnouncementProps {
    * plain card whose dismissal is the ink exit.
    */
   variant?: 'auto' | SinkTier | 'flat';
-  /**
-   * The ink thrown at the banner's top-left corner once it has surfaced: a
-   * colour, or `false` for none. Default the palette's blue.
-   */
-  blot?: string | false;
   /**
    * Dismissible: a close button. Afloat, the blow sinks the banner into the
    * page and the liquid closes over it; flat, the ink closes over it. Called
@@ -61,7 +57,6 @@ export function Announcement({
   children,
   width = announcement.width,
   variant = 'auto',
-  blot: blotInk = palette.blue,
   onDismiss,
   swallow,
   className,
@@ -71,8 +66,17 @@ export function Announcement({
   // the sink resolves its own tier; only `flat` opts out of floating
   const liquid = variant !== 'flat';
   const sink = useRef<InkSinkHandle>(null);
+  // The face wears the ink splat's nacre: surface tension at the rim and an
+  // iridescence where the surface curves away, dented by the pointer. It is
+  // the ink flooded to the slab's box in the slab's own colour, so it lies on
+  // the slab, tips with it and goes under with it. Only where the pond runs:
+  // the fallback tiers keep their flat face.
   const splat = useRef<InkSplatHandle>(null);
   const webgl = useWebGL();
+  const shaders = useThemeStore((s) => s.shaders);
+  const theme = useResolvedTheme();
+  const nacred = liquid && webgl !== false && shaders;
+  const faceInk = SLAB_LOOK[theme === 'dark' ? 'mineral' : 'pearl'].bg;
   // dismissed: the slab is under for good; after a beat the whole thing fades,
   // leaving the ground (the liquid it shows is the ground's, so nothing else
   // changes)
@@ -114,19 +118,6 @@ export function Announcement({
     const t = window.setTimeout(() => setSurfaced(true), 450);
     return () => window.clearTimeout(t);
   }, [liquid, pageReady, sinkReady]);
-  // The ink lands once the banner is up: thrown at a slab that has surfaced,
-  // not at one still rising through the liquid. The sink says when the rise
-  // has settled; the swallow tier does not report a rise, so a backstop
-  // stands in for it.
-  const [risen, setRisen] = useState(false);
-  useEffect(() => {
-    if (!surfaced) return;
-    const t = window.setTimeout(() => setRisen(true), blot.backstop);
-    return () => window.clearTimeout(t);
-  }, [surfaced]);
-  useEffect(() => {
-    if (risen && blotInk !== false) splat.current?.splat();
-  }, [risen, blotInk]);
   // The room opens as the banner comes up. It holds none while it is under —
   // there is nothing there to hold room for — and grows to the height it wants
   // as the liquid gives the banner back, so the page moves down under it
@@ -176,7 +167,6 @@ export function Announcement({
   // second is a dismissal
   const onSunkSettled = (isSunk: boolean) => {
     if (isSunk && dismissed) setFading(true);
-    if (!isSunk && surfaced) setRisen(true);
   };
 
   // The liquid has closed and the layer is fading; now the room it took has to
@@ -237,6 +227,9 @@ export function Announcement({
       style={{
         padding: `${announcement.paddingY}px ${announcement.paddingRight}px ${announcement.paddingY}px ${announcement.paddingX}px`,
       }}
+      // the pointer dents the face's nacre, as it does the splat's
+      onPointerMove={nacred ? (e) => splat.current?.point(e.nativeEvent) : undefined}
+      onPointerLeave={nacred ? () => splat.current?.leave() : undefined}
       // a click anywhere on the banner is a load at that point: the slab tips
       // until the spot under the finger is under the liquid. The dismissal is
       // its own, heavier blow, so it is left alone.
@@ -246,6 +239,20 @@ export function Announcement({
         sink.current?.press(e.nativeEvent);
       }}
     >
+      {nacred && (
+        <span className={styles.nacre} aria-hidden="true">
+          <InkSplat
+            ref={splat}
+            ink={faceInk}
+            logo={false}
+            interactive={false}
+            flooded
+            nacre={nacreFace.nacre}
+            meniscus={nacreFace.meniscus}
+            clip={{ inset: 0, radius: announcement.radius }}
+          />
+        </span>
+      )}
       <div className={styles.body}>{children}</div>
       {onDismiss && (
         <button
@@ -322,31 +329,6 @@ export function Announcement({
         tier={variant}
         onSunkSettled={onSunkSettled}
         onReady={() => setSinkReady(true)}
-        // The blot lies on the surface, over the slab's corner and spilling
-        // past it onto the liquid, so it is drawn above the liquid rather than
-        // on the slab — where the liquid round the slab would hide whatever
-        // spilled. The liquid cannot close over it, so it leaves as the slab
-        // is struck.
-        overlay={
-          webgl !== false && blotInk !== false ? (
-            <span
-              className={styles.blot}
-              data-leaving={dismissed || undefined}
-              style={{ width: blot.size, height: blot.size }}
-            >
-              <InkSplat
-                ref={splat}
-                ink={blotInk}
-                logo={false}
-                interactive={false}
-                flood={false}
-                nacre={blot.nacre}
-                scale={blot.scale}
-                spatter={blot.spatter}
-              />
-            </span>
-          ) : undefined
-        }
         className={`${styles.root} ${className ?? ''}`}
         style={{
           // hug the content, up to the width it is given and the room it has:

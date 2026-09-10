@@ -129,14 +129,6 @@ export interface InkSinkProps {
   radius?: number;
   /** Liquid around the content, px. Default 96. */
   bleed?: number;
-  /**
-   * Drawn above the liquid, in the slab's box: a mark lying on the surface
-   * rather than on the slab, free to spill past the slab's edge onto the
-   * liquid around it. It does not go under with the slab (the liquid cannot
-   * close over what is above it), so it should leave by itself. Never takes
-   * the pointer.
-   */
-  overlay?: ReactNode;
   /** CSS px per unit of the liquid's features. Default: the pond's height. */
   unit?: number;
   /** Start (or become) sunk. Uncontrolled when omitted; use the ref. */
@@ -216,7 +208,6 @@ export function InkSink({
   mercury,
   radius = 8,
   bleed = 96,
-  overlay,
   unit,
   sunk,
   onSunkChange,
@@ -501,11 +492,6 @@ export function InkSink({
           {children}
         </div>
       </div>
-      {overlay && (
-        <div className={styles.overlay} style={{ inset: bleed }} aria-hidden="true">
-          {overlay}
-        </div>
-      )}
     </div>
   );
 }
