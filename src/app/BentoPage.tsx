@@ -404,9 +404,11 @@ export function BentoPage() {
           </div>
         </div>
       </section>
-      {/* the splat the page's ink comes from, full screen */}
+      {/* the splat the page's ink comes from, full screen, and the rest of
+          the workbench */}
       <footer className="site-footer bento-footer">
         <a href="/dev/splat">The ink splat →</a>
+        <a href="/dev/">Experiments and tuning pages →</a>
       </footer>
       <Leva collapsed titleBar={{ title: 'pmndrs' }} />
     </main>
