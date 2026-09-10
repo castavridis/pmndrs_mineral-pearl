@@ -55,6 +55,8 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
   const coreRef = useRef<HTMLSpanElement>(null);
   const topRef = useRef<HTMLSpanElement>(null);
   const bottomRef = useRef<HTMLSpanElement>(null);
+  const spillLeftRef = useRef<HTMLSpanElement>(null);
+  const spillRightRef = useRef<HTMLSpanElement>(null);
   const rawGooId = useId();
   const gooId = `nav-goo-${rawGooId.replace(/[^a-zA-Z0-9-]/g, '')}`;
   const hovered = useNavStore((s) => s.hovered);
@@ -62,18 +64,24 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
   /** what the pill is under: whatever the pointer is over, else the current page */
   const pillTarget = hovered ?? current;
 
-  // The liquid reaches in from the bar's edges and pools around whatever the
-  // pointer is over, clinging to it as it goes. Three shapes do it — a tongue
-  // drawn down from the top, one up from the bottom, and the pool itself —
-  // merged by a gaussian blur and an alpha threshold, the same identity that
-  // makes a metaball field out of a sum of kernels.
+  // The liquid arrives rather than slides. When the pointer moves to another
+  // item, a glob runs in from the top edge and another from the bottom, and
+  // they pool together around it. The three shapes are merged by a gaussian
+  // blur and an alpha threshold, the same identity that makes a metaball field
+  // out of a sum of kernels, so the meeting is a merge and not an overlap.
+  //
+  // Nothing here transitions sideways: the shapes are placed at the new item
+  // outright and the arrival is the animation, replayed by keying them on the
+  // target so React remounts them.
   useEffect(() => {
     const row = rowRef.current;
     const pool = poolRef.current;
     const core = coreRef.current;
     const top = topRef.current;
     const bottom = bottomRef.current;
-    if (!row || !pool || !core || !top || !bottom) return;
+    const spillL = spillLeftRef.current;
+    const spillR = spillRightRef.current;
+    if (!row || !pool || !core || !top || !bottom || !spillL || !spillR) return;
     const place = () => {
       const el = pillTarget
         ? row.querySelector<HTMLElement>(`[data-id="${CSS.escape(pillTarget)}"]`)
@@ -87,25 +95,39 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
       const y = el.offsetTop;
       const w = el.offsetWidth;
       const h = el.offsetHeight;
-      const rowH = row.offsetHeight;
-      core.style.left = `${x - 12}px`;
-      core.style.top = `${y - 6}px`;
-      core.style.width = `${w + 24}px`;
-      core.style.height = `${h + 12}px`;
-      // the tongues are narrower than the pool, so the blur necks them where
-      // they meet it and the liquid reads as drawn up, not boxed in
-      const tw = Math.max(18, w * 0.5);
-      const tx = x + w / 2 - tw / 2;
       const coreTop = y - 6;
-      const coreBottom = y + h + 6;
-      top.style.left = `${tx}px`;
-      top.style.width = `${tw}px`;
-      top.style.top = '0px';
-      top.style.height = `${Math.max(0, coreTop + 8)}px`;
-      bottom.style.left = `${tx}px`;
-      bottom.style.width = `${tw}px`;
-      bottom.style.top = `${Math.max(0, coreBottom - 8)}px`;
-      bottom.style.height = `${Math.max(0, rowH - coreBottom + 8)}px`;
+      const coreH = h + 12;
+      core.style.left = `${x - 12}px`;
+      core.style.top = `${coreTop}px`;
+      core.style.width = `${w + 24}px`;
+      core.style.height = `${coreH}px`;
+      // The two that arrive are beads as deep as the pool, dropped in from
+      // above and risen from below. They come to rest inside the pool's own
+      // box, so once they have landed they add nothing to the silhouette and
+      // the pill is a pill again; the arrival is all they are for. (A tongue
+      // reaching to the bar's edge cannot work here: the row is the bar's
+      // full height, so there is no bar left above or below to reach across.)
+      const beadSize = coreH;
+      const bx = x + w / 2 - beadSize / 2;
+      const bead = (el: HTMLElement) => {
+        el.style.left = `${bx}px`;
+        el.style.top = `${coreTop}px`;
+        el.style.width = `${beadSize}px`;
+        el.style.height = `${beadSize}px`;
+      };
+      bead(top);
+      bead(bottom);
+      // the two loose globs, one at each end of the pool, overlapping it just
+      // enough that the threshold necks them rather than leaving them adrift
+      const sd = Math.max(10, (h + 12) * 0.66);
+      const sideGlob = (el: HTMLElement, cxp: number) => {
+        el.style.width = `${sd}px`;
+        el.style.height = `${sd}px`;
+        el.style.left = `${cxp - sd / 2}px`;
+        el.style.top = `${y + h / 2 - sd / 2}px`;
+      };
+      sideGlob(spillL, x - 8);
+      sideGlob(spillR, x + w + 8);
     };
     place();
     const ro = new ResizeObserver(place);
@@ -298,9 +320,21 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
               style={{ filter: `url(#${gooId})` }}
               aria-hidden="true"
             >
-              <span ref={topRef} className={styles.poolTongue} />
-              <span ref={coreRef} className={styles.poolCore} />
-              <span ref={bottomRef} className={styles.poolTongue} />
+              <span key={`${pillTarget ?? 'none'}-t`} ref={topRef} className={styles.globTop} />
+              <span key={`${pillTarget ?? 'none'}-c`} ref={coreRef} className={styles.poolCore} />
+              <span key={`${pillTarget ?? 'none'}-b`} ref={bottomRef} className={styles.globBottom} />
+              <span
+                key={`${pillTarget ?? 'none'}-sl`}
+                ref={spillLeftRef}
+                className={styles.globSpill}
+                style={{ '--from': '-260%' } as CSSProperties}
+              />
+              <span
+                key={`${pillTarget ?? 'none'}-sr`}
+                ref={spillRightRef}
+                className={styles.globSpill}
+                style={{ '--from': '260%' } as CSSProperties}
+              />
             </span>
             <a
               ref={logoRef}

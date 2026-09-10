@@ -204,31 +204,108 @@
 }
 
 .poolCore,
-.poolTongue {
+.globTop,
+.globBottom,
+.globSpill {
   position: absolute;
-  /* the liquid the bar is not: the page's own body, showing through it */
-  background: var(--nav-pool, var(--page-bg));
-  transition:
-    left 380ms cubic-bezier(0.22, 1, 0.36, 1),
-    top 380ms cubic-bezier(0.22, 1, 0.36, 1),
-    width 380ms cubic-bezier(0.22, 1, 0.36, 1),
-    height 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  border-radius: 999px;
+  /* The liquid the bar is not: the page's own body, welling up through it —
+     and lit, as the mass that swallows a card afloat is, rather than painted
+     flat. The shading is inside the goo filter: the blur smears it across the
+     merged silhouette, so the shapes read as one body rather than three, and
+     the threshold reads alpha alone, which the gradients never touch. */
+  background:
+    radial-gradient(130% 150% at 50% -30%, rgb(255 255 255 / 14%), transparent 62%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--nav-pool, var(--page-bg)) 84%, #fff) 0%,
+      var(--nav-pool, var(--page-bg)) 48%,
+      color-mix(in srgb, var(--nav-pool, var(--page-bg)) 88%, #000) 100%
+    );
+}
+
+/* the globs run in from the edges; the pool gathers under them as they land */
+@keyframes glob-from-top {
+  from {
+    transform: translateY(-190%) scaleY(1.15);
+  }
+  70% {
+    transform: translateY(6%) scaleY(0.94);
+  }
+  to {
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+@keyframes glob-from-bottom {
+  from {
+    transform: translateY(190%) scaleY(1.15);
+  }
+  70% {
+    transform: translateY(-6%) scaleY(0.94);
+  }
+  to {
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+@keyframes pool-gather {
+  0% {
+    transform: scale(0.2, 0.55);
+  }
+  70% {
+    transform: scale(1.04, 1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.globTop {
+  animation: glob-from-top 340ms cubic-bezier(0.32, 1.4, 0.5, 1) both;
+}
+
+.globBottom {
+  animation: glob-from-bottom 340ms cubic-bezier(0.32, 1.4, 0.5, 1) both;
 }
 
 .poolCore {
-  border-radius: 999px;
+  transform-origin: 50% 50%;
+  /* it gathers a beat behind them, so the globs are seen arriving first */
+  animation: pool-gather 300ms cubic-bezier(0.22, 1, 0.36, 1) 90ms both;
 }
 
-/* square where it meets the edge, round where it meets the pool; the blur
-   softens both, and the necking is what makes it read as liquid drawn up */
-.poolTongue {
-  border-radius: 999px;
+/* Two loose globs land beside the pool and are drawn into it, the way the
+   droplets of a swallow are pulled back onto the slab and merge. Each one
+   necks as it goes under the threshold, so the pool grows fingers for a beat
+   instead of arriving as a finished pill. */
+@keyframes spill-absorb {
+  0% {
+    transform: translateY(var(--from, -260%)) scale(1);
+  }
+  50% {
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    transform: translateY(0) scale(0.001);
+  }
+}
+
+.globSpill {
+  transform-origin: 50% 50%;
+  animation: spill-absorb 620ms cubic-bezier(0.3, 1.1, 0.4, 1) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .globTop,
+  .globBottom,
   .poolCore,
-  .poolTongue {
-    transition: none;
+  .globSpill {
+    animation: none;
+  }
+
+  .globSpill {
+    display: none;
   }
 }
 

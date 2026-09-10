@@ -11,7 +11,10 @@
 import { getPageLooks } from '../theme/look';
 
 const TRAIL = 12;
-const BLOBS = 5;
+// five roaming under the surface, plus one pinned in each corner
+const ROAMERS = 5;
+const CORNERS = 4;
+const BLOBS = ROAMERS + CORNERS;
 
 export interface NacreConfig {
   droplet: boolean;
@@ -462,6 +465,8 @@ interface CardState {
     fy: number;
     px: number;
     py: number;
+    /** Pinned in a corner: which one, as a sign per axis. Roamers have none. */
+    corner?: [number, number];
   }[];
   tx: Float32Array;
   ty: Float32Array;
@@ -475,6 +480,14 @@ interface CardState {
 }
 
 const BLOB_SCALE = [1.2, 0.62, 0.95, 0.48, 0.78];
+/* One blob sits in each corner. The mass inside a card is a rounded box with
+   the card's own small radius, and at these sizes its corners still read as a
+   point where the liquid turns. A blob in the corner is merged by the same
+   smin that merges the droplets, so the turn is rounded by liquid rather than
+   by a larger radius, which would round the card's edge along with it. */
+const CORNER_SCALE = 1.0;
+/** How far a corner blob's centre sits inside its corner, as a fraction of its radius. */
+const CORNER_INSET = 0.55;
 const GHOST_CAP = 8;
 
 const hexToRgb = (h: string): [number, number, number] => {
@@ -613,17 +626,37 @@ export class NacreStage {
     const state: CardState = {
       card,
       rgb: hexToRgb(card.accent),
-      blobs: BLOB_SCALE.map((f) => ({
-        f,
-        cx: 0.14 + rnd() * 0.72,
-        cy: 0.28 + rnd() * 0.44,
-        ax: 0.06 + rnd() * 0.13,
-        ay: 0.1 + rnd() * 0.16,
-        fx: 0.09 + rnd() * 0.13,
-        fy: 0.07 + rnd() * 0.14,
-        px: rnd() * 6.283,
-        py: rnd() * 6.283,
-      })),
+      blobs: [
+        ...BLOB_SCALE.map((f) => ({
+          f,
+          cx: 0.14 + rnd() * 0.72,
+          cy: 0.28 + rnd() * 0.44,
+          ax: 0.06 + rnd() * 0.13,
+          ay: 0.1 + rnd() * 0.16,
+          fx: 0.09 + rnd() * 0.13,
+          fy: 0.07 + rnd() * 0.14,
+          px: rnd() * 6.283,
+          py: rnd() * 6.283,
+        })),
+        ...([
+          [-1, -1],
+          [1, -1],
+          [-1, 1],
+          [1, 1],
+        ] as [number, number][]).map((corner) => ({
+          f: CORNER_SCALE,
+          cx: 0,
+          cy: 0,
+          // they breathe a little rather than sitting dead in the corner
+          ax: 0.006,
+          ay: 0.008,
+          fx: 0.05 + rnd() * 0.06,
+          fy: 0.04 + rnd() * 0.06,
+          px: rnd() * 6.283,
+          py: rnd() * 6.283,
+          corner,
+        })),
+      ],
       tx: new Float32Array(TRAIL),
       ty: new Float32Array(TRAIL),
       hx: 0,
@@ -906,14 +939,23 @@ export class NacreStage {
         const rad = cfg.size * b.f;
         const mx = (rad + 3) / w;
         const my = (rad + 3) / h;
-        const bx = Math.min(
-          1 - mx,
-          Math.max(mx, b.cx + b.ax * Math.sin(this._blobClock * b.fx + b.px))
-        );
-        const by = Math.min(
-          1 - my,
-          Math.max(my, b.cy + b.ay * Math.sin(this._blobClock * b.fy + b.py))
-        );
+        let bx: number;
+        let by: number;
+        if (b.corner) {
+          // a corner blob is placed by its own radius, not by the card's box:
+          // its centre sits a fraction of that radius inside the corner, so
+          // the mass it adds bulges into the turn and the card's rounded edge
+          // trims the rest
+          const ix = (rad * CORNER_INSET) / w;
+          const iy = (rad * CORNER_INSET) / h;
+          const sx = b.corner[0];
+          const sy = b.corner[1];
+          bx = (sx < 0 ? ix : 1 - ix) + sx * b.ax * Math.sin(this._blobClock * b.fx + b.px);
+          by = (sy < 0 ? iy : 1 - iy) + sy * b.ay * Math.sin(this._blobClock * b.fy + b.py);
+        } else {
+          bx = Math.min(1 - mx, Math.max(mx, b.cx + b.ax * Math.sin(this._blobClock * b.fx + b.px)));
+          by = Math.min(1 - my, Math.max(my, b.cy + b.ay * Math.sin(this._blobClock * b.fy + b.py)));
+        }
         this._packedBlob[i * 2] = (bx * w) / h;
         this._packedBlob[i * 2 + 1] = by;
         this._packedBlobR[i] = rad / h;

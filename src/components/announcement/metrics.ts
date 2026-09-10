@@ -4,6 +4,8 @@ export const announcement = {
   height: 94,
   radius: 8,
   paddingX: 40,
-  /** Liquid kept around the banner, px: where its ripples and droplets run. */
-  bleed: 64,
+  /** Liquid kept around the banner, px: where its ripples and droplets run.
+      As much room as the card afloat keeps on the study's pond, so the swallow
+      has somewhere to throw its droplets instead of clipping at the rim. */
+  bleed: 96,
 } as const;

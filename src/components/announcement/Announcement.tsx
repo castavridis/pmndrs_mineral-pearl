@@ -121,6 +121,17 @@ export function Announcement({
       bleed={announcement.bleed}
       sinkOnClick={false}
       mercuryOnSink={false}
+      /* The swallow, as the card afloat on the study's pond has it: big, dense
+         droplets that heap above the surface and are lit, rather than the flat
+         coverage a page-sized well would otherwise give. In a well the unit is
+         the ground's (420 px), so a droplet sized for a pond panel reads as a
+         speck against a 652 px banner; `globSize` is the only scale that is
+         the mass's own and not the ground's. */
+      globSize={1.6}
+      globDensity={0.9}
+      globHeight={0.8}
+      globSettle={1.1}
+      globShading
       sunk={sunk}
       tier={variant}
       onSunkSettled={onSunkSettled}
