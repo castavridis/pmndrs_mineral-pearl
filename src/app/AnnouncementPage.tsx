@@ -30,8 +30,8 @@ export function AnnouncementPage() {
   const c = useControls('announcement', {
     variant: {
       value: 'auto',
-      options: ['auto', 'liquid', 'swallow', 'quiet', 'flat', 'ink'],
-      hint: 'liquid is the pond; swallow and quiet are the fallbacks; flat opts out of floating; ink is a splash that floods the banner',
+      options: ['auto', 'liquid', 'swallow', 'quiet', 'flat'],
+      hint: 'liquid is the pond; swallow and quiet are the fallbacks; flat opts out of floating',
     },
     dismissible: true,
     restore: button(() => {
@@ -83,7 +83,7 @@ export function AnnouncementPage() {
   useEffect(() => {
     current.look = swallow;
   });
-  const variant = c.variant as 'auto' | 'liquid' | 'swallow' | 'quiet' | 'flat' | 'ink';
+  const variant = c.variant as 'auto' | 'liquid' | 'swallow' | 'quiet' | 'flat';
   const dismiss = (id: string) => () => setGone((g) => ({ ...g, [id]: true }));
   const items = [
     {
