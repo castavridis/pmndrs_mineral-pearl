@@ -37,7 +37,9 @@ export interface AnnouncementProps {
 
 /** The layer's fade, and the close of the room it held. Both are CSS above. */
 const FADE_MS = 600;
-const COLLAPSE_MS = 460;
+const COLLAPSE_MS = 700;
+/** The close starts before the fade is quite done, so the two read as one move. */
+const COLLAPSE_AT = 460;
 
 /**
  * A wide banner afloat on the page: the page's liquid ground is the well and
@@ -111,27 +113,39 @@ export function Announcement({
     if (isSunk && dismissed) setFading(true);
   };
 
-  // The liquid has closed and the layer has faded; now the room it took has to
-  // close as well. The slot is pinned to the height it has, given a frame to
-  // take that as a starting number, and run to zero — a height transition needs
-  // a number at both ends. `onDismiss` follows, so the parent unmounts a banner
-  // that is already gone rather than one that pops out from under the page.
+  // The liquid has closed and the layer is fading; now the room it took has to
+  // close as well, gently and over the top of the last of that fade. The slot
+  // is pinned to the height it has, given a frame to take that as a starting
+  // number, and run to zero — a height transition needs a number at both ends.
+  // `onDismiss` follows, so the parent unmounts a banner that is already gone
+  // rather than one that pops out from under the page.
   const slotRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!fading) return;
     const el = slotRef.current;
     if (!el) return;
+    // The room is the height and whatever margin came with it, both run to
+    // zero together. What it cannot close is a gap: a grid or flex gap belongs
+    // to the parent's tracks, not to the item, and a negative margin will not
+    // eat one — the track simply clamps at zero and the gap stands. So a
+    // banner that has to leave nothing behind is placed in block flow (see
+    // Home), where its own margin is the spacing and closes with it.
     const timers: number[] = [];
     timers.push(
       window.setTimeout(() => {
+        const box = getComputedStyle(el);
         el.style.height = `${el.offsetHeight}px`;
+        el.style.marginTop = box.marginTop;
+        el.style.marginBottom = box.marginBottom;
         timers.push(
           window.setTimeout(() => {
             el.style.height = '0px';
+            el.style.marginTop = '0px';
+            el.style.marginBottom = '0px';
             timers.push(window.setTimeout(() => onDismiss?.(), COLLAPSE_MS + 40));
           }, 20)
         );
-      }, FADE_MS)
+      }, COLLAPSE_AT)
     );
     return () => timers.forEach((t) => window.clearTimeout(t));
   }, [fading, onDismiss]);

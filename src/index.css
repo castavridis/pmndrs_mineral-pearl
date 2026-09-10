@@ -354,3 +354,16 @@ a {
   min-width: 0;
   max-width: 100%;
 }
+
+/* The banner's row on the home page: block flow, no padding of its own, so it
+   is nothing at all when there is no banner in it. The spacing belongs to the
+   banner (its slot), which is what closes when it is dismissed. */
+.announcement-row {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 clamp(16px, 4vw, 24px);
+}
+
+.announcement-row > * {
+  margin-top: clamp(28px, 5vw, 44px);
+}

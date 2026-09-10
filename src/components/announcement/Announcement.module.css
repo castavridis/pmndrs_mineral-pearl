@@ -123,7 +123,13 @@
    pinned to its measured height and then run to zero, so whatever is below
    rises into the gap. */
 .slot {
-  transition: height 460ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* the banner centres itself in the room the slot holds */
+  display: grid;
+  justify-items: center;
+  transition:
+    height 700ms cubic-bezier(0.4, 0, 0.2, 1),
+    margin-top 700ms cubic-bezier(0.4, 0, 0.2, 1),
+    margin-bottom 700ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -38,17 +38,22 @@ export function Home() {
       <header style={{ padding: '72px 8px 0' }}>
         <Nav links={LINKS} />
       </header>
+      {/* Block flow, not the page's grid, and the row stays whether or not there
+          is a banner in it. The banner's spacing is its own margin, so the whole
+          of the room it takes closes with it; a grid's gap belongs to the
+          parent's tracks and cannot be animated away for one item, which would
+          leave a hole where the banner had been. An empty row is nothing. */}
+      <div className="announcement-row">
+        {!bannerGone && (
+          <Announcement width={652} onDismiss={() => setBannerGone(true)}>
+            <span>
+              <strong>v10 is out.</strong> Petals, glass and the growing pill, in one package.
+            </span>
+            <a href="/blog/v10">Read more</a>
+          </Announcement>
+        )}
+      </div>
       <main className="page" style={{ gap: 'clamp(40px, 7vw, 56px)' }}>
-        <section aria-label="Announcement" style={{ display: 'grid', justifyItems: 'center' }}>
-          {!bannerGone && (
-            <Announcement width={652} onDismiss={() => setBannerGone(true)}>
-              <span>
-                <strong>v10 is out.</strong> Petals, glass and the growing pill, in one package.
-              </span>
-              <a href="/blog/v10">Read more</a>
-            </Announcement>
-          )}
-        </section>
         <section className="hero">
           <h1>React, three and a well of ink.</h1>
           <p>
