@@ -186,126 +186,39 @@
   }
 }
 
-/* --- the pool: liquid drawn in from the bar's edges, clinging to the item --- */
-.gooDefs {
+/* --- the pill: one shape sliding behind the item, drawn by the nacre stage -- */
+.slider {
   position: absolute;
-  width: 0;
-  height: 0;
-  overflow: hidden;
-}
-
-.pool {
-  position: absolute;
-  inset: 0;
   z-index: 0;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 220ms ease;
-}
-
-.poolCore,
-.globTop,
-.globBottom,
-.globSpill {
-  position: absolute;
   border-radius: 999px;
-  /* The liquid the bar is not: the page's own body, welling up through it —
-     and lit, as the mass that swallows a card afloat is, rather than painted
-     flat. The shading is inside the goo filter: the blur smears it across the
-     merged silhouette, so the shapes read as one body rather than three, and
-     the threshold reads alpha alone, which the gradients never touch. */
-  background:
-    radial-gradient(130% 150% at 50% -30%, rgb(255 255 255 / 14%), transparent 62%),
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--nav-pool, var(--page-bg)) 84%, #fff) 0%,
-      var(--nav-pool, var(--page-bg)) 48%,
-      color-mix(in srgb, var(--nav-pool, var(--page-bg)) 88%, #000) 100%
-    );
+  /* Without the stage (no WebGL, or the flat tier) it is the page's own liquid
+     welling through the bar, flat. With it, the face is the shader's and this
+     box only says where to draw. */
+  background: var(--nav-pool, var(--page-bg));
+  /* left/top/width/height, never a transform: the stage's canvas lives at the
+     body and a stacking context anywhere above the bar would seal it out */
+  transition:
+    left 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    top 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    width 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    height 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 220ms ease;
 }
 
-/* the globs run in from the edges; the pool gathers under them as they land */
-@keyframes glob-from-top {
-  from {
-    transform: translateY(-190%) scaleY(1.15);
-  }
-  70% {
-    transform: translateY(6%) scaleY(0.94);
-  }
-  to {
-    transform: translateY(0) scaleY(1);
-  }
+.slider[data-nacre] {
+  background: transparent;
 }
 
-@keyframes glob-from-bottom {
-  from {
-    transform: translateY(190%) scaleY(1.15);
-  }
-  70% {
-    transform: translateY(-6%) scaleY(0.94);
-  }
-  to {
-    transform: translateY(0) scaleY(1);
-  }
-}
-
-@keyframes pool-gather {
-  0% {
-    transform: scale(0.2, 0.55);
-  }
-  70% {
-    transform: scale(1.04, 1);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-.globTop {
-  animation: glob-from-top 340ms cubic-bezier(0.32, 1.4, 0.5, 1) both;
-}
-
-.globBottom {
-  animation: glob-from-bottom 340ms cubic-bezier(0.32, 1.4, 0.5, 1) both;
-}
-
-.poolCore {
-  transform-origin: 50% 50%;
-  /* it gathers a beat behind them, so the globs are seen arriving first */
-  animation: pool-gather 300ms cubic-bezier(0.22, 1, 0.36, 1) 90ms both;
-}
-
-/* Two loose globs land beside the pool and are drawn into it, the way the
-   droplets of a swallow are pulled back onto the slab and merge. Each one
-   necks as it goes under the threshold, so the pool grows fingers for a beat
-   instead of arriving as a finished pill. */
-@keyframes spill-absorb {
-  0% {
-    transform: translateY(var(--from, -260%)) scale(1);
-  }
-  50% {
-    transform: translateY(0) scale(1);
-  }
-  100% {
-    transform: translateY(0) scale(0.001);
-  }
-}
-
-.globSpill {
-  transform-origin: 50% 50%;
-  animation: spill-absorb 620ms cubic-bezier(0.3, 1.1, 0.4, 1) both;
+/* the first placement is not a slide: it has nowhere to have come from */
+.slider[data-placing] {
+  transition: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .globTop,
-  .globBottom,
-  .poolCore,
-  .globSpill {
-    animation: none;
-  }
-
-  .globSpill {
-    display: none;
+  .slider {
+    transition: opacity 220ms ease;
   }
 }
 

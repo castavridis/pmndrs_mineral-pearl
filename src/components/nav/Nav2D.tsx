@@ -2,7 +2,6 @@
 
 import {
   useEffect,
-  useId,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -12,13 +11,23 @@ import {
 import { Surface, type SurfaceTier } from '../surface/Surface';
 import { POND_BG, type Liquid } from '../ink-sink/liquid-pond';
 import { onInk, page, useResolvedTheme } from '../theme';
+import { palette } from '../theme/palette';
 import { InkSplat } from '../ink-splat';
+import { getNacreStage } from '../nacre-callout/stage';
 import { useNavStore, useNavStoreApi, resolveMode } from './store';
 import { tokens, tokensToCssVars } from './tokens';
 import { NAV_MODES, type NavLink, type NavMode } from './types';
 import { Logo } from './Logo';
 import { CmdPalette } from './CmdPalette';
 import styles from './Nav2D.module.css';
+
+/* The accent the stage breathes through the pill's slab. A callout takes its
+   kind's colour; the bar has no kind, so it takes the mark's own green — the
+   one colour that is the collective's rather than a state's. */
+const NAV_PILL_ACCENT = palette.green;
+/** How far the pill's face stands proud of the item's box, px. */
+const PILL_PAD_X = 14;
+const PILL_PAD_Y = 7;
 
 /**
  * The DOM nav: a pill `Surface` with the logo, the links and the Cmd item on
@@ -51,89 +60,72 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
   const pillRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLElement>(null);
   const rowRef = useRef<HTMLDivElement>(null);
-  const poolRef = useRef<HTMLSpanElement>(null);
-  const coreRef = useRef<HTMLSpanElement>(null);
-  const topRef = useRef<HTMLSpanElement>(null);
-  const bottomRef = useRef<HTMLSpanElement>(null);
-  const spillLeftRef = useRef<HTMLSpanElement>(null);
-  const spillRightRef = useRef<HTMLSpanElement>(null);
-  const rawGooId = useId();
-  const gooId = `nav-goo-${rawGooId.replace(/[^a-zA-Z0-9-]/g, '')}`;
+  const sliderRef = useRef<HTMLSpanElement>(null);
   const hovered = useNavStore((s) => s.hovered);
   const setHovered = useNavStore((s) => s.setHovered);
   /** what the pill is under: whatever the pointer is over, else the current page */
   const pillTarget = hovered ?? current;
 
-  // The liquid arrives rather than slides. When the pointer moves to another
-  // item, a glob runs in from the top edge and another from the bottom, and
-  // they pool together around it. The three shapes are merged by a gaussian
-  // blur and an alpha threshold, the same identity that makes a metaball field
-  // out of a sum of kernels, so the meeting is a merge and not an overlap.
+  // The pill slides. It is one shape behind the item the pointer is over, and
+  // it is drawn by the page's nacre stage — the same shader, the same slab,
+  // the same thin film as a callout — so the bar's active item is iridescent
+  // rather than painted. The stage reads the element's box every frame, so
+  // moving the box is all this has to do; the liquid follows.
   //
-  // Nothing here transitions sideways: the shapes are placed at the new item
-  // outright and the arrival is the animation, replayed by keying them on the
-  // target so React remounts them.
+  // Offsets, not a transform: a transform here opens a stacking context, and
+  // the stage draws into a fixed canvas at the body that such a context seals
+  // out of the bar.
   useEffect(() => {
     const row = rowRef.current;
-    const pool = poolRef.current;
-    const core = coreRef.current;
-    const top = topRef.current;
-    const bottom = bottomRef.current;
-    const spillL = spillLeftRef.current;
-    const spillR = spillRightRef.current;
-    if (!row || !pool || !core || !top || !bottom || !spillL || !spillR) return;
+    const slider = sliderRef.current;
+    if (!row || !slider) return;
     const place = () => {
       const el = pillTarget
         ? row.querySelector<HTMLElement>(`[data-id="${CSS.escape(pillTarget)}"]`)
         : null;
       if (!el) {
-        pool.style.opacity = '0';
+        slider.style.opacity = '0';
         return;
       }
-      pool.style.opacity = '1';
-      const x = el.offsetLeft;
-      const y = el.offsetTop;
-      const w = el.offsetWidth;
-      const h = el.offsetHeight;
-      const coreTop = y - 6;
-      const coreH = h + 12;
-      core.style.left = `${x - 12}px`;
-      core.style.top = `${coreTop}px`;
-      core.style.width = `${w + 24}px`;
-      core.style.height = `${coreH}px`;
-      // The two that arrive are beads as deep as the pool, dropped in from
-      // above and risen from below. They come to rest inside the pool's own
-      // box, so once they have landed they add nothing to the silhouette and
-      // the pill is a pill again; the arrival is all they are for. (A tongue
-      // reaching to the bar's edge cannot work here: the row is the bar's
-      // full height, so there is no bar left above or below to reach across.)
-      const beadSize = coreH;
-      const bx = x + w / 2 - beadSize / 2;
-      const bead = (el: HTMLElement) => {
-        el.style.left = `${bx}px`;
-        el.style.top = `${coreTop}px`;
-        el.style.width = `${beadSize}px`;
-        el.style.height = `${beadSize}px`;
-      };
-      bead(top);
-      bead(bottom);
-      // the two loose globs, one at each end of the pool, overlapping it just
-      // enough that the threshold necks them rather than leaving them adrift
-      const sd = Math.max(10, (h + 12) * 0.66);
-      const sideGlob = (el: HTMLElement, cxp: number) => {
-        el.style.width = `${sd}px`;
-        el.style.height = `${sd}px`;
-        el.style.left = `${cxp - sd / 2}px`;
-        el.style.top = `${y + h / 2 - sd / 2}px`;
-      };
-      sideGlob(spillL, x - 8);
-      sideGlob(spillR, x + w + 8);
+      const first = slider.style.opacity !== '1';
+      // arriving from nowhere, it should not slide in from the last place it
+      // happened to be: it appears where it is wanted, then slides after that
+      if (first) slider.dataset.placing = '';
+      slider.style.opacity = '1';
+      slider.style.left = `${el.offsetLeft - PILL_PAD_X}px`;
+      slider.style.top = `${el.offsetTop - PILL_PAD_Y}px`;
+      slider.style.width = `${el.offsetWidth + PILL_PAD_X * 2}px`;
+      slider.style.height = `${el.offsetHeight + PILL_PAD_Y * 2}px`;
+      if (first) {
+        void slider.offsetWidth;
+        delete slider.dataset.placing;
+      }
     };
     place();
     const ro = new ResizeObserver(place);
     ro.observe(row);
     return () => ro.disconnect();
   }, [pillTarget, links, mode]);
+
+  // The pill's face on the nacre stage: no icon (a control has none, and the
+  // accent would pool in a corner and wash the label), a radius large enough
+  // that the stage clamps it to half the height, which is the pill.
+  useEffect(() => {
+    const el = sliderRef.current;
+    if (!el || tier === 'flat') return;
+    const stage = getNacreStage();
+    if (!stage) return;
+    el.dataset.nacre = '';
+    const off = stage.register({ el, icon: null, accent: NAV_PILL_ACCENT, radius: 999 });
+    // the light and dark treatments differ, so the stage has to be told
+    const obs = new MutationObserver(() => stage.refresh());
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => {
+      obs.disconnect();
+      off();
+      delete el.dataset.nacre;
+    };
+  }, [tier]);
 
   const logoRef = useRef<HTMLAnchorElement>(null);
   const blotRef = useRef<HTMLSpanElement>(null);
@@ -189,9 +181,8 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
         ...tokensToCssVars(),
         '--nav-ink': onInk(POND_BG[bar]),
         '--nav-active-ink': onInk(POND_BG[active]),
-        // the sliding pill is drawn by the nacre stage, which is the black
-        // mineral body in either scheme, so its label is light in both
-        // the pool is the page's own liquid, welling up through the bar
+        // the pill's fallback face, for the tiers with no stage to draw it:
+        // the page's own liquid, welling up through the bar
         '--nav-pool': POND_BG[active],
         '--nav-pill-ink': onInk(POND_BG[active]),
       }) as CSSProperties,
@@ -304,38 +295,7 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
           className={styles.pill}
         >
           <div ref={rowRef} className={styles.row}>
-            <svg className={styles.gooDefs} aria-hidden="true" focusable="false">
-              <filter id={gooId}>
-                <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b" />
-                <feColorMatrix
-                  in="b"
-                  type="matrix"
-                  values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -8"
-                />
-              </filter>
-            </svg>
-            <span
-              ref={poolRef}
-              className={styles.pool}
-              style={{ filter: `url(#${gooId})` }}
-              aria-hidden="true"
-            >
-              <span key={`${pillTarget ?? 'none'}-t`} ref={topRef} className={styles.globTop} />
-              <span key={`${pillTarget ?? 'none'}-c`} ref={coreRef} className={styles.poolCore} />
-              <span key={`${pillTarget ?? 'none'}-b`} ref={bottomRef} className={styles.globBottom} />
-              <span
-                key={`${pillTarget ?? 'none'}-sl`}
-                ref={spillLeftRef}
-                className={styles.globSpill}
-                style={{ '--from': '-260%' } as CSSProperties}
-              />
-              <span
-                key={`${pillTarget ?? 'none'}-sr`}
-                ref={spillRightRef}
-                className={styles.globSpill}
-                style={{ '--from': '260%' } as CSSProperties}
-              />
-            </span>
+            <span ref={sliderRef} className={styles.slider} aria-hidden="true" />
             <a
               ref={logoRef}
               className={styles.logo}
