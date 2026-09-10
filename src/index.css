@@ -317,10 +317,11 @@ a {
   text-align: center;
   background: transparent;
   /* The stage draws this face in the other scheme's body: pearl on the dark
-     page, black mineral on the light one. So the label and the edge take the
-     page's background rather than its ink — on either page that is the colour
-     which reads against the body the button is actually wearing. */
-  border: 1px solid color-mix(in srgb, var(--page-bg) 22%, transparent);
+     page, black mineral on the light one. So the label takes the page's
+     background rather than its ink — on either page that is the colour which
+     reads against the body the button is actually wearing. No border: the
+     liquid's own edge is the button's edge. */
+  border: 0;
   border-radius: 8px;
   color: var(--page-bg);
   font: inherit;
