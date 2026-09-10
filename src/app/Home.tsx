@@ -2,9 +2,27 @@ import { useState } from 'react';
 import { Announcement, Callout, Nav, type NavLink } from '../components';
 
 const LINKS: NavLink[] = [
-  { id: 'docs', label: 'Docs', href: '/docs' },
-  { id: 'examples', label: 'Examples', href: '/examples' },
-  { id: 'blog', label: 'Blog', href: '/blog' },
+  {
+    id: 'docs',
+    label: 'Docs',
+    href: '/docs',
+    description: 'Guides and API reference for the whole collective.',
+    section: 'pmndrs / docs',
+  },
+  {
+    id: 'examples',
+    label: 'Examples',
+    href: '/examples',
+    description: 'Live sandboxes you can fork and edit in place.',
+    section: 'pmndrs / examples',
+  },
+  {
+    id: 'blog',
+    label: 'Blog',
+    href: '/blog',
+    description: 'Release notes, deep dives and the odd experiment.',
+    section: 'pmndrs / blog',
+  },
 ];
 
 /**

@@ -2,6 +2,8 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Surface, type SurfaceTier } from '../surface/Surface';
+import { POND_BG, type Liquid } from '../ink-sink/liquid-pond';
+import { onInk, useResolvedTheme } from '../theme';
 import { useNavStore, useNavStoreApi, resolveMode } from './store';
 import { tokens, tokensToCssVars } from './tokens';
 import { NAV_MODES, type NavLink, type NavMode } from './types';
@@ -19,10 +21,16 @@ import styles from './Nav2D.module.css';
  * experience uses the `full` layout with a horizontally scrollable pill.
  */
 export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: SurfaceTier }) {
+  // The bar stands against the page rather than with it: the dark page carries
+  // the pearl liquid, the light page the black mineral, and the active item is
+  // a pill of the other one, so it reads as the page showing through the bar.
+  const scheme = useResolvedTheme();
+  const bar: Liquid = scheme === 'dark' ? 'pearl' : 'mineral';
+  const active: Liquid = scheme === 'dark' ? 'mineral' : 'pearl';
   const mode = useNavStore((s) => s.mode);
   const [measured, setMeasured] = useState(false);
   const setMode = useNavStore((s) => s.setMode);
-  const active = useNavStore((s) => s.active);
+  const current = useNavStore((s) => s.active);
   const setActive = useNavStore((s) => s.setActive);
   const menuOpen = useNavStore((s) => s.menuOpen);
   const setMenuOpen = useNavStore((s) => s.setMenuOpen);
@@ -35,15 +43,23 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
   /** Measured pill width per mode. Reset whenever links change. */
   const required = useRef<Partial<Record<NavMode, number>>>({});
 
-  const cssVars = useMemo(() => tokensToCssVars() as CSSProperties, []);
+  const cssVars = useMemo(
+    () =>
+      ({
+        ...tokensToCssVars(),
+        '--nav-ink': onInk(POND_BG[bar]),
+        '--nav-active-ink': onInk(POND_BG[active]),
+      }) as CSSProperties,
+    [bar, active]
+  );
 
   // Mark the current page as active on mount (unless <Nav active> controls it).
   useEffect(() => {
-    if (active !== null) return;
+    if (current !== null) return;
     const path = window.location.pathname;
     const match = links.find((l) => l.href === path);
     if (match) setActive(match.id);
-  }, [links, active, setActive]);
+  }, [links, current, setActive]);
 
   // Measure + resolve mode. Runs on container resize, pill resize (fonts, links) and links change.
   useLayoutEffect(() => {
@@ -120,6 +136,7 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
         <Surface
           ref={pillRef}
           shape="pill"
+          material={bar}
           expressiveness={tier}
           unit={tokens.pillHeight * 4}
           className={styles.pill}
@@ -158,7 +175,7 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
             </button>
 
             {/* Always in the DOM so every mode can be measured; CSS hides it in collapsed. */}
-            <LinkList links={links} active={active} />
+            <LinkList links={links} active={current} liquid={active} tier={tier} />
 
             <button
               type="button"
@@ -184,7 +201,9 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
           data-open={menuOpen}
           hidden={mode !== 'collapsed' || !menuOpen}
         >
-          {mode === 'collapsed' && <LinkList links={links} active={active} />}
+          {mode === 'collapsed' && (
+            <LinkList links={links} active={current} liquid={active} tier={tier} />
+          )}
         </div>
       </nav>
       <CmdPalette />
@@ -192,18 +211,30 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
   );
 }
 
-function LinkList({ links, active }: { links: NavLink[]; active: string | null }) {
+function LinkList({
+  links,
+  active,
+  liquid,
+  tier,
+}: {
+  links: NavLink[];
+  active: string | null;
+  /** The active item's pill: the liquid the bar is not. */
+  liquid: Liquid;
+  tier: SurfaceTier;
+}) {
   const setHovered = useNavStore((s) => s.setHovered);
   const setFocused = useNavStore((s) => s.setFocused);
   return (
     <ul className={styles.links}>
-      {links.map((l) => (
-        <li key={l.id}>
+      {links.map((l) => {
+        const isActive = active === l.id;
+        const anchor = (
           <a
             className={styles.link}
             href={l.href}
             data-id={l.id}
-            aria-current={active === l.id ? 'page' : undefined}
+            aria-current={isActive ? 'page' : undefined}
             onPointerEnter={() => setHovered(l.id)}
             onPointerLeave={() => setHovered(null)}
             onFocus={() => setFocused(l.id)}
@@ -211,8 +242,25 @@ function LinkList({ links, active }: { links: NavLink[]; active: string | null }
           >
             {l.label}
           </a>
-        </li>
-      ))}
+        );
+        return (
+          <li key={l.id}>
+            {isActive ? (
+              <Surface
+                shape="pill"
+                material={liquid}
+                expressiveness={tier}
+                unit={tokens.pillHeight * 2}
+                className={styles.active}
+              >
+                {anchor}
+              </Surface>
+            ) : (
+              anchor
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
 }

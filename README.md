@@ -39,6 +39,7 @@ src/
     nav/                 Nav: the responsive pill nav (full / compact / collapsed) and its ⌘K palette
     announcement/        Announcement: the banner afloat on the page, sinking into it on dismiss
     callout/             Callout: the lens callout (surface / plain / svg) on a Surface
+  ui/                    the flat set: Button, CopyButton, Picker, Popover, Icons, tokens.css
   app/                   the site: AppShell, Home, /dev pages (mirroring the 3d-2d-nav pages)
   main.tsx, index.css
 ```
@@ -135,13 +136,19 @@ Every surface has one exit, `exit`: `dismiss` (the ground's own liquid closes in
 
 Change one and check the other.
 
+### The flat set (`src/ui`)
+
+`Button`, `ButtonLink`, `Kbd`, `CopyButton`, `Picker` and `Popover`, built from `reference/ui-screenshots/` and shared verbatim with the sibling repo. The folder is portable on purpose: the components read only the `--ui-*` custom properties in `ui/tokens.css` and import nothing from the rest of the app, so it can be copied between projects as one piece. `tokens.css` is imported once in `main.tsx`, before the app's own sheet, and follows `data-theme` with a `prefers-color-scheme` fallback.
+
+These are the utilitarian tier made properly: flat surfaces with a hairline border and 10px corners, no canvas. `Button` carries ⌘K and the social links, `Popover` the menu on a trigger, `Picker` the ⌘K panel (`CmdPalette` renders it inside a `<dialog>`), and `CopyButton` the brand-green bar, identical in both schemes, which can host sibling actions beside the copy action.
+
 ### `<Nav>`
 
 ```tsx
 <Nav links={[{ id: 'docs', label: 'Docs', href: '/docs' }]} active="docs" />
 ```
 
-The site nav of the 3d-2d-nav explorations, its pill a `Surface`: the logo, the links and the Cmd item on the page's liquid. It is DOM in every tier (the a11y and SEO source of truth); `enhancement` is `auto` (the gates), `full`, `calm` or `flat`, and in dev `?nav=` overrides. The layout mode follows the container: the pill is measured in every mode (`full`, `compact`, `collapsed`) by swapping `data-mode`, and `resolveMode` picks one with hysteresis so a resize around a threshold never flaps. Collapsed, the links become a disclosure under the pill. Every length is a token (`navTokens`), the glass nav's numbers, shared with the CSS as `--nav-*`. The Cmd item and ⌘K / Ctrl+K open `CmdPalette`, a `<dialog>` listing the links. One zustand store per nav (`createNavStore`, `useNavStore`) so several can share a page.
+The site nav of the 3d-2d-nav explorations, its pill a `Surface`. The bar stands against the page rather than with it: the dark page carries the pearl liquid and the light page the black mineral, and the active item is a pill of the other one, so it reads as the page showing through the bar. Its ink follows the liquid it sits on (`--nav-ink`, `--nav-active-ink`), not the page's. It is DOM in every tier (the a11y and SEO source of truth); `enhancement` is `auto` (the gates), `full`, `calm` or `flat`, and in dev `?nav=` overrides. The layout mode follows the container: the pill is measured in every mode (`full`, `compact`, `collapsed`) by swapping `data-mode`, and `resolveMode` picks one with hysteresis so a resize around a threshold never flaps. Collapsed, the links become a disclosure under the pill. Every length is a token (`navTokens`), the glass nav's numbers, shared with the CSS as `--nav-*`. The Cmd item and ⌘K / Ctrl+K open `CmdPalette`, a `<dialog>` listing the links. One zustand store per nav (`createNavStore`, `useNavStore`) so several can share a page.
 
 ### `<Announcement>`
 

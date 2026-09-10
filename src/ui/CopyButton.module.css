@@ -1,0 +1,83 @@
+/* Copy control: the green bar from reference/ui-screenshots/"copy (dark and light)".
+   The accent is the brand green in both themes, so this component does not flip with the
+   page — only its focus ring and shadow do. */
+
+.bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px;
+  border-radius: 12px;
+  background: var(--ui-accent);
+  color: var(--ui-accent-ink);
+  box-shadow: var(--ui-shadow-sm);
+}
+
+.action {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font-family: var(--ui-font);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 140ms ease;
+}
+.action:hover {
+  background: rgb(0 0 0 / 0.08);
+}
+.action:active {
+  background: rgb(0 0 0 / 0.14);
+}
+.action:focus-visible {
+  outline: 2px solid var(--ui-accent-ink);
+  outline-offset: -2px;
+}
+
+/* Lone glyph, as in the screenshot's row of actions. */
+.iconOnly {
+  padding: 0;
+  font-size: 17px;
+}
+
+/* Hairline between grouped actions. */
+.divider {
+  width: 1px;
+  height: 20px;
+  margin: 0 2px;
+  background: rgb(0 0 0 / 0.15);
+}
+
+.glyph {
+  font-size: 16px;
+}
+
+/* The label swaps Copy → Copied!; the width is held so the bar does not jump. */
+.label {
+  display: inline-grid;
+  place-items: center start;
+}
+.label > * {
+  grid-area: 1 / 1;
+}
+.label .ghost {
+  visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .action {
+    transition: none;
+  }
+}

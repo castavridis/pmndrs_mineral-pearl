@@ -1,67 +1,25 @@
+/* The dialog shell only: the panel inside is the shared `Picker` (src/ui). */
 .dialog {
   padding: 0;
   border: 0;
   background: transparent;
-  width: min(520px, calc(100vw - 32px));
-  color: var(--page-ink);
+  width: max-content;
+  max-width: calc(100vw - 32px);
 }
 
 .dialog::backdrop {
+  /* Scrim in the page's own direction: a light card on a dark scrim reads as a mistake. */
   background: rgb(0 0 0 / 0.5);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
 }
 
-/* the panel is a dry slab of the page: its ink on its ground */
-.panel {
-  border-radius: 18px;
-  overflow: hidden;
-  background: color-mix(in srgb, var(--page-bg) 94%, var(--page-ink));
-  border: 1px solid color-mix(in srgb, var(--page-ink) 18%, transparent);
-  box-shadow: 0 30px 80px rgb(0 0 0 / 0.5);
+:global(:root[data-theme='light']) .dialog::backdrop {
+  background: rgb(240 238 230 / 0.6);
 }
 
-.input {
-  width: 100%;
-  box-sizing: border-box;
-  border: 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--page-ink) 12%, transparent);
-  background: transparent;
-  font: inherit;
-  font-size: 18px;
-  padding: 16px 18px;
-  color: inherit;
-  outline: none;
-}
-
-.list {
-  list-style: none;
-  margin: 0;
-  padding: 8px;
-  max-height: 50vh;
-  overflow: auto;
-}
-
-.item,
-.empty {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  cursor: pointer;
-}
-
-.item[data-selected] {
-  background: color-mix(in srgb, var(--page-ink) 9%, transparent);
-}
-
-.href {
-  opacity: 0.5;
-  font-size: 0.85em;
-}
-
-.empty {
-  opacity: 0.6;
-  cursor: default;
+@media (prefers-color-scheme: light) {
+  :global(:root:not([data-theme='dark'])) .dialog::backdrop {
+    background: rgb(240 238 230 / 0.6);
+  }
 }

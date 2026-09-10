@@ -1,0 +1,95 @@
+/* Utilitarian button: the plain control from reference/ui-screenshots (the "View Markdown" /
+   "Open" pair visible in both popover shots). Flat surface, hairline border, 10px corners. */
+
+.button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-surface);
+  color: var(--ui-ink);
+  font-family: var(--ui-font);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: var(--ui-shadow-sm);
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    transform 140ms ease;
+}
+.button:hover {
+  background: var(--ui-surface-raised);
+  border-color: color-mix(in srgb, var(--ui-border) 160%, transparent);
+}
+.button:active {
+  transform: translateY(1px);
+}
+.button:focus-visible {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 2px;
+}
+.button[disabled] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Square, for a lone glyph (Twitter, Discord, GitHub). */
+.icon {
+  width: 44px;
+  padding: 0;
+  font-size: 17px;
+}
+
+.small {
+  height: 36px;
+  padding: 0 12px;
+  font-size: 14px;
+}
+.small.icon {
+  width: 36px;
+  padding: 0;
+}
+
+/* Pressed / open state, for a button that owns a popover. */
+.button[aria-expanded='true'] {
+  background: var(--ui-surface-raised);
+  border-color: color-mix(in srgb, var(--ui-border) 200%, transparent);
+}
+
+/* Trailing chevron rotates when the control it opens is showing. */
+.chevron {
+  font-size: 1.05em;
+  color: var(--ui-ink-muted);
+  transition: transform 160ms ease;
+}
+.button[aria-expanded='true'] .chevron {
+  transform: rotate(180deg);
+}
+
+/* Keyboard hint, as in the ⌘K control. */
+.kbd {
+  padding: 3px 6px;
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-hover);
+  box-shadow: inset 0 0 0 1px var(--ui-border-subtle);
+  font-family: var(--ui-font-mono);
+  font-size: 12px;
+  line-height: 1;
+  color: var(--ui-ink-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button,
+  .chevron {
+    transition: none;
+  }
+}

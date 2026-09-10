@@ -14,11 +14,39 @@ import {
   type NavLink,
   type SurfaceExit,
 } from '../components';
+import { Button, ButtonLink, CopyButton, Kbd, Popover } from '../ui';
+import {
+  BoltIcon,
+  DiscordIcon,
+  ExternalIcon,
+  GitHubIcon,
+  InfoIcon,
+  TerminalIcon,
+  TwitterIcon,
+} from '../ui/Icons';
 
 const LINKS: NavLink[] = [
-  { id: 'docs', label: 'Docs', href: '/docs' },
-  { id: 'examples', label: 'Examples', href: '/examples' },
-  { id: 'blog', label: 'Blog', href: '/blog' },
+  {
+    id: 'docs',
+    label: 'Docs',
+    href: '/docs',
+    description: 'Guides and API reference for the whole collective.',
+    section: 'pmndrs / docs',
+  },
+  {
+    id: 'examples',
+    label: 'Examples',
+    href: '/examples',
+    description: 'Live sandboxes you can fork and edit in place.',
+    section: 'pmndrs / examples',
+  },
+  {
+    id: 'blog',
+    label: 'Blog',
+    href: '/blog',
+    description: 'Release notes, deep dives and the odd experiment.',
+    section: 'pmndrs / blog',
+  },
 ];
 import { useThemeTweak } from './tweaks';
 
@@ -86,17 +114,14 @@ export function BentoPage() {
   useThemeTweak();
   useNacreTweaks();
   const [gone, setGone] = useState(false);
-  const [copyExit, setCopyExit] = useState<SurfaceExit>('none');
-  const [copied, setCopied] = useState(false);
   const [launcherDisabled, setLauncherDisabled] = useState(false);
+  const [launcherExit, setLauncherExit] = useState<SurfaceExit>('none');
   const [tab, setTab] = useState(2);
-  const copy = () => {
-    if (copyExit !== 'none') return;
-    setCopyExit('pending');
-    window.setTimeout(() => {
-      setCopied(true);
-      setCopyExit('none');
-    }, 1500);
+  // the launcher carries both held exits: `pending` while it works, `disable` when it is off
+  const launch = () => {
+    if (launcherDisabled || launcherExit !== 'none') return;
+    setLauncherExit('pending');
+    window.setTimeout(() => setLauncherExit('none'), 1500);
   };
   return (
     <main className="bento">
@@ -123,22 +148,21 @@ export function BentoPage() {
         <h2>Somewhat Expressive</h2>
         <div className="bento-row">
           <div className="bento-stack">
-            <div className="bento-inline">
-              <Surface
-                as="button"
-                type="button"
-                shape="pill"
-                expressiveness="calm"
-                className="surface-button"
-                exit={copyExit}
-                onClick={copy}
-              >
-                {copyExit === 'pending' ? 'Copying…' : copied ? 'Copied!' : 'Copy'}
-              </Surface>
-              <button type="button" className="text-button" onClick={() => setCopied(false)}>
-                reset
-              </button>
-            </div>
+            <CopyButton
+              value="pnpm add @react-three/fiber"
+              actions={[
+                { key: 'docs', label: 'Open the docs', icon: <InfoIcon />, href: '/dev/' },
+                { key: 'sandbox', label: 'Open a sandbox', icon: <ExternalIcon />, href: '/dev/splat' },
+                {
+                  key: 'repo',
+                  label: 'View the repository',
+                  icon: <GitHubIcon />,
+                  href: 'https://github.com/pmndrs',
+                },
+                { key: 'run', label: 'Run it', icon: <BoltIcon /> },
+                { key: 'cli', label: 'Copy the CLI command', icon: <TerminalIcon /> },
+              ]}
+            />
             <div className="bento-inline">
               <Surface
                 as="button"
@@ -146,7 +170,8 @@ export function BentoPage() {
                 shape="pill"
                 expressiveness="calm"
                 className="surface-button wide"
-                exit={launcherDisabled ? 'disable' : 'none'}
+                exit={launcherDisabled ? 'disable' : launcherExit}
+                onClick={launch}
               >
                 Article Launcher
               </Surface>
@@ -177,18 +202,29 @@ export function BentoPage() {
         <h2>Utilitarian</h2>
         <div className="bento-row">
           <div className="bento-inline">
-            {['Cmd K', 'TW', 'DI', 'GH'].map((k) => (
-              <Surface
-                key={k}
-                as="button"
-                type="button"
-                shape="key"
-                expressiveness="flat"
-                className="surface-key"
-              >
-                {k}
-              </Surface>
-            ))}
+            <Button
+              onClick={() => document.querySelector<HTMLElement>('[data-id="cmd"]')?.click()}
+            >
+              Cmd <Kbd>K</Kbd>
+            </Button>
+            <ButtonLink icon href="https://twitter.com/pmndrs" aria-label="Twitter">
+              <TwitterIcon />
+            </ButtonLink>
+            <ButtonLink icon href="https://discord.gg/poimandres" aria-label="Discord">
+              <DiscordIcon />
+            </ButtonLink>
+            <ButtonLink icon href="https://github.com/pmndrs" aria-label="GitHub">
+              <GitHubIcon />
+            </ButtonLink>
+            <Popover
+              label="Open"
+              items={[
+                { key: 'github', label: 'Open in GitHub', href: 'https://github.com/pmndrs' },
+                { key: 'chatgpt', label: 'Open in ChatGPT', href: 'https://chat.openai.com' },
+                { key: 'claude', label: 'Open in Claude', href: 'https://claude.ai' },
+                { key: 'cursor', label: 'Open in Cursor', href: 'https://cursor.com' },
+              ]}
+            />
           </div>
           <Surface shape="card" expressiveness="flat" className="tabs-card">
             <div className="tabs" role="tablist">

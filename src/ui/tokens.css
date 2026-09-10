@@ -1,0 +1,92 @@
+/*
+ * Design tokens for the flat UI set (button, copy, picker, popover).
+ *
+ * Self-contained on purpose: the components in this folder read only `--ui-*`, so the whole
+ * folder can be lifted into another project by copying it and this file. Theming follows the
+ * host page's `data-theme` attribute, with a `prefers-color-scheme` fallback for hosts that
+ * do not stamp one.
+ *
+ * Structure is taken from reference/ui-screenshots; colours are the pmndrs palette, not the
+ * screenshots' exact values.
+ */
+
+:root {
+  /* Accent: pmndrs green. Identical in both themes — it is the brand colour, not a surface. */
+  --ui-accent: #caf543;
+  --ui-accent-ink: #1a1c10;
+
+  /* Surfaces, from the page outward: panel sits on the page, raised sits on the panel. */
+  --ui-surface: #fdfbf5;
+  --ui-surface-raised: #fffefa;
+  --ui-surface-sunken: #f4f1e8;
+  --ui-panel: #fdfcf8;
+
+  --ui-ink: #1a1a18;
+  --ui-ink-muted: #6b6b64;
+  /* Both faint inks clear 4.5:1 against the lightest surface they sit on (the raised row). */
+  --ui-ink-faint: #75756c;
+
+  --ui-border: rgb(0 0 0 / 0.12);
+  --ui-border-subtle: rgb(0 0 0 / 0.07);
+  --ui-hover: rgb(0 0 0 / 0.04);
+
+  --ui-shadow: 0 10px 30px rgb(0 0 0 / 0.12), 0 2px 6px rgb(0 0 0 / 0.06);
+  --ui-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.06);
+
+  /* Match highlight inside picker results. */
+  --ui-match-bg: #e4fb9a;
+  --ui-match-ink: #23290c;
+
+  --ui-radius: 10px;
+  --ui-radius-lg: 14px;
+  --ui-radius-xl: 18px;
+  --ui-radius-sm: 6px;
+
+  --ui-font: 'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --ui-font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+
+  --ui-focus: #6b5bd6;
+}
+
+:root[data-theme='dark'] {
+  --ui-surface: #262523;
+  --ui-surface-raised: #302f2c;
+  --ui-surface-sunken: #171614;
+  --ui-panel: #35342f;
+
+  --ui-ink: #f2f2ef;
+  --ui-ink-muted: #a8a89f;
+  --ui-ink-faint: #98988f;
+
+  --ui-border: rgb(255 255 255 / 0.14);
+  --ui-border-subtle: rgb(255 255 255 / 0.08);
+  --ui-hover: rgb(255 255 255 / 0.06);
+
+  --ui-shadow: 0 16px 40px rgb(0 0 0 / 0.5), 0 2px 8px rgb(0 0 0 / 0.4);
+  --ui-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+
+  --ui-match-bg: #3f4c10;
+  --ui-match-ink: #dcff5e;
+
+  --ui-focus: #b9a8ff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']):not([data-theme='dark']) {
+    --ui-surface: #262523;
+    --ui-surface-raised: #302f2c;
+    --ui-surface-sunken: #171614;
+    --ui-panel: #35342f;
+    --ui-ink: #f2f2ef;
+    --ui-ink-muted: #a8a89f;
+    --ui-ink-faint: #98988f;
+    --ui-border: rgb(255 255 255 / 0.14);
+    --ui-border-subtle: rgb(255 255 255 / 0.08);
+    --ui-hover: rgb(255 255 255 / 0.06);
+    --ui-shadow: 0 16px 40px rgb(0 0 0 / 0.5), 0 2px 8px rgb(0 0 0 / 0.4);
+    --ui-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+    --ui-match-bg: #3f4c10;
+    --ui-match-ink: #dcff5e;
+    --ui-focus: #b9a8ff;
+  }
+}

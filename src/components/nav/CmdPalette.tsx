@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Picker, type PickerItem } from '../../ui/Picker';
 import { useNavStore } from './store';
 import styles from './CmdPalette.module.css';
 
 /**
  * Minimal command palette owned by the nav. Opened by the "Cmd" item or ⌘K / Ctrl+K.
- * Lists the nav links (plus the logo/home) and navigates on selection.
+ * Lists the nav links (plus the logo/home) and navigates on selection. The panel
+ * itself is the shared `Picker` (`src/ui`), so it matches the rest of the flat set.
  */
 export function CmdPalette() {
   const open = useNavStore((s) => s.paletteOpen);
@@ -16,7 +18,6 @@ export function CmdPalette() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
   const [index, setIndex] = useState(0);
-  const listId = useId();
 
   // Global shortcut. Toggle from the dialog's real state: after Escape the <dialog> is
   // already closed while its `close` event (which syncs the store) is still queued.
@@ -43,10 +44,18 @@ export function CmdPalette() {
     }
   }, [open]);
 
-  const items = useMemo(() => {
+  const items = useMemo<(PickerItem & { href: string })[]>(() => {
     const all = [{ id: 'logo', label: 'Home', href: '/' }, ...links];
     const q = query.trim().toLowerCase();
-    return q ? all.filter((l) => l.label.toLowerCase().includes(q)) : all;
+    const matched = q ? all.filter((l) => l.label.toLowerCase().includes(q)) : all;
+    return matched.map((l) => ({
+      id: l.id,
+      label: l.label,
+      description: 'description' in l ? l.description : undefined,
+      // Breadcrumb: the explicit section, else the href read as a path.
+      meta: ('section' in l && l.section) || l.href.replace(/^\//, '').split('/').join(' / ') || 'home',
+      href: l.href,
+    }));
   }, [links, query]);
 
   const go = (href: string) => {
@@ -73,59 +82,19 @@ export function CmdPalette() {
         if (e.target === e.currentTarget) setOpen(false);
       }}
     >
-      <div className={styles.panel}>
-        <input
-          ref={inputRef}
-          className={styles.input}
-          type="search"
-          placeholder="Where to?"
-          aria-label="Search pages"
-          role="combobox"
-          aria-expanded="true"
-          aria-controls={listId}
-          aria-autocomplete="list"
-          aria-activedescendant={items[index] ? `${listId}-${items[index].id}` : undefined}
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setIndex(0);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'ArrowDown') {
-              e.preventDefault();
-              setIndex((i) => Math.min(i + 1, items.length - 1));
-            } else if (e.key === 'ArrowUp') {
-              e.preventDefault();
-              setIndex((i) => Math.max(i - 1, 0));
-            } else if (e.key === 'Enter' && items[index]) {
-              e.preventDefault();
-              go(items[index].href);
-            }
-          }}
-        />
-        <ul id={listId} role="listbox" className={styles.list} aria-label="Pages">
-          {items.length === 0 && (
-            <li className={styles.empty} role="option" aria-selected="false">
-              No matches
-            </li>
-          )}
-          {items.map((l, i) => (
-            <li
-              key={l.id}
-              id={`${listId}-${l.id}`}
-              role="option"
-              aria-selected={i === index}
-              className={styles.item}
-              data-selected={i === index || undefined}
-              onMouseEnter={() => setIndex(i)}
-              onClick={() => go(l.href)}
-            >
-              {l.label}
-              <span className={styles.href}>{l.href}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+      <Picker
+        items={items}
+        query={query}
+        onQueryChange={setQuery}
+        index={index}
+        onIndexChange={setIndex}
+        onSelect={(item) => go((item as PickerItem & { href: string }).href)}
+        onDismiss={() => setOpen(false)}
+        inputRef={inputRef}
+        placeholder="Where to?"
+        inputLabel="Search pages"
+        listLabel="Pages"
+      />
     </dialog>
   );
 }

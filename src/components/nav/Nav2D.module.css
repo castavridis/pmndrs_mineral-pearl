@@ -13,7 +13,8 @@
   justify-content: center;
   width: 100%;
   min-width: 0;
-  color: var(--page-ink);
+  /* the bar carries the liquid it stands on, not the page's ink */
+  color: var(--nav-ink, var(--page-ink));
   container-type: inline-size;
 }
 
@@ -40,7 +41,16 @@
   box-sizing: border-box;
 }
 
-/* the pill is a Surface: its liquid is its whole face */
+/* the pill is a Surface: its liquid is its whole face. Surface paints its own
+   `color`, so the bar's ink has to be qualified past it. */
+.root .pill {
+  color: var(--nav-ink, var(--page-ink));
+}
+
+.root .active {
+  color: var(--nav-active-ink, var(--page-ink));
+}
+
 .pill {
   display: block;
   width: max-content;
@@ -128,6 +138,31 @@
   }
 }
 
+/* --- the active item: a pill of the liquid the bar is not ----------------- */
+.active {
+  display: block;
+  border: 0;
+  color: var(--nav-active-ink, var(--page-ink));
+  box-shadow: 0 2px 10px -4px rgb(0 0 0 / 0.5);
+}
+
+.active .link {
+  padding: 0 clamp(12px, 1.4em, 22px);
+  height: calc(var(--nav-pill-height) - 18px);
+  font-weight: 500;
+}
+
+/* the pill says which page this is; the underline would say it twice */
+.active .link[aria-current='page']::after {
+  display: none;
+}
+
+@media (hover: hover) {
+  .active .link:hover {
+    transform: none;
+  }
+}
+
 .link[aria-current='page']::after {
   content: '';
   position: absolute;
@@ -168,10 +203,12 @@
   font: inherit;
   font-size: 0.7em;
   margin-left: 0.5em;
-  padding: 0.15em 0.4em;
-  border-radius: 5px;
-  background: color-mix(in srgb, var(--page-bg) 45%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 18%, transparent);
+  padding: 0.2em 0.45em;
+  border-radius: 6px;
+  /* a dry key on the liquid: the ink's own opposite, faintly */
+  background: color-mix(in srgb, var(--nav-active-ink, var(--page-bg)) 78%, transparent);
+  color: var(--nav-ink, var(--page-ink));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 12%, transparent);
 }
 
 .menuBtn {
@@ -216,8 +253,8 @@
   gap: 4px;
   padding: 8px;
   border-radius: var(--nav-pill-radius);
-  background: color-mix(in srgb, var(--page-bg) 92%, transparent);
-  border: 1px solid color-mix(in srgb, var(--page-ink) 16%, transparent);
+  background: color-mix(in srgb, var(--nav-active-ink, var(--page-bg)) 92%, transparent);
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
   box-shadow: 0 12px 40px rgb(0 0 0 / 0.25);
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
