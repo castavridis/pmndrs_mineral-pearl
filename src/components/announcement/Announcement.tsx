@@ -27,7 +27,7 @@ export interface AnnouncementProps {
   /**
    * The meniscus at the rim of the face's nacre (the dark page's face): a band
    * where the lip darkens and the edge catches the light and the iridescence.
-   * Off, the nacre runs to a hard edge. Default true.
+   * Off (the default), the nacre runs to a hard edge.
    */
   meniscus?: boolean;
   /**
@@ -64,7 +64,7 @@ export function Announcement({
   children,
   width = announcement.width,
   variant = 'auto',
-  meniscus = true,
+  meniscus = false,
   onDismiss,
   swallow,
   className,
