@@ -227,6 +227,7 @@ export function Announcement({
         globHeight={look.globHeight}
         globSettle={look.globSettle}
         globShading={look.globShading}
+        sinkSplash={look.droplets}
         viscosity={look.viscosity}
         sinkDepth={look.sinkDepth}
         pressDepth={look.pressDepth}

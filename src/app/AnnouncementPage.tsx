@@ -28,6 +28,7 @@ export function AnnouncementPage() {
       globHeight: { value: d.globHeight, min: 0, max: 2.5, step: 0.05, label: 'heap height' },
       globSettle: { value: d.globSettle, min: 0, max: 4, step: 0.05, label: 'settle (s)' },
       globShading: { value: d.globShading, label: 'lit mass' },
+      droplets: { value: d.droplets, label: 'throw droplets' },
       viscous: { value: false, label: 'own viscosity' },
       viscosity: {
         value: 0.4,
@@ -47,6 +48,7 @@ export function AnnouncementPage() {
     globHeight: c.globHeight,
     globSettle: c.globSettle,
     globShading: c.globShading,
+    droplets: c.droplets,
     viscosity: c.viscous ? c.viscosity : undefined,
     sinkDepth: c.sinkDepth,
     pressDepth: c.pressDepth,

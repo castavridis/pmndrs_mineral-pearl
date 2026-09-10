@@ -19,6 +19,12 @@ export interface AnnouncementSwallow {
   globSettle: number;
   /** Light the mass, rather than drawing it as flat coverage. */
   globShading: boolean;
+  /**
+   * Throw the rim's droplets as the banner goes under. Off, the liquid simply
+   * closes over it: a quiet swallow, with the ring from the blow and nothing
+   * flying. The droplets are the swallow's own — a press never throws them.
+   */
+  droplets: boolean;
   /** Thickness of the liquid; undefined follows the page look's. */
   viscosity?: number;
   /** How deep a press drives the point under the finger, in uv. */
@@ -35,6 +41,7 @@ export const ANNOUNCEMENT_SWALLOW: AnnouncementSwallow = {
   globHeight: 0.8,
   globSettle: 1.1,
   globShading: true,
+  droplets: true,
   pressDepth: -0.12,
   sinkDepth: -0.34,
   bleed: 96,
