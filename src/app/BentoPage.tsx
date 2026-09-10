@@ -344,6 +344,7 @@ export function BentoPage() {
                 type="button"
                 className="surface-button launcher"
                 aria-disabled={launcherDisabled || undefined}
+                aria-keyshortcuts="T"
                 onPointerDown={(e) => {
                   if (!launcherDisabled) launcherSink.current?.press(e.nativeEvent);
                 }}

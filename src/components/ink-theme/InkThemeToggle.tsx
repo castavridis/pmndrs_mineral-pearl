@@ -46,6 +46,7 @@ export function InkThemeToggle({
       type="button"
       onClick={onClick}
       aria-disabled={busy || undefined}
+      aria-keyshortcuts="T"
       aria-label={`Theme: ${LABEL[theme]} (${resolved}). Switch to ${LABEL[next]}`}
       title={`Theme: ${LABEL[theme]}`}
       style={{
