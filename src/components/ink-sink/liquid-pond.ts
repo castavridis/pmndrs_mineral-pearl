@@ -496,6 +496,15 @@ const EPOCH = performance.now();
 const MAXP = 128;
 const KQ = 0.541;
 const TAU = Math.PI * 2;
+/* A press: how much of the depth the slab gives as a whole, the rest being
+   supplied by the tilt about its centre; the shortest lever the tilt is
+   allowed to work with, as a fraction of the slab's mean size; and a ceiling
+   on the tilt, in uv of height per uv of offset, so a press at the very edge
+   of a small slab cannot stand it on end. */
+const PRESS_HEAVE = 0.35;
+const PRESS_LEVER = 0.42;
+const PRESS_TILT_MAX = 0.5;
+
 const GROW = [2.2, 0.45, 0.3, 0.3]; // how much each droplet kind swells as the mass closes over the slab
 
 export type Liquid = 'mineral' | 'pearl' | 'mercury';
@@ -732,6 +741,8 @@ export class LiquidPond {
     /** (port) the velocity the surface feels: `v` low-passed over the momentum-diffusion time */
     velLag: number;
     pressAt: number;
+    /** where the press landed, in the shader's frame: the point held under */
+    pressPt: [number, number];
     ripples: Ripple[];
     ptr: [number, number];
     ptrOn: number;
@@ -795,6 +806,7 @@ export class LiquidPond {
       v: 0,
       velLag: 0,
       pressAt: -99,
+      pressPt: [0, 0],
       ripples: [],
       ptr: [0, 0],
       ptrOn: 0,
@@ -903,11 +915,19 @@ export class LiquidPond {
     const py = pt ? pt[1] : this._by;
     const dx = px - this._bx;
     const dy = py - this._by;
-    // an impulse, not a target: the tilt spring rocks it back as it bobs up
+    // the point the finger holds down; the loop tips the slab about its centre
+    // until that point sits at the press depth
+    s.pressPt[0] = px;
+    s.pressPt[1] = py;
+    // an impulse on top of it, so it arrives with a knock rather than a glide
     s.tiltV[0] += -dx * 7;
     s.tiltV[1] += -dy * 7;
+    // A ring from where the finger went in, and nothing else. A press is a
+    // load, not an impact: the liquid it displaces runs outward as a wave.
+    // Throwing the rim's droplets here (as this used to) is the swallow that
+    // belongs to going under, and on a slab tuned for a dramatic dismissal it
+    // buried the whole face for a click.
     this._spawn(px, py, 0.85);
-    this._splat(1);
   }
 
   setFocus(on: boolean) {
@@ -1573,7 +1593,11 @@ export class LiquidPond {
       const hoverY = 0.014 - s.prox * 0.022 * this._pr('tilt');
       const sinkDepth = this.opts.sinkDepth ?? -0.34;
       const pressDepth = this.opts.pressDepth ?? -0.3;
-      const target = this._sunk ? sinkDepth : pressed ? pressDepth : hoverY;
+      // A press is a load at a point, not a lift of the whole slab. The slab
+      // gives a little as a whole and tips about its centre until the point
+      // under the finger is at the press depth — the far side rides up by as
+      // much, which is what a plank on water does when you lean on one end.
+      const target = this._sunk ? sinkDepth : pressed ? pressDepth * PRESS_HEAVE : hoverY;
       const k = this._sunk ? 7.5 : pressed ? 18 : 22;
       if (s.prox > 0.6 && !this._wasUnder) this._spawn(this._bx, this._by, 0.25 * this._pr('wake'));
       this._wasUnder = s.prox > 0.6;
@@ -1607,8 +1631,23 @@ export class LiquidPond {
         const ref = Math.sqrt(Math.max(this._halfX * this._halfY, 1e-8));
         const reach = (d: number, half: number) =>
           Math.max(-1, Math.min(1, d / Math.max(half, 1e-4)));
-        const tx = -reach(s.ptr[0] - this._bx, this._halfX) * ref * under * tiltK;
-        const ty = -reach(s.ptr[1] - this._by, this._halfY) * ref * under * tiltK;
+        let tx = -reach(s.ptr[0] - this._bx, this._halfX) * ref * under * tiltK;
+        let ty = -reach(s.ptr[1] - this._by, this._halfY) * ref * under * tiltK;
+        if (pressed && !this._sunk) {
+          // The face's local height is depth + tilt · offset, so the tilt that
+          // puts the pressed point at `pressDepth` is offset * need / |offset|²
+          // — solved rather than tuned. A press at the middle has no lever, so
+          // the offset is floored at a fraction of the slab's size and the
+          // whole thing simply gives instead.
+          const ox = s.pressPt[0] - this._bx;
+          const oy = s.pressPt[1] - this._by;
+          const need = pressDepth * (1 - PRESS_HEAVE);
+          const len2 = Math.max(ox * ox + oy * oy, (PRESS_LEVER * ref) ** 2);
+          const g = need / len2;
+          const cap = PRESS_TILT_MAX / Math.max(ref, 1e-4);
+          tx = Math.max(-cap, Math.min(cap, ox * g));
+          ty = Math.max(-cap, Math.min(cap, oy * g));
+        }
         const tk = 60;
         const tc = 5.5 * visc;
         s.tiltV[0] += (tx - s.tilt[0]) * tk * h - s.tiltV[0] * tc * h;
@@ -1674,11 +1713,7 @@ export class LiquidPond {
       const landed = P && P.n > 0;
       const hold = 0.45;
       const globTarget =
-        !landed || settle <= 0
-          ? landed
-            ? 1
-            : 0
-          : Math.max(0, 1 - Math.max(0, P.t - hold) / settle);
+        !landed || settle <= 0 ? (landed ? 1 : 0) : Math.max(0, 1 - Math.max(0, P.t - hold) / settle);
       this._globH += (globTarget - this._globH) * (1 - Math.exp(-dt * 7));
       gl.uniform3f(
         u.uGlob,

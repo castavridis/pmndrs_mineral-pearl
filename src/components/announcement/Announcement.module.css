@@ -116,3 +116,18 @@
     animation: none;
   }
 }
+
+/* --- the slot: the room the banner takes in the page ----------------------
+   A dismissal is not over when the liquid has closed: the space the banner
+   held has to go too, and it should close rather than vanish. The slot is
+   pinned to its measured height and then run to zero, so whatever is below
+   rises into the gap. */
+.slot {
+  transition: height 460ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slot {
+    transition: none;
+  }
+}

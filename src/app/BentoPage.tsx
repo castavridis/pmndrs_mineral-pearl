@@ -184,7 +184,7 @@ export function BentoPage() {
                 bleed={44}
                 sinkOnClick={false}
                 viscosity={0.22}
-                pressDepth={-0.05}
+                pressDepth={-0.09}
                 sinkSplash={false}
                 className="launcher-sink"
                 style={{ width: 'calc(100% + 88px)', margin: -44 }}
@@ -226,7 +226,7 @@ export function BentoPage() {
                   viscosity={0.22}
                   sunk={launcherDisabled}
                   sinkDepth={-0.1}
-                  pressDepth={-0.05}
+                  pressDepth={-0.09}
                   sinkSplash={false}
                   className="launcher-sink"
                   style={{ width: 'calc(100% + 88px)', margin: -44 }}
