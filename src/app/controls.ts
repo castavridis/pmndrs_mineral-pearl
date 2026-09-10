@@ -21,3 +21,17 @@ export const CONTROL_SWALLOW: SwallowLook = {
   sinkDepth: -0.1,
   bleed: 44,
 };
+
+/**
+ * How hard the pointer's wake moves the middle tier. These are controls, not
+ * ornaments: at 0.8 a ripple passing under one shoved it several pixels and a
+ * degree of tilt, which read as an animation rather than as water. Halved, it
+ * is a lean you notice only if you are looking at it.
+ *
+ * `useWake` carries the movement and the tilt in one number, so lowering it
+ * softens both together.
+ */
+export const CONTROL_WAKE = 0.35;
+
+/** The callout is a bigger, heavier slab, so it answers the water even less. */
+export const CALLOUT_WAKE = 0.26;

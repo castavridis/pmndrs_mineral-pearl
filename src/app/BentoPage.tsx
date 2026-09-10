@@ -52,7 +52,7 @@ const LINKS: NavLink[] = [
     section: 'pmndrs / blog',
   },
 ];
-import { CONTROL_SWALLOW } from './controls';
+import { CALLOUT_WAKE, CONTROL_SWALLOW, CONTROL_WAKE } from './controls';
 import { useThemeTweak } from './tweaks';
 
 /* The panel's current values, where leva's buttons can reach them: a button's
@@ -216,9 +216,9 @@ export function BentoPage() {
   const copyWake = useRef<HTMLDivElement>(null);
   const launcherWake = useRef<HTMLDivElement>(null);
   const calloutWake = useRef<HTMLDivElement>(null);
-  useWake(copyWake, 0.8);
-  useWake(launcherWake, 0.8);
-  useWake(calloutWake, 0.6);
+  useWake(copyWake, CONTROL_WAKE);
+  useWake(launcherWake, CONTROL_WAKE);
+  useWake(calloutWake, CALLOUT_WAKE);
   const copySink = useRef<InkSinkHandle>(null);
   const launcherSink = useRef<InkSinkHandle>(null);
   const launcherFace = useRef<HTMLButtonElement>(null);
