@@ -2,13 +2,14 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { InkSink, centreOf, type InkSinkHandle } from '../ink-sink/InkSink';
+import { LiquidGround } from '../ink-sink/LiquidGround';
 import { InkSplat, type InkSplatHandle } from '../ink-splat';
 import { SLAB_LOOK } from '../ink-sink/liquid-pond';
 import { Surface } from '../surface/Surface';
 import { useWebGL } from '../gate';
 import { useResolvedTheme, useThemeStore } from '../theme';
 import type { SinkTier } from '../ink-sink/InkSink';
-import { announcement, nacreFace } from './metrics';
+import { announcement, mineralFace, nacreFace } from './metrics';
 import { ANNOUNCEMENT_SWALLOW, type AnnouncementSwallow } from './swallow';
 import styles from './Announcement.module.css';
 
@@ -24,9 +25,9 @@ export interface AnnouncementProps {
    */
   variant?: 'auto' | SinkTier | 'flat';
   /**
-   * The meniscus at the rim of the face's nacre: a band where the lip darkens
-   * and the edge catches the light and the iridescence. Off, the nacre runs
-   * to a hard edge. Default true.
+   * The meniscus at the rim of the face's nacre (the dark page's face): a band
+   * where the lip darkens and the edge catches the light and the iridescence.
+   * Off, the nacre runs to a hard edge. Default true.
    */
   meniscus?: boolean;
   /**
@@ -73,17 +74,19 @@ export function Announcement({
   // the sink resolves its own tier; only `flat` opts out of floating
   const liquid = variant !== 'flat';
   const sink = useRef<InkSinkHandle>(null);
-  // The face wears the ink splat's nacre: surface tension at the rim and an
-  // iridescence where the surface curves away, dented by the pointer. It is
-  // the ink flooded to the slab's box in the slab's own colour, so it lies on
-  // the slab, tips with it and goes under with it. Only where the pond runs:
-  // the fallback tiers keep their flat face.
+  // The face is dressed, on the slab itself so it tips with it and goes under
+  // with it. On the dark page it wears the ink splat's nacre: surface tension
+  // at the rim and an iridescence where the surface curves away, dented by the
+  // pointer — the ink flooded to the slab's box in the slab's own colour. On
+  // the light page it is the pond's mineral body, the liquid the page is not.
+  // Only where the pond runs: the fallback tiers keep their flat face.
   const splat = useRef<InkSplatHandle>(null);
   const webgl = useWebGL();
   const shaders = useThemeStore((s) => s.shaders);
   const theme = useResolvedTheme();
-  const nacred = liquid && webgl !== false && shaders;
-  const faceInk = SLAB_LOOK[theme === 'dark' ? 'mineral' : 'pearl'].bg;
+  const dressed = liquid && webgl !== false && shaders;
+  const face = !dressed ? null : theme === 'dark' ? 'nacre' : 'mineral';
+  const faceInk = SLAB_LOOK.mineral.bg;
   // dismissed: the slab is under for good; after a beat the whole thing fades,
   // leaving the ground (the liquid it shows is the ground's, so nothing else
   // changes)
@@ -235,8 +238,8 @@ export function Announcement({
         padding: `${announcement.paddingY}px ${announcement.paddingRight}px ${announcement.paddingY}px ${announcement.paddingX}px`,
       }}
       // the pointer dents the face's nacre, as it does the splat's
-      onPointerMove={nacred ? (e) => splat.current?.point(e.nativeEvent) : undefined}
-      onPointerLeave={nacred ? () => splat.current?.leave() : undefined}
+      onPointerMove={face === 'nacre' ? (e) => splat.current?.point(e.nativeEvent) : undefined}
+      onPointerLeave={face === 'nacre' ? () => splat.current?.leave() : undefined}
       // a click anywhere on the banner is a load at that point: the slab tips
       // until the spot under the finger is under the liquid. The dismissal is
       // its own, heavier blow, so it is left alone.
@@ -246,7 +249,19 @@ export function Announcement({
         sink.current?.press(e.nativeEvent);
       }}
     >
-      {nacred && (
+      {face === 'mineral' && (
+        // the mineral reads the pointer from the window: the face's own layer
+        // takes no pointer events, and the dent only shows where it is over it
+        <LiquidGround
+          liquid="mineral"
+          pointer="window"
+          maxDpr={2}
+          unit={mineralFace.unit}
+          // behind the text, and clipped to the slab's corners
+          style={{ zIndex: -1, borderRadius: announcement.radius }}
+        />
+      )}
+      {face === 'nacre' && (
         <span className={styles.nacre} aria-hidden="true">
           <InkSplat
             ref={splat}

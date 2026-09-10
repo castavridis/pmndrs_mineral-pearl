@@ -20,3 +20,9 @@ export const nacreFace = {
   /** The meniscus at the rim, px: where the lip darkens and the edge catches the light. */
   meniscus: 7,
 } as const;
+
+/** The light page's face: the pond's mineral body. */
+export const mineralFace = {
+  /** CSS px per unit of the liquid's features: the page ground's and the callouts', so the banner's mineral is the same stone. */
+  unit: 420,
+} as const;
