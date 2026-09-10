@@ -179,7 +179,8 @@ a {
 .bento {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 72px clamp(16px, 4vw, 40px) 96px;
+  /* 3rem above, so the banner starts near the top rather than adrift in it */
+  padding: 3rem clamp(16px, 4vw, 40px) 96px;
 }
 
 .bento-tier {

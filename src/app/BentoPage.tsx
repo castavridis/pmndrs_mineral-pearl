@@ -3,6 +3,7 @@ import { Leva, button, folder, useControls } from 'leva';
 import { useEffect } from 'react';
 import {
   Announcement,
+  InkThemeToggle,
   NACRE_DEFAULT,
   Nav,
   NacreCallout,
@@ -339,7 +340,7 @@ export function BentoPage() {
                   launcherSink.current?.press(centreOf(e.currentTarget));
                 }}
               >
-                Article Launcher
+                Sample Call to Action
               </button>
             </InkSink>
           </div>
@@ -348,8 +349,9 @@ export function BentoPage() {
             className="text-button"
             onClick={() => setLauncherDisabled((d) => !d)}
           >
-            {launcherDisabled ? 'enable' : 'disable'}
+            {launcherDisabled ? 'Enable CTA' : 'Disable CTA'}
           </button>
+          <InkThemeToggle modes={['dark', 'light']} />
         </div>
       </section>
 

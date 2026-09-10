@@ -17,6 +17,9 @@ import { BentoPage } from './app/BentoPage';
 // Path routing without a router: every route is served the same index.html
 // by the Vercel rewrite and picks its page here.
 const path = window.location.pathname;
+// the bento shows a theme switch among its own elements, so the shell leaves
+// its fixed one out there
+const ownToggle = path.startsWith('/dev/bento');
 const page = path.startsWith('/dev/demo') ? (
   <Demo />
 ) : path.startsWith('/dev/nav') ? (
@@ -41,6 +44,6 @@ const page = path.startsWith('/dev/demo') ? (
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <AppShell>{page}</AppShell>
+    <AppShell toggle={!ownToggle}>{page}</AppShell>
   </StrictMode>
 );

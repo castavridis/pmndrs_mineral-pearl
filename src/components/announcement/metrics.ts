@@ -3,7 +3,7 @@ export const announcement = {
   width: 652,
   height: 94,
   radius: 8,
-  paddingX: 40,
+  paddingX: 16,
   /** Liquid kept around the banner, px: where its ripples and droplets run.
       As much room as the card afloat keeps on the study's pond, so the swallow
       has somewhere to throw its droplets instead of clipping at the rim. */
