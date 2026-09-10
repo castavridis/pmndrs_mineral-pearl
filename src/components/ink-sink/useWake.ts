@@ -12,7 +12,17 @@ import { getFixedGround } from './grounds';
  * The surface is read from the same ripples the shader draws (`sampleWake`),
  * so the DOM and the liquid agree about where the water is.
  */
-export function useWake(ref: RefObject<HTMLElement | null>, strength = 1) {
+export function useWake(
+  ref: RefObject<HTMLElement | null>,
+  strength = 1,
+  /**
+   * How the movement is applied. `transform` is the default. `offset` writes
+   * `--wake-x` and `--wake-y` for the CSS to place with `left`/`top` instead,
+   * for anything that must not open a stacking context — the nav's bar has the
+   * page's nacre stage drawing inside it, and a transform would seal it out.
+   */
+  mode: 'transform' | 'offset' = 'transform'
+) {
   const reduced = useReducedMotion();
   useEffect(() => {
     const el = ref.current;
@@ -38,12 +48,19 @@ export function useWake(ref: RefObject<HTMLElement | null>, strength = 1) {
       x += (tx - x) * k;
       y += (ty - y) * k;
       rot += (tr - rot) * k;
-      el.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0) rotate(${rot.toFixed(3)}deg)`;
+      if (mode === 'offset') {
+        el.style.setProperty('--wake-x', `${x.toFixed(2)}px`);
+        el.style.setProperty('--wake-y', `${y.toFixed(2)}px`);
+      } else {
+        el.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0) rotate(${rot.toFixed(3)}deg)`;
+      }
     };
     raf = requestAnimationFrame(frame);
     return () => {
       cancelAnimationFrame(raf);
       el.style.transform = '';
+      el.style.removeProperty('--wake-x');
+      el.style.removeProperty('--wake-y');
     };
-  }, [ref, strength, reduced]);
+  }, [ref, strength, reduced, mode]);
 }

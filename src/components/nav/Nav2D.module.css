@@ -9,6 +9,10 @@
   --fs: var(--nav-font-size-full);
   --menu-h: 40px;
   position: relative;
+  /* the wake carries the bar; offsets rather than a transform, so the stage's
+     canvas can still reach inside it (see useWake) */
+  left: var(--wake-x, 0px);
+  top: var(--wake-y, 0px);
   display: flex;
   justify-content: center;
   width: 100%;

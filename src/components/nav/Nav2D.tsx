@@ -6,6 +6,7 @@ import { POND_BG, type Liquid } from '../ink-sink/liquid-pond';
 import { onInk, page, useResolvedTheme } from '../theme';
 import { palette } from '../theme/palette';
 import { getNacreStage } from '../nacre-callout/stage';
+import { useWake } from '../ink-sink/useWake';
 import { InkSplat } from '../ink-splat';
 import { useNavStore, useNavStoreApi, resolveMode } from './store';
 import { tokens, tokensToCssVars } from './tokens';
@@ -44,6 +45,10 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
   const rootRef = useRef<HTMLDivElement>(null);
   const pillRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLElement>(null);
+  // the bar floats on the page like everything else: the wake carries it. In
+  // offset mode, since a transform here would seal the nacre stage's canvas
+  // out of the bar and take the moving pill with it.
+  useWake(rootRef, 0.7, 'offset');
   const rowRef = useRef<HTMLDivElement>(null);
   const indicatorRef = useRef<HTMLSpanElement>(null);
   const hovered = useNavStore((s) => s.hovered);
