@@ -92,10 +92,18 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
       // happened to be: it appears where it is wanted, then slides after that
       if (first) slider.dataset.placing = '';
       slider.style.opacity = '1';
+      // One height for every item. The items are not all the same height —
+      // Cmd stands the row's full height so its key cap has somewhere to sit,
+      // while a link is only as tall as its text — and a pill that took each
+      // item's own box would swell as it reached that one. A label sets the
+      // height, and the pill is centred on whatever it is under.
+      const label = row.querySelector<HTMLElement>('a[data-id]:not([data-id="logo"])');
+      const base = label?.offsetHeight || el.offsetHeight;
+      const pillH = base + PILL_PAD_Y * 2;
       slider.style.left = `${el.offsetLeft - PILL_PAD_X}px`;
-      slider.style.top = `${el.offsetTop - PILL_PAD_Y}px`;
+      slider.style.top = `${el.offsetTop + el.offsetHeight / 2 - pillH / 2}px`;
       slider.style.width = `${el.offsetWidth + PILL_PAD_X * 2}px`;
-      slider.style.height = `${el.offsetHeight + PILL_PAD_Y * 2}px`;
+      slider.style.height = `${pillH}px`;
       if (first) {
         void slider.offsetWidth;
         delete slider.dataset.placing;
