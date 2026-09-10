@@ -113,6 +113,12 @@ export interface InkSplatProps {
    * as on an announcement. Default true.
    */
   flood?: boolean;
+  /**
+   * How far each droplet's kernel follows the run of droplets around it, after
+   * Yu and Turk's anisotropic kernels. 0 is the ballistic shape alone, which is
+   * rounder; 1 (default) lets strands read as strands.
+   */
+  anisotropy?: number;
   /** `splat` (default) or `engulf`, the inverse. */
   mode?: InkMode;
   /** Splat on pointerdown over the canvas. Default true. */
@@ -161,6 +167,7 @@ export function InkSplat({
   logo = true,
   nacre = 0,
   flood = true,
+  anisotropy = 1,
   scale = BLOT_SCALE,
   origin,
   clip,
@@ -223,6 +230,7 @@ export function InkSplat({
         logo={logo}
         nacre={nacre}
         flood={flood}
+        anisotropy={anisotropy}
         scale={scale}
         originX={origin?.[0] ?? 0.5}
         originY={origin?.[1] ?? 0.5}
@@ -248,6 +256,7 @@ interface LayerProps {
   logo: boolean;
   nacre: number;
   flood: boolean;
+  anisotropy: number;
   scale: number;
   originX: number;
   originY: number;
@@ -415,6 +424,7 @@ function InkSplatLayer({
   logo,
   nacre,
   flood,
+  anisotropy,
   scale,
   originX,
   originY,
@@ -516,6 +526,7 @@ function InkSplatLayer({
     res.floodLen = engulf ? ENGULF_FLOOD_LEN : FLOOD_LEN;
     // with no flood the blot is settled as soon as the droplets have stopped
     res.duration = !flood ? FLOOD_START : engulf ? ENGULF_DURATION : DURATION;
+    res.particles.anisotropy = anisotropy;
     res.particles.floodStart = res.floodStart;
     res.particles.floodLen = res.floodLen;
     const u = res.inkMaterial.uniforms;
@@ -523,7 +534,7 @@ function InkSplatLayer({
     u.uFloodLen.value = res.floodLen;
     u.uEngulf.value = engulf ? 1 : 0;
     invalidate();
-  }, [mode, flood, invalidate]);
+  }, [mode, flood, anisotropy, invalidate]);
 
   // viewport geometry in shader units
   useEffect(() => {

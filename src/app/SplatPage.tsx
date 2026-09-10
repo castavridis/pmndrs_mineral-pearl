@@ -11,11 +11,24 @@ export function SplatPage() {
   const settled = useSplatPage((s) => s.settled);
   const theme = useResolvedTheme();
 
-  const { logo, scale, interactive, inkOverride, ink, mark, originX, originY } = useControls(
+  const {
+    logo,
+    scale,
+    interactive,
+    inkOverride,
+    ink,
+    mark,
+    originX,
+    originY,
+    anisotropy,
+    nacre,
+  } = useControls(
     'ink splat',
     {
       logo: true,
       scale: { value: BLOT_SCALE, min: 0.5, max: 4, step: 0.05 },
+      anisotropy: { value: 1, min: 0, max: 1, step: 0.05, label: 'anisotropic kernels' },
+      nacre: { value: 0, min: 0, max: 1, step: 0.05, label: 'nacre surface' },
       interactive: { value: true, label: 'click to splat' },
       inkOverride: { value: false, label: 'custom colours' },
       ink: { value: page.light.ink, render: (get) => get('ink splat.inkOverride') },
@@ -37,6 +50,8 @@ export function SplatPage() {
           mark={inkOverride ? mark : undefined}
           logo={logo}
           scale={scale}
+          anisotropy={anisotropy}
+          nacre={nacre}
           origin={[originX, originY]}
           interactive={interactive}
           onSettle={() => setSettled(true)}
