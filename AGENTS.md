@@ -34,6 +34,10 @@ pnpm lint -- <files>
 
 Avoid whole-repo `pnpm format` / `pnpm lint` unless asked.
 
+## Planned work
+
+[`IMPROVEMENTS.md`](IMPROVEMENTS.md) holds the ranked improvement plan and the design worked out for each item; section 6 of `CHANGELOG.md` mirrors its status. Read it before touching `ink-sink/` or the nacre stage, and keep both status columns current.
+
 ## Conventions
 
 - Components live in `src/components/<name>/` with an `index.ts` barrel and are re-exported from `src/components/index.ts`.

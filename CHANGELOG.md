@@ -165,7 +165,8 @@ so the study can still be diffed against.
 ## 6. Review: what to improve, and what was done about it
 
 A review at the end of the session, ranked by what each would buy. The status column
-is kept current as items are taken on.
+is kept current as items are taken on. The full plan, with the design worked out for
+each item, is in [`IMPROVEMENTS.md`](IMPROVEMENTS.md).
 
 | # | Improvement | Why | Status |
 | --- | --- | --- | --- |
