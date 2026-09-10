@@ -9,9 +9,12 @@
   border-radius: 8px;
   background: transparent;
   border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
-  /* the card is black mineral on the dark page and the page's own ground on
-     the light one (the iridescence study's light treatment), so the text
-     follows the page rather than being pinned to one of them */
+  /* The card is black mineral on either page for now, so inside it the page's
+     tokens are the dark page's: the text, and the halos behind it that are
+     drawn in the ground's colour, read against the card rather than against
+     whichever page it happens to lie on. */
+  --page-ink: #eeeeea;
+  --page-bg: #0c0a06;
   color: var(--page-ink);
 }
 
@@ -49,21 +52,6 @@
     0 0 10px color-mix(in srgb, var(--page-bg) 66%, transparent);
 }
 
-
-/* On the light ground the card is pale paper, and the kind's colour — a
-   pmndrs green or yellow, chosen to carry against black mineral — has almost
-   nothing to hold on to there. The headline takes the page's ink instead and
-   the icon keeps the colour, so the kind is still said, in the one place that
-   can afford to say it. */
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme='dark']) .lbl {
-    color: var(--page-ink);
-  }
-}
-
-:root[data-theme='light'] .lbl {
-  color: var(--page-ink);
-}
 .body p {
   margin: 0;
   font-size: 14.5px;

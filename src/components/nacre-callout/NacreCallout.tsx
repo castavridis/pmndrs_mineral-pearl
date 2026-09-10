@@ -59,7 +59,8 @@ export function NacreCallout({ kind = 'note', children, className, style }: Nacr
     if (!el) return;
     const stage = getNacreStage();
     if (!stage) return;
-    const off = stage.register({ el, icon: iconRef.current, accent: k.accent });
+    // mineral on either page, for now: see the CSS for how the text follows
+    const off = stage.register({ el, icon: iconRef.current, accent: k.accent, dark: true });
     // the ghost is the text: refresh it when the scheme (colours) changes
     const obs = new MutationObserver(() => stage.refresh());
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });

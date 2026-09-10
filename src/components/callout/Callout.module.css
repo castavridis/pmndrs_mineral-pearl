@@ -7,17 +7,23 @@
   position: relative;
   display: block;
   width: 100%;
+  /* Every callout is black mineral on either page for now — the nacre slab
+     and the plain and flat cards alike — so inside it the page's tokens are
+     the dark page's: the text, and the halos drawn in the ground's colour
+     behind it, read against the mineral rather than against whichever page
+     the card lies on. */
+  --page-ink: #eeeeea;
+  --page-bg: #0c0a06;
+  color: var(--page-ink);
 }
 
 /* the nacre slab is drawn beneath by the page's stage; the DOM is a bordered
-   card over it. The slab is black mineral on the dark page and the page's own
-   ground on the light one, so the text follows the page. */
+   card over it */
 .nacre {
   z-index: 1;
   border-radius: 8px;
   background: transparent;
   border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
-  color: var(--page-ink);
 }
 
 /* the blot under the lens: the kind's ink, thrown at the card's corner */

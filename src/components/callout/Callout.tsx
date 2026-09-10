@@ -3,7 +3,7 @@
 import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { InkSplat, type InkSplatHandle } from '../ink-splat';
 import { Surface } from '../surface/Surface';
-import { onInk, useResolvedTheme } from '../theme';
+import { onInk } from '../theme';
 import { useWebGL } from '../gate';
 import { calloutKinds, type CalloutKind } from './kinds';
 import { nacreKinds } from '../nacre-callout/NacreCallout';
@@ -46,7 +46,6 @@ export function Callout({
 }: CalloutProps) {
   const k = calloutKinds[kind];
   const n = nacreKinds[kind];
-  const theme = useResolvedTheme();
   const webgl = useWebGL();
   const nacre = variant === 'surface' && webgl !== false;
   // The blot is the kind's palette colour, unmuted: it is a mark on the card,
@@ -55,7 +54,9 @@ export function Callout({
   const blotInk = k.hex;
   const onBlot = onInk(blotInk);
   // the label beside it is text, so that one does take the readable ink
-  const tint = k.ink[theme];
+  // every callout is mineral on either page for now, so its label takes the
+  // ink that reads on mineral
+  const tint = k.ink.dark;
   const vars = {
     '--tint': tint,
     '--accent': n.accent,
@@ -96,7 +97,7 @@ export function Callout({
     if (!nacre || !el) return;
     const stage = getNacreStage();
     if (!stage) return;
-    const off = stage.register({ el, icon: lensRef.current, accent: n.accent });
+    const off = stage.register({ el, icon: lensRef.current, accent: n.accent, dark: true });
     const obs = new MutationObserver(() => stage.refresh());
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     return () => {
@@ -154,6 +155,8 @@ export function Callout({
       ) : (
         <Surface
           shape="card"
+          // mineral on either page for now, as the nacre slab is
+          material="mineral"
           radius={callout.radius}
           expressiveness={variant === 'plain' ? 'calm' : 'flat'}
           unit={callout.width * 0.75}

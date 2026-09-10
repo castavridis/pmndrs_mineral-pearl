@@ -457,6 +457,12 @@ export interface NacreCard {
    * rather than a patch of it.
    */
   invert?: boolean;
+  /**
+   * Always the dark treatment — the black mineral — whatever the page is.
+   * For a card that is meant to stand on the page as a piece of mineral rather
+   * than take on the ground it lies on.
+   */
+  dark?: boolean;
 }
 
 interface CardState {
@@ -858,9 +864,8 @@ export class NacreStage {
     gl.uniform1f(u.uTime, now / 1000);
     gl.uniform1f(u.uDark, dark ? 1 : 0);
     gl.uniform3fv(u.uBg, bg);
-    // the other scheme's pair, for the cards that invert
+    // the other scheme, for the cards that invert
     const invDark = !dark;
-    const invBg = hexToRgb(invDark ? PAGE_BG.dark : PAGE_BG.light);
     gl.uniform1f(u.uIconR, 15);
     gl.uniform1f(u.uGhostOn, cfg.textGhost ? 1 : 0);
     gl.uniform1f(u.uGhostOpacity, cfg.ghostOpacity);
@@ -909,9 +914,9 @@ export class NacreStage {
     for (const c of this._cards.values()) {
       const el = c.card.el;
       // a card that inverts carries the other scheme's body, ground and film
-      const cd = c.card.invert ? invDark : dark;
+      const cd = c.card.dark ? true : c.card.invert ? invDark : dark;
       gl.uniform1f(u.uDark, cd ? 1 : 0);
-      gl.uniform3fv(u.uBg, c.card.invert ? invBg : bg);
+      gl.uniform3fv(u.uBg, cd === dark ? bg : hexToRgb(cd ? PAGE_BG.dark : PAGE_BG.light));
       // the film is the light page's iridescence; the dark page keeps the nacre's
       gl.uniform1f(u.uFilm, cfg.film * (cd ? 0.3 : 1));
       const r = el.getBoundingClientRect();
