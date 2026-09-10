@@ -144,7 +144,7 @@
   /* wider than the bar is tall, so it carries past the edge */
   width: 168px;
   height: 168px;
-  transform: translate(-50%, -50%) translate(var(--wake-x, 0px), var(--wake-y, 0px));
+  transform: translate(-50%, -50%);
   pointer-events: none;
 }
 

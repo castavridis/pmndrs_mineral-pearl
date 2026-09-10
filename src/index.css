@@ -295,16 +295,26 @@ a {
   pointer-events: none;
 }
 
-/* the article launcher: a slab afloat on the page, its face drawn by the
-   nacre stage. The sink gives it its motion, the stage its iridescence. */
+/* The article launcher: a slab afloat on the page, its face drawn by the
+   nacre stage. The sink gives it its motion, the stage its iridescence.
+
+   Sizing: the sink pads itself by its bleed so the liquid has room to spill,
+   and pulls that back with an equal negative margin, so the slab lands exactly
+   on the wrapper's box. Left at max-content the button could neither grow nor
+   shrink; `auto` lets it follow the column instead. */
+/* width and margin are set inline; see the call site */
 .launcher-sink {
-  width: max-content;
-  margin: -44px;
+  min-width: 0;
 }
 
 .launcher {
   position: relative;
   z-index: 1;
+  /* fluid: a surface button's min-width would stop it shrinking */
+  display: block;
+  width: 100%;
+  min-width: 0;
+  text-align: center;
   background: transparent;
   border: 1px solid color-mix(in srgb, var(--page-ink) 16%, transparent);
   border-radius: 8px;
@@ -326,8 +336,9 @@ a {
   will-change: transform;
 }
 
-/* one that sits in a row beside something else takes only the room it needs */
+/* one that shares a row: it grows and shrinks with the room left over */
 .afloat-inline {
-  width: max-content;
+  flex: 1 1 180px;
+  min-width: 0;
   max-width: 100%;
 }

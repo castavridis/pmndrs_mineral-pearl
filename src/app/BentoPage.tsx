@@ -207,11 +207,12 @@ export function BentoPage() {
                   pressDepth={-0.05}
                   sinkSplash={false}
                   className="launcher-sink"
+                  style={{ width: 'calc(100% + 88px)', margin: -44 }}
                 >
                   <button
                     ref={launcherFace}
                     type="button"
-                    className="surface-button wide launcher"
+                    className="surface-button launcher"
                     aria-disabled={launcherDisabled || undefined}
                     onPointerDown={() => {
                       if (!launcherDisabled) launcherSink.current?.press();

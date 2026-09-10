@@ -6,7 +6,6 @@ import { POND_BG, type Liquid } from '../ink-sink/liquid-pond';
 import { onInk, page, useResolvedTheme } from '../theme';
 import { palette } from '../theme/palette';
 import { getNacreStage } from '../nacre-callout/stage';
-import { useWake } from '../ink-sink/useWake';
 import { InkSplat } from '../ink-splat';
 import { useNavStore, useNavStoreApi, resolveMode } from './store';
 import { tokens, tokensToCssVars } from './tokens';
@@ -90,12 +89,6 @@ export function Nav2D({ links, tier = 'full' }: { links: NavLink[]; tier?: Surfa
   }, [tier]);
   const logoRef = useRef<HTMLAnchorElement>(null);
   const blotRef = useRef<HTMLSpanElement>(null);
-
-  // The bar holds still; what floats on it does not. The pill is placed with
-  // `left`/`top` so the wake can have its transform to itself, and the mark's
-  // blot composes the wake with the translate that centres it.
-  useWake(indicatorRef, 0.9);
-  useWake(blotRef, 1.3, 'offset');
 
   // The mark's blot lives outside the bar and behind it, so the bar's liquid
   // covers the part that lands on it and only the spill shows. It has to be

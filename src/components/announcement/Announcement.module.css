@@ -51,6 +51,37 @@
   background: color-mix(in srgb, currentColor 10%, transparent);
 }
 
+/* A tap must not leave the banner marked. Touch browsers paint their own
+   highlight over the tapped control, and a tap also lands `:focus`, so the
+   dismissed banner would carry a grey flash and then a ring on its way under.
+   The ring belongs to the keyboard, which is what `:focus-visible` is for. */
+.dismiss,
+.root {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dismiss {
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.dismiss:focus {
+  outline: none;
+}
+
+.dismiss:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+@media (hover: none) {
+  /* no pointer to hover with, so the hover fill would stick after the tap */
+  .dismiss:hover {
+    opacity: 0.6;
+    background: transparent;
+  }
+}
+
 /* the flat card carries its own ink; the slab afloat wears the slab colours */
 .flat {
   color: var(--page-ink);
